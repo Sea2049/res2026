@@ -11,6 +11,8 @@
 - **状态管理**: React Hooks
 - **API 集成**: Reddit API
 - **测试框架**: Jest + React Testing Library
+- **容器化**: Docker + Docker Compose
+- **部署**: 阿里云 ECS / 任意 Linux 服务器
 
 ## 3. 架构设计
 本项目采用 **Feature-based (基于功能)** 的模块化架构。
@@ -87,6 +89,29 @@ src/
 - `getMultiplePostComments()`: 批量获取多个帖子的评论
 - `getSubredditComments()`: 获取 Subreddit 热门帖子评论
 
+### 3.4 生产环境部署
+
+#### Docker 部署架构
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Docker Container                       │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │           Reddit Insight Tool (Port 3000)               │ │
+│  └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 部署文件说明
+
+| 文件 | 作用 |
+|------|------|
+| `Dockerfile` | 多阶段构建，优化镜像体积，支持 standalone 模式 |
+| `docker-compose.yml` | 容器编排配置，包含健康检查和日志管理 |
+| `.env.production` | 生产环境变量模板 |
+| `.dockerignore` | Docker 构建忽略文件，优化构建上下文 |
+| `DEPLOYMENT.md` | 详细的阿里云部署指南 |
+| `next.config.mjs` | 生产环境优化配置（standalone 输出、缓存策略） |
+
 ## 4. 开发规范
 - **注释**: 所有关键代码（接口、复杂逻辑、组件 Props）必须包含中文注释。
 - **类型安全**: 严格使用 TypeScript 类型。
@@ -102,6 +127,7 @@ src/
 - **边界情况**: 处理 API 请求失败、空数据、网络超时等情况。
 - **API 限流**: 实现请求取消机制，防止重复请求。
 - **本地存储**: 搜索历史使用 localStorage，注意存储大小限制。
+- **容器安全**: 使用非 root 用户运行，限制容器权限。
 
 ## 6. 文件统计
 
@@ -110,10 +136,20 @@ src/
 | TypeScript 组件 (.tsx) | 28 |
 | TypeScript 文件 (.ts) | 10 |
 | 测试文件 (.test.ts/.test.tsx) | 4 |
+| Docker/部署文件 | 5 |
 | CSS 文件 (.css) | 1 |
-| **总计** | **43** |
+| **总计** | **48** |
 
 ## 7. 更新日志
+
+### 2026-01-14 - Docker 生产环境部署
+新增完整的 Docker 容器化部署方案：
+- `Dockerfile`: 多阶段构建，优化镜像体积
+- `docker-compose.yml`: 容器编排配置
+- `.env.production`: 生产环境变量模板
+- `.dockerignore`: 构建忽略配置
+- `DEPLOYMENT.md`: 阿里云部署详细指南
+- `next.config.mjs`: 生产环境优化配置
 
 ### 2026-01-14 - 通用 UI 组件扩展
 新增 5 个常用 UI 组件：Select 下拉选择器、Dialog 对话框、DropdownMenu 下拉菜单、Tooltip 工具提示、Progress 进度条。

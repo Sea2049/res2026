@@ -8,10 +8,16 @@
 |-----------|------|
 | `FRAMEWORK.md` | 项目框架设计文档。 |
 | `CODE_DIRECTORY.md` | 代码目录索引（本文档）。 |
+| `README.md` | 项目说明文档，包含功能特性、快速开始和部署指南。 |
+| `DEPLOYMENT.md` | 阿里云部署详细指南，包含 ECS 配置、Docker 部署、Nginx 反向代理、SSL 证书配置。 |
 | `package.json` | 项目依赖配置。 |
-| `next.config.mjs` | Next.js 配置文件。 |
+| `next.config.mjs` | Next.js 配置文件，包含生产环境优化（standalone 输出、缓存策略）。 |
 | `tsconfig.json` | TypeScript 配置文件。 |
 | `tailwind.config.ts` | Tailwind CSS 配置文件。 |
+| `Dockerfile` | 多阶段 Docker 构建配置，优化镜像体积，支持 standalone 模式。 |
+| `docker-compose.yml` | Docker Compose 编排配置，包含健康检查和日志管理。 |
+| `.env.production` | 生产环境变量模板。 |
+| `.dockerignore` | Docker 构建忽略文件，优化构建上下文。 |
 
 ## src 目录
 
@@ -79,10 +85,31 @@
 | TypeScript 组件 (.tsx) | 28 |
 | TypeScript 文件 (.ts) | 10 |
 | 测试文件 (.test.ts/.test.tsx) | 4 |
-| CSS 文件 (.css) | 1 |
-| **总计** | **43** |
+| Docker/部署文件 | 5 |
+| 配置文件 | 6 |
+| **总计** | **53** |
+
+## 部署相关文件
+
+| 文件 | 作用 | 说明 |
+|------|------|------|
+| `Dockerfile` | Docker 构建配置 | 多阶段构建，优化镜像体积约 100MB |
+| `docker-compose.yml` | 容器编排配置 | 包含健康检查、日志管理 |
+| `.env.production` | 环境变量模板 | 生产环境配置 |
+| `.dockerignore` | 构建忽略配置 | 减少构建上下文大小 |
+| `DEPLOYMENT.md` | 部署指南 | 阿里云 ECS 详细部署步骤 |
+| `next.config.mjs` | Next.js 配置 | standalone 输出、缓存策略 |
 
 ## 更新日志
+
+### 2026-01-14 - Docker 生产环境部署
+新增完整的 Docker 容器化部署方案：
+- `Dockerfile`: 多阶段构建，优化镜像体积
+- `docker-compose.yml`: 容器编排配置
+- `.env.production`: 生产环境变量模板
+- `.dockerignore`: 构建忽略配置
+- `DEPLOYMENT.md`: 阿里云部署详细指南
+- `next.config.mjs`: 生产环境优化配置
 
 ### 2026-01-14 - 通用 UI 组件扩展
 新增 5 个常用 UI 组件：Select 下拉选择器、Dialog 对话框、DropdownMenu 下拉菜单、Tooltip 工具提示、Progress 进度条。

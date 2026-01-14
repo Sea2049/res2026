@@ -9,9 +9,10 @@
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/License-ISC-green?style=for-the-badge)](LICENSE)
 
-[v1.0](https://github.com/Sea2049/res2026/releases/tag/v1.0) · [GitHub](https://github.com/Sea2049/res2026)
+[v1.1](https://github.com/Sea2049/res2026/releases) · [GitHub](https://github.com/Sea2049/res2026) · [部署指南](DEPLOYMENT.md)
 
 </div>
 
@@ -36,6 +37,7 @@
 - **Reddit API 集成**: 完整的 API 封装，支持批量数据获取
 - **单元测试**: 核心组件和 Hooks 覆盖测试
 - **类型安全**: 严格的 TypeScript 类型定义
+- **Docker 容器化**: 一键部署，支持阿里云 ECS
 
 ---
 
@@ -50,6 +52,7 @@
 | **React Hooks** | 状态管理和逻辑复用 |
 | **Reddit API** | 社区数据获取 |
 | **Jest** | 单元测试框架 |
+| **Docker** | 容器化部署 |
 
 ---
 
@@ -59,8 +62,9 @@
 
 - Node.js 18.17 或更高版本
 - npm 或 yarn 包管理器
+- Docker 和 Docker Compose（生产部署）
 
-### 安装步骤
+### 本地开发
 
 ```bash
 # 克隆项目
@@ -75,6 +79,25 @@ npm run dev
 ```
 
 打开 [http://localhost:3000](http://localhost:3000) 查看应用。
+
+### Docker 部署（推荐）
+
+```bash
+# 克隆项目
+git clone https://github.com/Sea2049/res2026.git
+cd res2026
+
+# 创建环境变量文件
+cp .env.production .env.production.local
+
+# 构建并启动容器
+docker-compose -f docker-compose.yml up -d --build
+
+# 查看日志
+docker-compose logs -f app
+```
+
+应用将在 http://localhost:3000 运行。
 
 ### 可用脚本
 
@@ -91,28 +114,66 @@ npm run dev
 
 ---
 
+## ☁️ 云端部署
+
+### 阿里云 ECS 部署
+
+详细部署指南请参考 [DEPLOYMENT.md](DEPLOYMENT.md)，包含：
+
+- 阿里云 ECS 实例创建和配置
+- Docker 和 Docker Compose 安装
+- Nginx 反向代理配置
+- SSL 证书配置（Let's Encrypt / 阿里云）
+- 域名解析和绑定
+- 监控和运维管理
+
+### 快速部署命令
+
+```bash
+# 1. 连接服务器
+ssh root@你的ECS公网IP
+
+# 2. 安装 Docker（如果未安装）
+curl -fsSL https://get.docker.com | sh
+
+# 3. 克隆并部署
+git clone https://github.com/Sea2049/res2026.git
+cd res2026
+docker-compose -f docker-compose.yml up -d --build
+
+# 4. 配置 Nginx（可选）
+# 5. 配置 SSL 证书（可选）
+```
+
+---
+
 ## 📁 项目结构
 
 ```
 res2026/
-├── src/
-│   ├── app/                    # 页面路由和布局
-│   │   ├── layout.tsx          # 根布局
-│   │   ├── page.tsx            # 首页
-│   │   └── globals.css         # 全局样式
-│   ├── components/             # 通用 UI 组件
-│   │   └── ui/                 # Shadcn/UI 组件库
-│   ├── features/               # 业务功能模块
-│   │   ├── topic-selection/    # 主题筛选功能
-│   │   └── analysis/           # 分析功能
-│   └── lib/                    # 工具库
-│       ├── api/                # Reddit API 客户端
-│       ├── nlp.ts              # NLP 自然语言处理
-│       ├── types.ts            # 类型定义
-│       └── utils.ts            # 工具函数
-├── FRAMEWORK.md                # 框架设计文档
-├── CODE_DIRECTORY.md           # 代码目录索引
-└── package.json                # 项目依赖
+├── src/                            # 源代码目录
+│   ├── app/                        # 页面路由和布局
+│   │   ├── layout.tsx              # 根布局
+│   │   ├── page.tsx                # 首页
+│   │   └── globals.css             # 全局样式
+│   ├── components/                 # 通用 UI 组件
+│   │   └── ui/                     # Shadcn/UI 组件库
+│   ├── features/                   # 业务功能模块
+│   │   ├── topic-selection/        # 主题筛选功能
+│   │   └── analysis/               # 分析功能
+│   └── lib/                        # 工具库
+│       ├── api/                    # Reddit API 客户端
+│       ├── nlp.ts                  # NLP 自然语言处理
+│       ├── types.ts                # 类型定义
+│       └── utils.ts                # 工具函数
+├── Dockerfile                      # Docker 构建配置
+├── docker-compose.yml              # Docker Compose 编排
+├── .env.production                 # 生产环境变量模板
+├── .dockerignore                   # Docker 构建忽略文件
+├── DEPLOYMENT.md                   # 阿里云部署指南
+├── FRAMEWORK.md                    # 框架设计文档
+├── CODE_DIRECTORY.md               # 代码目录索引
+└── package.json                    # 项目依赖
 ```
 
 ---
@@ -163,8 +224,10 @@ npm run test:coverage
 
 ## 📝 文档
 
+- [README.md](README.md) - 项目说明文档
 - [FRAMEWORK.md](FRAMEWORK.md) - 框架设计文档
 - [CODE_DIRECTORY.md](CODE_DIRECTORY.md) - 代码目录索引
+- [DEPLOYMENT.md](DEPLOYMENT.md) - 阿里云部署指南
 
 ---
 
@@ -190,6 +253,7 @@ npm run test:coverage
 - [Tailwind CSS](https://tailwindcss.com/) - CSS 框架
 - [Shadcn/UI](https://ui.shadcn.com/) - UI 组件库
 - [Reddit API](https://www.reddit.com/dev/api/) - 社区数据来源
+- [Docker](https://www.docker.com/) - 容器化平台
 
 ---
 
