@@ -59,10 +59,10 @@ export function TopicList({
       return (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">🔍</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <h3 className="text-lg font-semibold text-white mb-2">
             未找到相关结果
           </h3>
-          <p className="text-gray-600">
+          <p className="text-gray-300">
             尝试使用其他关键词搜索
           </p>
         </div>
@@ -72,10 +72,10 @@ export function TopicList({
     return (
       <div className="text-center py-12">
         <div className="text-6xl mb-4">📋</div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <h3 className="text-lg font-semibold text-white mb-2">
           开始搜索主题
         </h3>
-        <p className="text-gray-600">
+        <p className="text-gray-300">
           输入关键词搜索感兴趣的 Subreddit 或 Post
         </p>
       </div>
@@ -115,10 +115,10 @@ export function TopicList({
     return (
       <div className="text-center py-12">
         <div className="text-6xl mb-4">⚠️</div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <h3 className="text-lg font-semibold text-white mb-2">
           搜索失败
         </h3>
-        <p className="text-gray-600 mb-4">
+        <p className="text-gray-300 mb-4">
           {error || "网络请求失败，请稍后重试"}
         </p>
       </div>
@@ -152,7 +152,7 @@ export function TopicList({
     
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between text-sm text-gray-600">
+        <div className="flex items-center justify-between text-sm text-gray-300">
           <span>搜索结果：{getResultStats()}</span>
           <span>已选 {selectedTopicIds.size} 个</span>
         </div>

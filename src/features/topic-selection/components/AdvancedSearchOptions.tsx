@@ -212,7 +212,7 @@ export function AdvancedSearchOptions({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-200 mb-2">
               排序方式
             </label>
             <div className="flex flex-wrap gap-2">
@@ -224,7 +224,7 @@ export function AdvancedSearchOptions({
                     "px-4 py-2 rounded-lg text-sm transition-colors",
                     options.sortBy === option.value
                       ? "bg-blue-600 text-white"
-                      : "bg-white text-gray-700 hover:bg-gray-100"
+                      : "bg-gray-700 text-gray-200 hover:bg-gray-600"
                   )}
                   aria-pressed={options.sortBy === option.value}
                 >
@@ -235,7 +235,7 @@ export function AdvancedSearchOptions({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-200 mb-2">
               时间范围
             </label>
             <div className="flex flex-wrap gap-2">
@@ -247,7 +247,7 @@ export function AdvancedSearchOptions({
                     "px-4 py-2 rounded-lg text-sm transition-colors",
                     options.timeRange === option.value
                       ? "bg-blue-600 text-white"
-                      : "bg-white text-gray-700 hover:bg-gray-100"
+                      : "bg-gray-700 text-gray-200 hover:bg-gray-600"
                   )}
                   aria-pressed={options.timeRange === option.value}
                 >
@@ -258,7 +258,7 @@ export function AdvancedSearchOptions({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-200 mb-2">
               结果数量
             </label>
             <div className="flex flex-wrap gap-2">
@@ -270,7 +270,7 @@ export function AdvancedSearchOptions({
                     "px-4 py-2 rounded-lg text-sm transition-colors",
                     options.limit === limit
                       ? "bg-blue-600 text-white"
-                      : "bg-white text-gray-700 hover:bg-gray-100"
+                      : "bg-gray-700 text-gray-200 hover:bg-gray-600"
                   )}
                   aria-pressed={options.limit === limit}
                 >
