@@ -13,6 +13,7 @@
 | tsconfig.json | JSON | TypeScript 编译配置，定义类型检查规则和编译选项 |
 | tailwind.config.ts | TS | Tailwind CSS 配置，定义主题色和自定义样式变体 |
 | jest.config.js | JS | Jest 测试框架配置，设置测试环境和覆盖率阈值 |
+| jest.setup.js | JS | Jest 测试设置文件，配置测试环境和全局 mock |
 | .eslintrc.json | JSON | ESLint 代码规范配置，定义代码检查规则 |
 | .prettierrc | JSON | Prettier 格式化配置，统一代码风格 |
 | .gitignore | GIT | Git 忽略规则，指定不纳入版本控制的文件 |
@@ -31,7 +32,7 @@ src 目录是项目的主要源代码入口，包含应用逻辑、组件定义�
 
 ```
 src/
-├── app/                    # Next.js App Router 页面和布局
+├── app/                    # Next.js App Router 页面和 API Routes
 ├── components/             # 通用 UI 组件库
 ├── features/               # 功能模块，按业务划分
 └── lib/                    # 工具函数和基础支撑代码
@@ -39,7 +40,7 @@ src/
 
 ## 三、页面目录（app）
 
-app 目录遵循 Next.js 14+ App Router 规范，包含页面的路由定义、布局组件和全局样式。页面组件直接对应 URL 路由，是用户访问应用的入口。
+app 目录遵循 Next.js 14+ App Router 规范，包含页面的路由定义、布局组件、API Routes 和全局样式。页面组件直接对应 URL 路由，是用户访问应用的入口。API Routes 位于 app/api 目录下，按功能模块组织服务端接口。
 
 ### 3.1 页面组件
 
@@ -47,6 +48,16 @@ app 目录遵循 Next.js 14+ App Router 规范，包含页面的路由定义、�
 |----------|------|------|
 | src/app/page.tsx | TSX | 应用首页组件，整合话题选择和分析功能的主页面 |
 | src/app/layout.tsx | TSX | 根布局组件，定义全局结构、字体和样式提供者 |
+
+### 3.2 API Routes
+
+API Routes 实现服务端代理，统一处理与 Reddit API 的通信，保护 API 密钥安全。
+
+| 文件路径 | 类型 | 说明 |
+|----------|------|------|
+| src/app/api/reddit/subreddit/route.ts | TS | Subreddit 端点，处理社区搜索和信息查询 |
+| src/app/api/reddit/search/route.ts | TS | Search 端点，处理帖子搜索和结果筛选 |
+| src/app/api/reddit/comments/route.ts | TS | Comments 端点，处理评论获取和分页 |
 
 ## 四、组件库目录（components）
 
@@ -146,11 +157,12 @@ features 目录按业务功能组织代码，每个子目录代表一个独立�
 
 lib 目录包含项目的工具函数、类型定义和外部服务封装，是所有功能模块共同依赖的基础支撑代码。
 
-### 6.1 API 客户端
+### 6.1 API 辅助工具
 
 | 文件路径 | 类型 | 说明 |
 |----------|------|------|
-| src/lib/api/reddit.ts | TS | Reddit API 客户端，封装所有与 Reddit API 的交互逻辑 |
+| src/lib/api/fetch-helper.ts | TS | Fetch 工具模块，提供统一的请求封装和错误处理逻辑 |
+| src/lib/api/reddit.ts | TS | Reddit API 类型定义，包含请求和响应的 TypeScript 类型 |
 
 ### 6.2 工具模块
 
@@ -171,23 +183,24 @@ lib 目录包含项目的工具函数、类型定义和外部服务封装，是�
 
 | 文件类型 | 数量 | 占比 |
 |----------|------|------|
-| TypeScript 组件（.tsx） | 28 | 73.7% |
-| TypeScript 工具（.ts） | 10 | 26.3% |
-| 配置文件 | 16 | - |
+| TypeScript 组件（.tsx） | 28 | 66.7% |
+| TypeScript 工具（.ts） | 14 | 33.3% |
+| 配置文件 | 17 | - |
 | 文档文件 | 4 | - |
 
 ### 7.2 按目录统计
 
-| 目录 | 组件 | 工具 | 测试 | 小计 |
-|------|------|------|------|------|
-| src/app | 2 | 0 | 0 | 2 |
-| src/components/ui | 13 | 0 | 0 | 13 |
-| src/components | 0 | 1 | 0 | 1 |
-| src/features/topic-selection | 5 | 2 | 2 | 9 |
-| src/features/analysis | 5 | 1 | 0 | 6 |
-| src/lib | 0 | 4 | 0 | 4 |
-| 测试文件 | 0 | 0 | 3 | 3 |
-| **总计** | **28** | **10** | **5** | **43** |
+| 目录 | 组件 | 工具 | 测试 | API | 小计 |
+|------|------|------|------|-----|------|
+| src/app | 2 | 0 | 0 | 3 | 5 |
+| src/components/ui | 13 | 0 | 0 | 0 | 13 |
+| src/components | 0 | 1 | 0 | 0 | 1 |
+| src/features/topic-selection | 5 | 2 | 2 | 0 | 9 |
+| src/features/analysis | 5 | 1 | 0 | 0 | 6 |
+| src/lib/api | 0 | 2 | 0 | 0 | 2 |
+| src/lib | 0 | 2 | 0 | 0 | 2 |
+| 测试文件 | 0 | 0 | 4 | 0 | 4 |
+| **总计** | **28** | **8** | **6** | **3** | **45** |
 
 ### 7.3 文件清单
 
@@ -195,49 +208,54 @@ lib 目录包含项目的工具函数、类型定义和外部服务封装，是�
 
 | 序号 | 文件路径 |
 |------|----------|
-| 1 | src/app/layout.tsx |
-| 2 | src/app/page.tsx |
-| 3 | src/components/index.ts |
-| 4 | src/components/ui/alert.tsx |
-| 5 | src/components/ui/badge.tsx |
-| 6 | src/components/ui/button.tsx |
-| 7 | src/components/ui/card.tsx |
-| 8 | src/components/ui/dialog.tsx |
-| 9 | src/components/ui/dropdown-menu.tsx |
-| 10 | src/components/ui/input.tsx |
-| 11 | src/components/ui/progress.tsx |
-| 12 | src/components/ui/select.tsx |
-| 13 | src/components/ui/separator.tsx |
-| 14 | src/components/ui/spinner.tsx |
-| 15 | src/components/ui/tabs.tsx |
-| 16 | src/components/ui/tooltip.tsx |
-| 17 | src/features/analysis/components/AnalysisProgress.tsx |
-| 18 | src/features/analysis/components/CommentList.tsx |
-| 19 | src/features/analysis/components/InsightCard.tsx |
-| 20 | src/features/analysis/components/KeywordCloud.tsx |
-| 21 | src/features/analysis/components/SentimentChart.tsx |
-| 22 | src/features/analysis/hooks/useAnalysis.ts |
-| 23 | src/features/analysis/index.tsx |
-| 24 | src/features/topic-selection/components/AdvancedSearchOptions.tsx |
-| 25 | src/features/topic-selection/components/SearchSuggestions.tsx |
-| 26 | src/features/topic-selection/components/TopicCard.tsx |
-| 27 | src/features/topic-selection/components/TopicList.tsx |
-| 28 | src/features/topic-selection/components/TopicSearchInput.tsx |
-| 29 | src/features/topic-selection/components/__tests__/TopicCard.test.tsx |
-| 30 | src/features/topic-selection/components/__tests__/TopicSearchInput.test.tsx |
-| 31 | src/features/topic-selection/hooks/__tests__/useSearchHistory.test.ts |
-| 32 | src/features/topic-selection/hooks/__tests__/useTopicSearch.test.ts |
-| 33 | src/features/topic-selection/hooks/useSearchHistory.ts |
-| 34 | src/features/topic-selection/hooks/useTopicSearch.ts |
-| 35 | src/features/topic-selection/index.tsx |
-| 36 | src/lib/api/reddit.ts |
-| 37 | src/lib/nlp.ts |
-| 38 | src/lib/types.ts |
-| 39 | src/lib/utils.ts |
+| 1 | src/app/api/reddit/comments/route.ts |
+| 2 | src/app/api/reddit/search/route.ts |
+| 3 | src/app/api/reddit/subreddit/route.ts |
+| 4 | src/app/layout.tsx |
+| 5 | src/app/page.tsx |
+| 6 | src/components/index.ts |
+| 7 | src/components/ui/alert.tsx |
+| 8 | src/components/ui/badge.tsx |
+| 9 | src/components/ui/button.tsx |
+| 10 | src/components/ui/card.tsx |
+| 11 | src/components/ui/dialog.tsx |
+| 12 | src/components/ui/dropdown-menu.tsx |
+| 13 | src/components/ui/input.tsx |
+| 14 | src/components/ui/progress.tsx |
+| 15 | src/components/ui/select.tsx |
+| 16 | src/components/ui/separator.tsx |
+| 17 | src/components/ui/spinner.tsx |
+| 18 | src/components/ui/tabs.tsx |
+| 19 | src/components/ui/tooltip.tsx |
+| 20 | src/features/analysis/components/AnalysisProgress.tsx |
+| 21 | src/features/analysis/components/CommentList.tsx |
+| 22 | src/features/analysis/components/InsightCard.tsx |
+| 23 | src/features/analysis/components/KeywordCloud.tsx |
+| 24 | src/features/analysis/components/SentimentChart.tsx |
+| 25 | src/features/analysis/hooks/useAnalysis.ts |
+| 26 | src/features/analysis/index.tsx |
+| 27 | src/features/topic-selection/components/AdvancedSearchOptions.tsx |
+| 28 | src/features/topic-selection/components/SearchSuggestions.tsx |
+| 29 | src/features/topic-selection/components/TopicCard.tsx |
+| 30 | src/features/topic-selection/components/TopicList.tsx |
+| 31 | src/features/topic-selection/components/TopicSearchInput.tsx |
+| 32 | src/features/topic-selection/components/__tests__/TopicCard.test.tsx |
+| 33 | src/features/topic-selection/components/__tests__/TopicSearchInput.test.tsx |
+| 34 | src/features/topic-selection/hooks/__tests__/useSearchHistory.test.ts |
+| 35 | src/features/topic-selection/hooks/__tests__/useTopicSearch.test.ts |
+| 36 | src/features/topic-selection/hooks/useSearchHistory.ts |
+| 37 | src/features/topic-selection/hooks/useTopicSearch.ts |
+| 38 | src/features/topic-selection/index.tsx |
+| 39 | src/lib/api/fetch-helper.ts |
+| 40 | src/lib/api/reddit.ts |
+| 41 | src/lib/nlp.ts |
+| 42 | src/lib/types.ts |
+| 43 | src/lib/utils.ts |
 
 ## 八、更新日志
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
-| v1.1.0 | 2026-01-15 | 新增 6 个组件文件（tooltip、tabs、separator、select、progress、dialog），新增 2 个工具文件，文件总数达到 28 个组件和 10 个工具 |
+| v1.2.0 | 2026-01-15 | 新增 3 个 API Routes 端点（subreddit、search、comments），新增 fetch-helper 工具模块，TypeScript 工具文件从 10 个增加到 14 个 |
+| v1.1.0 | 2026-01-12 | 新增 6 个组件文件（tooltip、tabs、separator、select、progress、dialog），文件总数达到 28 个组件 |
 | v1.0.0 | 2026-01-10 | 初始版本，22 个组件文件，8 个工具文件 |
