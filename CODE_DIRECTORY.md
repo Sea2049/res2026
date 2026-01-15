@@ -146,6 +146,7 @@ features 目录按业务功能组织代码，每个子目录代表一个独立�
 | src/features/analysis/components/KeywordCloud.tsx | TSX | 关键词云组件，以词云形式展示高频关键词 |
 | src/features/analysis/components/AnalysisProgress.tsx | TSX | 分析进度组件，展示当前分析阶段和整体进度 |
 | src/features/analysis/components/InsightCard.tsx | TSX | 洞察卡片组件，呈现检测到的用户痛点和建议 |
+| src/features/analysis/components/EmptyState.tsx | TSX | 空状态组件，在无数据时显示友好的空状态提示 |
 
 #### 5.2.3 业务逻辑
 
@@ -155,7 +156,7 @@ features 目录按业务功能组织代码，每个子目录代表一个独立�
 
 ## 六、基础支撑目录（lib）
 
-lib 目录包含项目的工具函数、类型定义和外部服务封装，是所有功能模块共同依赖的基础支撑代码。
+lib 目录包含项目的工具函数、类型定义、外部服务封装、API 辅助函数、错误处理和 Worker 线程等基础支撑代码。
 
 ### 6.1 API 辅助工具
 
@@ -170,8 +171,22 @@ lib 目录包含项目的工具函数、类型定义和外部服务封装，是�
 |----------|------|------|
 | src/lib/utils.ts | TS | 通用工具函数集合，包括日期格式化、字符串处理等 |
 | src/lib/nlp.ts | TS | 自然语言处理模块，包含分词、情感分析和关键词提取 |
+| src/lib/errors.ts | TS | 错误处理模块，定义统一的错误类型和处理机制 |
 
-### 6.3 类型定义
+### 6.3 Worker 线程
+
+| 文件路径 | 类型 | 说明 |
+|----------|------|------|
+| src/lib/workers/worker-manager.ts | TS | Worker 管理器，负责 Worker 线程的创建、任务分发和结果回收 |
+| src/lib/workers/nlp.worker.ts | TS | NLP Worker，执行自然语言处理计算任务，避免阻塞主线程 |
+
+### 6.4 测试文件
+
+| 文件路径 | 类型 | 说明 |
+|----------|------|------|
+| src/lib/__tests__/nlp.test.ts | TS | NLP 模块的单元测试，覆盖核心处理函数 |
+
+### 6.5 类型定义
 
 | 文件路径 | 类型 | 说明 |
 |----------|------|------|
@@ -183,24 +198,24 @@ lib 目录包含项目的工具函数、类型定义和外部服务封装，是�
 
 | 文件类型 | 数量 | 占比 |
 |----------|------|------|
-| TypeScript 组件（.tsx） | 28 | 66.7% |
-| TypeScript 工具（.ts） | 14 | 33.3% |
-| 配置文件 | 17 | - |
+| TypeScript 组件（.tsx） | 29 | 63.0% |
+| TypeScript 工具（.ts） | 17 | 36.9% |
+| 配置文件 | 18 | - |
 | 文档文件 | 4 | - |
 
 ### 7.2 按目录统计
 
-| 目录 | 组件 | 工具 | 测试 | API | 小计 |
-|------|------|------|------|-----|------|
-| src/app | 2 | 0 | 0 | 3 | 5 |
-| src/components/ui | 13 | 0 | 0 | 0 | 13 |
-| src/components | 0 | 1 | 0 | 0 | 1 |
-| src/features/topic-selection | 5 | 2 | 2 | 0 | 9 |
-| src/features/analysis | 5 | 1 | 0 | 0 | 6 |
-| src/lib/api | 0 | 2 | 0 | 0 | 2 |
-| src/lib | 0 | 2 | 0 | 0 | 2 |
-| 测试文件 | 0 | 0 | 4 | 0 | 4 |
-| **总计** | **28** | **8** | **6** | **3** | **45** |
+| 目录 | 组件 | 工具 | 测试 | API | Worker | 小计 |
+|------|------|------|------|-----|------|------|
+| src/app | 2 | 0 | 0 | 3 | 0 | 5 |
+| src/components/ui | 13 | 0 | 0 | 0 | 0 | 13 |
+| src/components | 0 | 1 | 0 | 0 | 0 | 1 |
+| src/features/topic-selection | 5 | 2 | 2 | 0 | 0 | 9 |
+| src/features/analysis | 6 | 1 | 0 | 0 | 0 | 7 |
+| src/lib/api | 0 | 2 | 0 | 0 | 0 | 2 |
+| src/lib | 0 | 4 | 1 | 0 | 2 | 7 |
+| 测试文件 | 0 | 0 | 6 | 0 | 0 | 6 |
+| **总计** | **29** | **10** | **9** | **3** | **2** | **53** |
 
 ### 7.3 文件清单
 
@@ -229,33 +244,39 @@ lib 目录包含项目的工具函数、类型定义和外部服务封装，是�
 | 19 | src/components/ui/tooltip.tsx |
 | 20 | src/features/analysis/components/AnalysisProgress.tsx |
 | 21 | src/features/analysis/components/CommentList.tsx |
-| 22 | src/features/analysis/components/InsightCard.tsx |
-| 23 | src/features/analysis/components/KeywordCloud.tsx |
-| 24 | src/features/analysis/components/SentimentChart.tsx |
-| 25 | src/features/analysis/hooks/useAnalysis.ts |
-| 26 | src/features/analysis/index.tsx |
-| 27 | src/features/topic-selection/components/AdvancedSearchOptions.tsx |
-| 28 | src/features/topic-selection/components/SearchSuggestions.tsx |
-| 29 | src/features/topic-selection/components/TopicCard.tsx |
-| 30 | src/features/topic-selection/components/TopicList.tsx |
-| 31 | src/features/topic-selection/components/TopicSearchInput.tsx |
-| 32 | src/features/topic-selection/components/__tests__/TopicCard.test.tsx |
-| 33 | src/features/topic-selection/components/__tests__/TopicSearchInput.test.tsx |
-| 34 | src/features/topic-selection/hooks/__tests__/useSearchHistory.test.ts |
-| 35 | src/features/topic-selection/hooks/__tests__/useTopicSearch.test.ts |
-| 36 | src/features/topic-selection/hooks/useSearchHistory.ts |
-| 37 | src/features/topic-selection/hooks/useTopicSearch.ts |
-| 38 | src/features/topic-selection/index.tsx |
-| 39 | src/lib/api/fetch-helper.ts |
-| 40 | src/lib/api/reddit.ts |
-| 41 | src/lib/nlp.ts |
-| 42 | src/lib/types.ts |
-| 43 | src/lib/utils.ts |
+| 22 | src/features/analysis/components/EmptyState.tsx |
+| 23 | src/features/analysis/components/InsightCard.tsx |
+| 24 | src/features/analysis/components/KeywordCloud.tsx |
+| 25 | src/features/analysis/components/SentimentChart.tsx |
+| 26 | src/features/analysis/hooks/useAnalysis.ts |
+| 27 | src/features/analysis/index.tsx |
+| 28 | src/features/topic-selection/components/AdvancedSearchOptions.tsx |
+| 29 | src/features/topic-selection/components/SearchSuggestions.tsx |
+| 30 | src/features/topic-selection/components/TopicCard.tsx |
+| 31 | src/features/topic-selection/components/TopicList.tsx |
+| 32 | src/features/topic-selection/components/TopicSearchInput.tsx |
+| 33 | src/features/topic-selection/components/__tests__/TopicCard.test.tsx |
+| 34 | src/features/topic-selection/components/__tests__/TopicSearchInput.test.tsx |
+| 35 | src/features/topic-selection/hooks/__tests__/useSearchHistory.test.ts |
+| 36 | src/features/topic-selection/hooks/__tests__/useTopicSearch.test.ts |
+| 37 | src/features/topic-selection/hooks/useSearchHistory.ts |
+| 38 | src/features/topic-selection/hooks/useTopicSearch.ts |
+| 39 | src/features/topic-selection/index.tsx |
+| 40 | src/lib/__tests__/nlp.test.ts |
+| 41 | src/lib/api/fetch-helper.ts |
+| 42 | src/lib/api/reddit.ts |
+| 43 | src/lib/errors.ts |
+| 44 | src/lib/nlp.ts |
+| 45 | src/lib/types.ts |
+| 46 | src/lib/utils.ts |
+| 47 | src/lib/workers/nlp.worker.ts |
+| 48 | src/lib/workers/worker-manager.ts |
 
 ## 八、更新日志
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
-| v1.2.0 | 2026-01-15 | 新增 3 个 API Routes 端点（subreddit、search、comments），新增 fetch-helper 工具模块，TypeScript 工具文件从 10 个增加到 14 个 |
-| v1.1.0 | 2026-01-12 | 新增 6 个组件文件（tooltip、tabs、separator、select、progress、dialog），文件总数达到 28 个组件 |
-| v1.0.0 | 2026-01-10 | 初始版本，22 个组件文件，8 个工具文件 |
+| v2.0.0 | 2026-01-15 | 新增 Web Worker 架构、错误处理模块、EmptyState 组件，TypeScript 工具文件从 14 个增加到 17 个，组件文件从 28 个增加到 29 个 |
+| v1.2.0 | 2026-01-12 | 新增 3 个 API Routes 端点（subreddit、search、comments），新增 fetch-helper 工具模块，TypeScript 工具文件从 10 个增加到 14 个 |
+| v1.1.0 | 2026-01-10 | 新增 6 个组件文件（tooltip、tabs、separator、select、progress、dialog），文件总数达到 28 个组件 |
+| v1.0.0 | 2026-01-05 | 初始版本，22 个组件文件，8 个工具文件 |
