@@ -177,7 +177,7 @@ export function AdvancedSearchOptions({
                 className={cn(
                   "px-4 py-2 rounded-lg text-sm transition-colors",
                   !options.subredditOnly && !options.postOnly
-                    ? "bg-blue-600 text-white"
+                    ? "bg-reddit-orange text-white"
                     : "bg-white text-gray-700 hover:bg-gray-100"
                 )}
                 aria-pressed={!options.subredditOnly && !options.postOnly}
@@ -189,7 +189,7 @@ export function AdvancedSearchOptions({
                 className={cn(
                   "px-4 py-2 rounded-lg text-sm transition-colors",
                   options.subredditOnly
-                    ? "bg-blue-600 text-white"
+                    ? "bg-reddit-orange text-white"
                     : "bg-white text-gray-700 hover:bg-gray-100"
                 )}
                 aria-pressed={options.subredditOnly}
@@ -201,7 +201,7 @@ export function AdvancedSearchOptions({
                 className={cn(
                   "px-4 py-2 rounded-lg text-sm transition-colors",
                   options.postOnly
-                    ? "bg-blue-600 text-white"
+                    ? "bg-reddit-orange text-white"
                     : "bg-white text-gray-700 hover:bg-gray-100"
                 )}
                 aria-pressed={options.postOnly}
@@ -223,7 +223,7 @@ export function AdvancedSearchOptions({
                   className={cn(
                     "px-4 py-2 rounded-lg text-sm transition-colors",
                     options.sortBy === option.value
-                      ? "bg-blue-600 text-white"
+                      ? "bg-reddit-orange text-white"
                       : "bg-gray-700 text-gray-200 hover:bg-gray-600"
                   )}
                   aria-pressed={options.sortBy === option.value}
@@ -246,7 +246,7 @@ export function AdvancedSearchOptions({
                   className={cn(
                     "px-4 py-2 rounded-lg text-sm transition-colors",
                     options.timeRange === option.value
-                      ? "bg-blue-600 text-white"
+                      ? "bg-reddit-orange text-white"
                       : "bg-gray-700 text-gray-200 hover:bg-gray-600"
                   )}
                   aria-pressed={options.timeRange === option.value}
@@ -269,7 +269,7 @@ export function AdvancedSearchOptions({
                   className={cn(
                     "px-4 py-2 rounded-lg text-sm transition-colors",
                     options.limit === limit
-                      ? "bg-blue-600 text-white"
+                      ? "bg-reddit-orange text-white"
                       : "bg-gray-700 text-gray-200 hover:bg-gray-600"
                   )}
                   aria-pressed={options.limit === limit}

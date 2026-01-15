@@ -138,7 +138,7 @@ export function useTopicSearch(): UseTopicSearchReturn {
       let searchResults: SearchResult[] = [];
 
       if (!searchOptions.postOnly) {
-        const subreddits = await redditApi.searchSubreddits(keyword);
+        const subreddits = await redditApi.searchSubreddits(keyword, signal);
         searchResults = [...searchResults, ...subreddits.slice(0, searchOptions.limit)];
       }
 
@@ -148,7 +148,8 @@ export function useTopicSearch(): UseTopicSearchReturn {
           undefined,
           searchOptions.sortBy,
           searchOptions.timeRange,
-          searchOptions.limit
+          searchOptions.limit,
+          signal
         );
         searchResults = [...searchResults, ...posts.slice(0, searchOptions.limit)];
       }

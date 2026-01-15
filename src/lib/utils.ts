@@ -56,21 +56,19 @@ export function formatSubscriberCount(count: number): string {
   if (count < 1000) return count.toString();
   
   const suffixes = ["", "K", "M", "B"];
-  const suffixNum = Math.floor(("" + Math.floor(count)).length / 3);
+  // 1000 -> 1K, 1000000 -> 1M
+  // log10(1000) = 3. 3/3 = 1. suffix[1] = K
+  const suffixNum = Math.floor(Math.log10(count) / 3);
   
-  let shortValue: number;
-  const shortNum = count % 1000 !== 0;
+  if (suffixNum >= suffixes.length) return count.toString(); // Should not happen for reasonable numbers
+
+  const shortValue = count / Math.pow(1000, suffixNum);
   
-  for (let i = suffixNum ? 2 : 1; i < (suffixNum ? 3 : 2); i++) {
-    shortValue = parseFloat((suffixNum !== 0 ? count / Math.pow(1000, i) : count / Math.pow(1000, i)).toPrecision(3));
-    if (shortValue % 1 !== 0) {
-      shortValue = Math.floor(shortValue * 10) / 10;
-    }
-    if (shortValue < 1000) {
-      return shortValue + suffixes[i];
-    }
-  }
-  return count.toString();
+  // Keep 1 decimal place if needed, but remove .0
+  // e.g. 1.5K, 10K
+  const formatted = shortValue.toFixed(1).replace(/\.0$/, '');
+  
+  return `${formatted}${suffixes[suffixNum]}`;
 }
 
 /**

@@ -1,6 +1,15 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useTopicSearch } from '../useTopicSearch';
 import type { Subreddit, Post } from '@/lib/types';
+import { redditApi } from '@/lib/api/reddit';
+
+// Mock redditApi
+jest.mock('@/lib/api/reddit', () => ({
+  redditApi: {
+    searchSubreddits: jest.fn(),
+    searchPosts: jest.fn(),
+  },
+}));
 
 /**
  * useTopicSearch Hook 单元测试
@@ -64,12 +73,18 @@ describe('useTopicSearch', () => {
   /**
    * 测试：切换主题选择状态
    */
-  it('应该切换主题选择状态', () => {
+  it('应该切换主题选择状态', async () => {
+    (redditApi.searchSubreddits as jest.Mock).mockResolvedValue([mockSubreddit]);
+    (redditApi.searchPosts as jest.Mock).mockResolvedValue([mockPost]);
+
     const { result } = renderHook(() => useTopicSearch());
     
     act(() => {
       result.current.setKeyword('test');
-      result.current.setResults([mockSubreddit, mockPost]);
+    });
+
+    await act(async () => {
+      await result.current.search();
     });
     
     act(() => {
@@ -77,18 +92,24 @@ describe('useTopicSearch', () => {
     });
     
     expect(result.current.selectedTopicIds.has(mockSubreddit.id)).toBe(true);
-    expect(result.current.selectedTopics).toContain(mockSubreddit);
+    expect(result.current.selectedTopics).toContainEqual(mockSubreddit);
   });
 
   /**
    * 测试：取消选择主题
    */
-  it('应该取消选择主题', () => {
+  it('应该取消选择主题', async () => {
+    (redditApi.searchSubreddits as jest.Mock).mockResolvedValue([mockSubreddit]);
+    (redditApi.searchPosts as jest.Mock).mockResolvedValue([mockPost]);
+
     const { result } = renderHook(() => useTopicSearch());
     
     act(() => {
       result.current.setKeyword('test');
-      result.current.setResults([mockSubreddit, mockPost]);
+    });
+
+    await act(async () => {
+      await result.current.search();
     });
     
     act(() => {
@@ -97,18 +118,24 @@ describe('useTopicSearch', () => {
     });
     
     expect(result.current.selectedTopicIds.has(mockSubreddit.id)).toBe(false);
-    expect(result.current.selectedTopics).not.toContain(mockSubreddit);
+    expect(result.current.selectedTopics).not.toContainEqual(mockSubreddit);
   });
 
   /**
    * 测试：清空搜索结果
    */
-  it('应该清空搜索结果', () => {
+  it('应该清空搜索结果', async () => {
+    (redditApi.searchSubreddits as jest.Mock).mockResolvedValue([mockSubreddit]);
+    (redditApi.searchPosts as jest.Mock).mockResolvedValue([mockPost]);
+
     const { result } = renderHook(() => useTopicSearch());
     
     act(() => {
       result.current.setKeyword('test');
-      result.current.setResults([mockSubreddit, mockPost]);
+    });
+
+    await act(async () => {
+      await result.current.search();
     });
     
     expect(result.current.results.length).toBe(2);
@@ -123,12 +150,18 @@ describe('useTopicSearch', () => {
   /**
    * 测试：清空已选主题
    */
-  it('应该清空已选主题', () => {
+  it('应该清空已选主题', async () => {
+    (redditApi.searchSubreddits as jest.Mock).mockResolvedValue([mockSubreddit]);
+    (redditApi.searchPosts as jest.Mock).mockResolvedValue([mockPost]);
+
     const { result } = renderHook(() => useTopicSearch());
     
     act(() => {
       result.current.setKeyword('test');
-      result.current.setResults([mockSubreddit, mockPost]);
+    });
+
+    await act(async () => {
+      await result.current.search();
     });
     
     act(() => {
@@ -147,12 +180,21 @@ describe('useTopicSearch', () => {
   /**
    * 测试：计算已选主题列表
    */
-  it('应该正确计算已选主题列表', () => {
+  it('应该正确计算已选主题列表', async () => {
+    (redditApi.searchSubreddits as jest.Mock).mockResolvedValue([mockSubreddit]);
+    (redditApi.searchPosts as jest.Mock).mockResolvedValue([mockPost]);
+
     const { result } = renderHook(() => useTopicSearch());
     
     act(() => {
       result.current.setKeyword('test');
-      result.current.setResults([mockSubreddit, mockPost]);
+    });
+
+    await act(async () => {
+      await result.current.search();
+    });
+
+    act(() => {
       result.current.toggleSelectTopic(mockSubreddit);
     });
     

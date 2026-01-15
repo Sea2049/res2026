@@ -199,8 +199,8 @@ export function TopicSearchInput({
             onClick={handleSearchClick}
             disabled={isLoading || !value.trim()}
             className={cn(
-              "px-6 py-2 bg-blue-600 text-white rounded-lg",
-              "hover:bg-blue-700 active:bg-blue-800",
+              "px-6 py-2 bg-reddit-orange text-white rounded-lg",
+              "hover:bg-orange-600 active:bg-orange-700",
               "disabled:opacity-50 disabled:cursor-not-allowed",
               "transition-colors duration-200"
             )}

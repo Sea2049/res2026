@@ -97,10 +97,10 @@ export function TopicSelection({ onSelectedTopicsChange, className }: TopicSelec
     <div className={className}>
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold text-white mb-2">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
             主题筛选
           </h2>
-          <p className="text-gray-300 text-sm">
+          <p className="text-gray-600 text-sm">
             搜索并选择感兴趣的 Subreddit 或 Post 进行分析
           </p>
         </div>

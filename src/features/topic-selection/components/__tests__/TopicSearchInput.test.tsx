@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { TopicSearchInput } from '../TopicSearchInput';
 
 /**
@@ -23,6 +23,10 @@ describe('TopicSearchInput', () => {
     onClearHistory: mockOnClearHistory,
     onRemoveHistory: mockOnRemoveHistory,
   };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
   /**
    * 测试：渲染搜索输入框
@@ -87,6 +91,9 @@ describe('TopicSearchInput', () => {
     const history = ['javascript', 'python', 'gaming'];
     render(<TopicSearchInput {...defaultProps} searchHistory={history} />);
     
+    const input = screen.getByLabelText('搜索输入框');
+    fireEvent.focus(input);
+    
     expect(screen.getByText('搜索历史')).toBeInTheDocument();
     expect(screen.getByText('javascript')).toBeInTheDocument();
     expect(screen.getByText('python')).toBeInTheDocument();
@@ -99,6 +106,9 @@ describe('TopicSearchInput', () => {
   it('应该调用 onHistoryClick 当点击历史记录项时', () => {
     const history = ['javascript'];
     render(<TopicSearchInput {...defaultProps} searchHistory={history} />);
+    
+    const input = screen.getByLabelText('搜索输入框');
+    fireEvent.focus(input);
     
     const historyItem = screen.getByText('javascript');
     fireEvent.click(historyItem);
@@ -113,7 +123,10 @@ describe('TopicSearchInput', () => {
     const history = ['javascript'];
     render(<TopicSearchInput {...defaultProps} searchHistory={history} />);
     
-    const deleteButton = screen.getAllByRole('button')[1];
+    const input = screen.getByLabelText('搜索输入框');
+    fireEvent.focus(input);
+    
+    const deleteButton = screen.getByLabelText('删除 javascript');
     fireEvent.click(deleteButton);
     
     expect(mockOnRemoveHistory).toHaveBeenCalledWith('javascript');
@@ -125,6 +138,9 @@ describe('TopicSearchInput', () => {
   it('应该调用 onClearHistory 当点击清空按钮时', () => {
     const history = ['javascript'];
     render(<TopicSearchInput {...defaultProps} searchHistory={history} />);
+    
+    const input = screen.getByLabelText('搜索输入框');
+    fireEvent.focus(input);
     
     const clearButton = screen.getByText('清空');
     fireEvent.click(clearButton);
@@ -138,8 +154,8 @@ describe('TopicSearchInput', () => {
   it('应该显示错误信息当输入为空时', () => {
     render(<TopicSearchInput {...defaultProps} value='' />);
     
-    const searchButton = screen.getByLabelText('搜索按钮');
-    fireEvent.click(searchButton);
+    const input = screen.getByLabelText('搜索输入框');
+    fireEvent.keyDown(input, { key: 'Enter' });
     
     expect(screen.getByText('请输入搜索关键词')).toBeInTheDocument();
   });

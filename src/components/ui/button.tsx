@@ -41,7 +41,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 const getVariantClasses = (variant: ButtonVariant): string => {
   const variants = {
     default: "bg-gray-100 text-gray-900 hover:bg-gray-200",
-    primary: "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800",
+    primary: "bg-reddit-orange text-white hover:bg-orange-600 active:bg-orange-700",
     secondary: "bg-gray-600 text-white hover:bg-gray-700",
     ghost: "bg-transparent hover:bg-gray-100 text-gray-900",
     outline: "border border-gray-300 bg-transparent hover:bg-gray-50 text-gray-900",

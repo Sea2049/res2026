@@ -35,7 +35,7 @@ export interface ProgressProps extends HTMLAttributes<HTMLDivElement> {
  */
 const getVariantClasses = (variant: ProgressVariant): string => {
   const variants = {
-    default: "bg-blue-600",
+    default: "bg-reddit-orange",
     success: "bg-green-600",
     warning: "bg-yellow-500",
     danger: "bg-red-600",

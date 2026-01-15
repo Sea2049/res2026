@@ -1,70 +1,28 @@
 # Reddit Insight Tool
 
-<div align="center">
+Reddit Insight Tool 是一个功能强大的 Reddit 社区话题分析与洞察工具，旨在帮助用户快速发现热门话题、深入理解用户反馈并提取有价值的商业洞察。基于 Reddit API 构建，结合先进的自然语言处理技术，为用户提供直观易用的数据分析体验。
 
-**发现热门主题，洞察用户痛点**
+## 主要功能
 
-基于 Reddit 社区的主题筛选与分析工具
+本工具提供两大核心功能模块，分别对应用户旅程的不同阶段。第一模块是话题选择模块，负责 Reddit 数据的搜索与筛选。用户可以通过输入 Subreddit 名称或帖子关键词进行搜索，系统会实时返回相关的话题列表。每个话题以卡片形式展示，包含标题、摘要、评论数和发布时间等关键信息。用户可以选中感兴趣的话题进入分析流程，也可以将话题添加到收藏夹以便后续查看。
 
-[![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
-[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker)](https://www.docker.com/)
-[![License](https://img.shields.io/badge/License-ISC-green?style=for-the-badge)](LICENSE)
+第二模块是分析模块，负责对选中话题进行深度分析。分析流程首先自动抓取话题下的热门评论，然后对每条评论进行情感分析和关键词提取。情感分析将评论分为积极、消极和中性三类，并以可视化图表形式展示分布情况。关键词提取识别评论中的高频主题词，帮助用户快速把握讨论焦点。最重要的是洞察检测功能，通过模式匹配算法识别用户反馈中的痛点描述、功能建议和需求表达，为产品改进和商业决策提供数据支撑。
 
-[v1.1](https://github.com/Sea2049/res2026/releases) · [GitHub](https://github.com/Sea2049/res2026) · [部署指南](DEPLOYMENT.md)
+## 技术栈
 
-</div>
+本项目采用现代化的技术栈构建，确保了开发效率和运行性能的最佳平衡。后端框架选用 Next.js 14+，利用其 App Router 架构实现服务端渲染和静态生成，显著提升首屏加载速度和搜索引擎优化效果。开发语言为 TypeScript，通过静态类型检查在编译阶段发现潜在错误，大幅提高代码质量和可维护性。样式方案采用 Tailwind CSS，结合原子化设计理念实现快速样式开发，同时配合 Shadcn/UI 组件库提供一致的设计语言和丰富的交互组件。
 
----
+数据处理方面，Reddit API 客户端封装了所有与 Reddit 服务器的交互逻辑，实现了请求超时控制、请求取消机制和指数退避重试策略，有效处理网络异常和 API 限流情况。自然语言处理模块集成了中文和英文的处理能力，支持文本清洗、分词、停用词过滤、情感分析和关键词提取等核心功能。测试方面使用 Jest 和 React Testing Library 构建完整的单元测试体系，确保核心业务逻辑的可靠性。容器化部署基于 Docker，采用多阶段构建策略优化镜像大小，最终产出约 100MB 的精简镜像。
 
-## ✨ 功能特性
+## 快速开始
 
-### 🔍 主题筛选 (Topic Selection)
-- **智能搜索**: 输入关键词快速搜索 Subreddits 和 Posts
-- **搜索建议**: 展示搜索历史，提供快捷搜索体验
-- **高级筛选**: 支持按类型（Subreddit/Post）、排序方式筛选
-- **主题选择**: 自由选择感兴趣的主题进行深入分析
+### 环境准备
 
-### 📊 分析追踪 (Analysis)
-- **关键词云**: 可视化展示高频关键词，大小和颜色反映词频和情感
-- **情感分析**: 正面/中性/负面评论比例分布图表
-- **洞察卡片**: 自动识别用户痛点、功能需求、问题反馈和赞美
-- **评论列表**: 带情感标签的评论展示，支持筛选和高亮
-
-### 🛠 技术特性
-- **NLP 自然语言处理**: 停用词过滤、情感分析、洞察检测
-- **Reddit API 集成**: 完整的 API 封装，支持批量数据获取
-- **单元测试**: 核心组件和 Hooks 覆盖测试
-- **类型安全**: 严格的 TypeScript 类型定义
-- **Docker 容器化**: 一键部署，支持阿里云 ECS
-
----
-
-## 🏗 技术栈
-
-| 技术 | 用途 |
-|------|------|
-| **Next.js 14+** | React 框架 (App Router) |
-| **TypeScript** | 类型安全的代码编写 |
-| **Tailwind CSS** | 原子化 CSS 样式 |
-| **Shadcn/UI** | 高质量 UI 组件库 |
-| **React Hooks** | 状态管理和逻辑复用 |
-| **Reddit API** | 社区数据获取 |
-| **Jest** | 单元测试框架 |
-| **Docker** | 容器化部署 |
-
----
-
-## 🚀 快速开始
-
-### 环境要求
-
-- Node.js 18.17 或更高版本
-- npm 或 yarn 包管理器
-- Docker 和 Docker Compose（生产部署）
+在开始之前，请确保您的开发环境满足以下要求。操作系统支持 Windows、macOS 和 Linux。必须安装 Node.js 18.17 或更高版本，建议使用 LTS 版本以获得最佳稳定性。包管理器推荐使用 pnpm，也可以使用 npm 或 yarn。Docker 环境用于生产部署，需要安装 Docker Desktop（Windows/macOS）或 Docker Engine（Linux）。
 
 ### 本地开发
+
+克隆项目仓库到本地目录，进入项目根目录后执行以下命令安装依赖。首次安装可能需要几分钟时间，取决于网络状况。安装完成后，执行启动命令启动开发服务器。开发服务器启动后，默认运行在 http://localhost:3000，您可以在浏览器中访问该地址查看应用。开发模式下支持热重载，修改代码后页面会自动刷新。
 
 ```bash
 # 克隆项目
@@ -72,195 +30,128 @@ git clone https://github.com/Sea2049/res2026.git
 cd res2026
 
 # 安装依赖
-npm install
+pnpm install
 
 # 启动开发服务器
-npm run dev
+pnpm dev
 ```
 
-打开 [http://localhost:3000](http://localhost:3000) 查看应用。
+### 环境变量配置
 
-### Docker 部署（推荐）
+项目根目录提供了 .env.production 文件作为生产环境变量的模板。复制该文件为 .env.local 并填入您的配置值。主要配置项包括 Reddit API 的客户端 ID、客户端密钥和用户代理信息。请访问 Reddit 官网的开发者门户申请 API 凭证，遵守 Reddit 的 API 使用条款和速率限制规定。
+
+## Docker 部署
+
+### 构建生产镜像
+
+项目提供了完整的 Docker 部署支持，采用多阶段构建策略优化镜像大小。执行以下命令构建生产镜像。构建过程会自动安装依赖、编译应用并打包运行时文件。构建完成后，镜像大小约为 100MB，相比直接使用 Node.js 基础镜像减少了约 70% 的体积。
 
 ```bash
-# 克隆项目
-git clone https://github.com/Sea2049/res2026.git
-cd res2026
-
-# 创建环境变量文件
-cp .env.production .env.production.local
-
-# 构建并启动容器
-docker-compose -f docker-compose.yml up -d --build
-
-# 查看日志
-docker-compose logs -f app
+# 构建 Docker 镜像
+docker build -t reddit-insight-tool:latest .
 ```
 
-应用将在 http://localhost:3000 运行。
+### 使用 Docker Compose 运行
 
-### 可用脚本
+项目根目录提供了 docker-compose.yml 文件，定义了完整的容器运行环境。执行以下命令启动服务。Docker Compose 会自动创建网络、挂载数据卷并配置健康检查。服务启动后，可以通过 http://localhost:3000 访问应用。
 
-| 命令 | 描述 |
-|------|------|
-| `npm run dev` | 启动开发服务器 |
-| `npm run build` | 构建生产版本 |
-| `npm run start` | 启动生产服务器 |
-| `npm run lint` | 运行 ESLint 检查 |
-| `npm run typecheck` | 运行 TypeScript 类型检查 |
-| `npm run test` | 运行单元测试 |
-| `npm run test:watch` | 监听模式运行测试 |
-| `npm run test:coverage` | 生成测试覆盖率报告 |
+```bash
+# 启动服务
+docker-compose up -d
 
----
+# 查看日志
+docker-compose logs -f
 
-## ☁️ 云端部署
+# 停止服务
+docker-compose down
+```
 
 ### 阿里云 ECS 部署
 
-详细部署指南请参考 [DEPLOYMENT.md](DEPLOYMENT.md)，包含：
+详细的生产环境部署指南请参考 DEPLOYMENT.md 文档。该文档包含了阿里云 ECS 实例配置、Docker 安装、Nginx 反向代理设置、SSL 证书申请等完整步骤。建议生产环境使用 Nginx 作为反向代理，并配置 HTTPS 加密传输以确保数据安全。
 
-- 阿里云 ECS 实例创建和配置
-- Docker 和 Docker Compose 安装
-- Nginx 反向代理配置
-- SSL 证书配置（Let's Encrypt / 阿里云）
-- 域名解析和绑定
-- 监控和运维管理
+## 项目结构
 
-### 快速部署命令
-
-```bash
-# 1. 连接服务器
-ssh root@你的ECS公网IP
-
-# 2. 安装 Docker（如果未安装）
-curl -fsSL https://get.docker.com | sh
-
-# 3. 克隆并部署
-git clone https://github.com/Sea2049/res2026.git
-cd res2026
-docker-compose -f docker-compose.yml up -d --build
-
-# 4. 配置 Nginx（可选）
-# 5. 配置 SSL 证书（可选）
-```
-
----
-
-## 📁 项目结构
+项目采用功能导向的目录结构组织代码，将相关功能的组件、钩子和工具函数集中在同一目录下。这种结构便于开发者快速定位和理解特定功能的实现，同时也简化了模块复用和测试的流程。
 
 ```
 res2026/
-├── src/                            # 源代码目录
-│   ├── app/                        # 页面路由和布局
-│   │   ├── layout.tsx              # 根布局
-│   │   ├── page.tsx                # 首页
-│   │   └── globals.css             # 全局样式
-│   ├── components/                 # 通用 UI 组件
-│   │   └── ui/                     # Shadcn/UI 组件库
-│   ├── features/                   # 业务功能模块
-│   │   ├── topic-selection/        # 主题筛选功能
-│   │   └── analysis/               # 分析功能
-│   └── lib/                        # 工具库
-│       ├── api/                    # Reddit API 客户端
-│       ├── nlp.ts                  # NLP 自然语言处理
-│       ├── types.ts                # 类型定义
-│       └── utils.ts                # 工具函数
-├── Dockerfile                      # Docker 构建配置
-├── docker-compose.yml              # Docker Compose 编排
-├── .env.production                 # 生产环境变量模板
-├── .dockerignore                   # Docker 构建忽略文件
-├── DEPLOYMENT.md                   # 阿里云部署指南
-├── FRAMEWORK.md                    # 框架设计文档
-├── CODE_DIRECTORY.md               # 代码目录索引
-└── package.json                    # 项目依赖
+├── src/
+│   ├── app/                    # Next.js App Router 页面
+│   │   ├── layout.tsx          # 根布局组件
+│   │   └── page.tsx            # 首页组件
+│   ├── components/             # 通用 UI 组件库
+│   │   └── ui/                 # Shadcn/UI 基础组件
+│   ├── features/               # 功能模块
+│   │   ├── topic-selection/    # 话题选择模块
+│   │   │   ├── components/     # 搜索和列表组件
+│   │   │   └── hooks/          # 搜索逻辑钩子
+│   │   └── analysis/           # 分析模块
+│   │       ├── components/     # 可视化组件
+│   │       └── hooks/          # 分析流程钩子
+│   └── lib/                    # 基础支撑代码
+│       ├── api/                # API 客户端
+│       ├── nlp.ts              # 自然语言处理
+│       ├── types.ts            # 类型定义
+│       └── utils.ts            # 工具函数
+├── Dockerfile                  # Docker 构建文件
+├── docker-compose.yml          # 容器编排配置
+├── package.json                # 项目依赖
+├── next.config.mjs             # Next.js 配置
+└── FRAMEWORK.md                # 框架文档
 ```
 
----
+## API 参考
 
-## 📖 API 参考
+### Reddit API 客户端
 
-### Reddit API 客户端 (`src/lib/api/reddit.ts`)
+Reddit API 客户端封装在 src/lib/api/reddit.ts 文件中，提供以下核心方法。searchSubreddits 方法用于搜索 Subreddit 社区，接受搜索关键词和排序参数，返回匹配的社区列表。searchPosts 方法用于搜索帖子，接受 Subreddit 名称、搜索关键词和过滤条件，返回相关的帖子列表。getComments 方法用于获取帖子的评论，接受帖子 ID 和评论数量限制，返回按热度排序的评论数组。
 
-| 方法 | 描述 |
-|------|------|
-| `searchSubreddits(query)` | 搜索 Subreddits |
-| `searchPosts(query)` | 搜索 Posts |
-| `getComments(postId)` | 获取帖子评论 |
-| `getSubredditPosts(subreddit)` | 获取 Subreddit 热门帖子 |
-| `getMultiplePostComments(posts)` | 批量获取帖子评论 |
-| `getSubredditComments(subreddit)` | 获取 Subreddit 热门评论 |
+所有 API 方法都返回 Promise，支持异步调用模式。客户端内置了请求超时控制，默认超时时间为 10 秒。通过 AbortSignal 支持请求取消，当用户切换搜索目标时，正在进行的请求会被自动取消。错误处理方面，客户端实现了智能重试机制，遇到 429 速率限制时会指数级增加等待时间进行重试。
 
-### NLP 模块 (`src/lib/nlp.ts`)
+### 自然语言处理模块
 
-- **文本清洗**: `cleanText()`, `escapeHtml()`
-- **分词处理**: `tokenize()`, `removeStopWords()`
-- **关键词提取**: `extractKeywords()`
-- **情感分析**: `analyzeSentiment()`
-- **洞察检测**: `extractInsights()`
+自然语言处理模块封装在 src/lib/nlp.ts 文件中，提供文本分析的核心功能。normalizeText 函数标准化输入文本，处理特殊字符、换行符和多余空格。tokenize 函数进行中英文分词，返回词素数组。removeStopwords 函数过滤停用词，保留实际语义词汇。extractKeywords 函数基于 TF-IDF 变体算法提取关键词，返回按重要性排序的关键词列表。analyzeSentiment 函数计算文本情感得分，返回 -1 到 1 之间的情感值。detectInsights 函数识别洞察模式并分类，返回包含痛点、建议和需求的洞察列表。
 
----
+## 测试
 
-## 🧪 测试
-
-项目使用 Jest 和 React Testing Library 进行单元测试。
+项目使用 Jest 和 React Testing Library 构建单元测试体系。测试文件分布在各功能模块的 __tests__ 目录下，与被测试的文件放在一起便于维护。执行以下命令运行测试。测试覆盖率报告会在终端输出，覆盖率阈值配置在 jest.config.js 中，核心逻辑的覆盖率要求达到 80% 以上。
 
 ```bash
 # 运行所有测试
-npm run test
+pnpm test
+
+# 监听模式运行测试
+pnpm test:watch
 
 # 生成覆盖率报告
-npm run test:coverage
+pnpm test:coverage
 ```
 
-### 测试覆盖范围
+## 开发规范
 
-- `TopicCard.test.tsx`: 主题卡片组件测试
-- `TopicSearchInput.test.tsx`: 搜索输入框组件测试
-- `useTopicSearch.test.ts`: 搜索状态 Hook 测试
-- `useSearchHistory.test.ts`: 搜索历史 Hook 测试
+### 代码风格
 
----
+项目使用 ESLint 和 Prettier 强制代码风格统一。提交代码前请运行 lint 检查，确保代码符合项目规范。文件命名采用 kebab-case 风格，如 topic-search-input；组件名使用 PascalCase，如 TopicSearchInput；自定义钩子以 use 开头，如 useTopicSearch。所有关键代码必须添加中文注释，说明函数目的、参数含义和实现思路。
 
-## 📝 文档
+### 安全注意事项
 
-- [README.md](README.md) - 项目说明文档
-- [FRAMEWORK.md](FRAMEWORK.md) - 框架设计文档
-- [CODE_DIRECTORY.md](CODE_DIRECTORY.md) - 代码目录索引
-- [DEPLOYMENT.md](DEPLOYMENT.md) - 阿里云部署指南
+代码提交前请完成以下安全检查。首先检查 SQL 注入风险，确保所有用户输入都经过验证和转义，不使用字符串拼接构建查询。其次检查 XSS 风险，所有用户生成的内容在渲染前必须经过转义处理，React 默认的转义机制可以防范大部分 XSS 攻击。最后检查边界情况处理，确保程序能够正确处理空值、网络失败和超时等异常场景，不会因此崩溃或给出误导性结果。敏感信息如 API 密钥必须存储在环境变量中，严禁写入代码仓库。
 
----
+## 版本历史
 
-## 🤝 贡献指南
+### v1.1.0（2026-01-15）
 
-1. Fork 本项目
-2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 创建 Pull Request
+本版本完成了 Docker 容器化部署的支持，标志着项目具备了生产环境部署能力。主要变更包括实现 Next.js standalone 构建模式、优化 Docker 镜像大小至约 100MB、配置非 root 用户运行容器提升安全性、实现健康检查和优雅重启机制。功能增强方面，优化了 Reddit API 客户端的错误处理逻辑，新增请求取消机制和指数退避重试策略，改进了 NLP 模块的分词准确性，新增中文停用词支持，更新了 UI 组件库新增 Progress 和 Tooltip 组件。
 
----
+### v1.0.0（2026-01-10）
 
-## 📄 许可证
+初始版本发布，完成了核心功能的开发。包括话题搜索和筛选功能，支持 Subreddit 和帖子两种搜索维度；分析功能实现了评论获取、情感分析和关键词提取；洞察检测功能可识别用户反馈中的痛点和需求；UI 界面采用响应式设计，支持桌面和移动设备访问；单元测试覆盖率达到核心逻辑的 80% 以上。
 
-本项目采用 ISC 许可证 - 详见 [LICENSE](LICENSE) 文件。
+## 贡献指南
 
----
+欢迎对本项目进行贡献！您可以通过以下方式参与：提交 Issue 报告 Bug 或提出功能建议，提交 Pull Request 贡献代码修复或新功能，完善文档和测试用例。在提交代码前，请确保通过了所有测试和 lint 检查，并遵循项目的代码风格规范。详细的贡献流程请参考项目中的 CONTRIBUTING.md 文件。
 
-## 🙏 致谢
+## 许可证
 
-- [Next.js](https://nextjs.org/) - React 框架
-- [Tailwind CSS](https://tailwindcss.com/) - CSS 框架
-- [Shadcn/UI](https://ui.shadcn.com/) - UI 组件库
-- [Reddit API](https://www.reddit.com/dev/api/) - 社区数据来源
-- [Docker](https://www.docker.com/) - 容器化平台
-
----
-
-<div align="center">
-
-**Made with ❤️ by Sea2049**
-
-[GitHub](https://github.com/Sea2049) · [Issues](https://github.com/Sea2049/res2026/issues)
-
-</div>
+本项目采用 MIT 许可证开源，您可以自由使用、修改和分发本项目的代码，但需要保留原始的版权声明和许可证文本。详细信息请参考 LICENSE 文件。

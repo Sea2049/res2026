@@ -54,7 +54,8 @@ describe('useSearchHistory', () => {
       result.current.addToHistory('cooking');
     });
     
-    expect(result.current.history).toEqual(['cooking', 'gaming', 'javascript']);
+    // History is LIFO (newest first)
+    expect(result.current.history).toEqual(['cooking', 'gaming', 'python']);
     expect(result.current.history.length).toBe(3);
   });
 
@@ -121,13 +122,14 @@ describe('useSearchHistory', () => {
       result.current.addToHistory('gaming');
     });
     
-    expect(result.current.history).toEqual(['javascript', 'python', 'gaming']);
+    // Expect LIFO order: gaming, python, javascript
+    expect(result.current.history).toEqual(['gaming', 'python', 'javascript']);
     
     act(() => {
       result.current.removeFromHistory('python');
     });
     
-    expect(result.current.history).toEqual(['javascript', 'gaming']);
+    expect(result.current.history).toEqual(['gaming', 'javascript']);
     expect(result.current.history).not.toContain('python');
   });
 

@@ -18,20 +18,50 @@ class RedditApiClient {
   private baseUrl = "https://www.reddit.com";
 
   /**
-   * 搜索 Subreddits
-   * @param query 搜索关键词
-   * @returns Promise<Subreddit[]> 搜索结果列表
+   * 通用 Fetch 方法，支持重试和 AbortSignal
    */
-  async searchSubreddits(query: string): Promise<Subreddit[]> {
+  private async fetchWithRetry(url: string, options: RequestInit = {}, retries = 3): Promise<Response> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/api/subreddit_autocomplete_v2.json?query=${encodeURIComponent(query)}&include_over_18=false`
-      );
-      
+      const response = await fetch(url, options);
+
+      if (response.status === 429) {
+        if (retries > 0) {
+          const retryAfter = response.headers.get("Retry-After");
+          const waitTime = retryAfter ? parseInt(retryAfter, 10) * 1000 : 2000; // 默认等待 2 秒
+          console.warn(`Rate limited. Retrying in ${waitTime}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
+          return this.fetchWithRetry(url, options, retries - 1);
+        } else {
+          throw new Error("API 请求过于频繁 (429)，请稍后再试");
+        }
+      }
+
       if (!response.ok) {
         throw new Error(`API 请求失败: ${response.status}`);
       }
 
+      return response;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error; // 直接抛出 AbortError，不进行重试
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 搜索 Subreddits
+   * @param query 搜索关键词
+   * @param signal AbortSignal 用于取消请求
+   * @returns Promise<Subreddit[]> 搜索结果列表
+   */
+  async searchSubreddits(query: string, signal?: AbortSignal): Promise<Subreddit[]> {
+    try {
+      const response = await this.fetchWithRetry(
+        `${this.baseUrl}/api/subreddit_autocomplete_v2.json?query=${encodeURIComponent(query)}&include_over_18=false`,
+        { signal }
+      );
+      
       const data = await response.json();
       
       return data.children.map((item: any) => ({
@@ -44,6 +74,9 @@ class RedditApiClient {
         url: item.data.url,
       }));
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
       console.error("搜索 Subreddits 失败:", error);
       return [];
     }
@@ -56,6 +89,7 @@ class RedditApiClient {
    * @param sortBy 排序方式
    * @param timeRange 时间范围
    * @param limit 结果数量限制
+   * @param signal AbortSignal 用于取消请求
    * @returns Promise<Post[]> 搜索结果列表
    */
   async searchPosts(
@@ -63,7 +97,8 @@ class RedditApiClient {
     subreddit?: string,
     sortBy: SearchSortBy = "relevance",
     timeRange: SearchTimeRange = "all",
-    limit: number = 20
+    limit: number = 20,
+    signal?: AbortSignal
   ): Promise<Post[]> {
     try {
       let endpoint = `${this.baseUrl}/search.json?q=${encodeURIComponent(query)}&sort=${sortBy}&limit=${limit}`;
@@ -76,12 +111,8 @@ class RedditApiClient {
         endpoint += `&restrict_sr=true&sr=${encodeURIComponent(subreddit)}`;
       }
 
-      const response = await fetch(endpoint);
+      const response = await this.fetchWithRetry(endpoint, { signal });
       
-      if (!response.ok) {
-        throw new Error(`API 请求失败: ${response.status}`);
-      }
-
       const data = await response.json();
       
       return data.data.children.map((item: any) => ({
@@ -96,6 +127,9 @@ class RedditApiClient {
         url: item.data.url,
       }));
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
       console.error("搜索 Posts 失败:", error);
       return [];
     }
@@ -105,18 +139,16 @@ class RedditApiClient {
    * 获取 Post 的评论
    * @param postId Post ID
    * @param subreddit Subreddit 名称
+   * @param signal AbortSignal 用于取消请求
    * @returns Promise<Comment[]> 评论列表
    */
-  async getComments(postId: string, subreddit: string): Promise<Comment[]> {
+  async getComments(postId: string, subreddit: string, signal?: AbortSignal): Promise<Comment[]> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/r/${subreddit}/comments/${postId}.json?limit=100&sort=confidence`
+      const response = await this.fetchWithRetry(
+        `${this.baseUrl}/r/${subreddit}/comments/${postId}.json?limit=100&sort=confidence`,
+        { signal }
       );
       
-      if (!response.ok) {
-        throw new Error(`API 请求失败: ${response.status}`);
-      }
-
       const data = await response.json();
       const comments: Comment[] = [];
 
@@ -147,6 +179,9 @@ class RedditApiClient {
 
       return comments;
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
       console.error("获取评论失败:", error);
       return [];
     }
@@ -156,18 +191,16 @@ class RedditApiClient {
    * 获取 Subreddit 的热门帖子
    * @param subreddit Subreddit 名称
    * @param limit 返回数量限制
+   * @param signal AbortSignal 用于取消请求
    * @returns Promise<Post[]> 帖子列表
    */
-  async getSubredditPosts(subreddit: string, limit: number = 10): Promise<Post[]> {
+  async getSubredditPosts(subreddit: string, limit: number = 10, signal?: AbortSignal): Promise<Post[]> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/r/${subreddit}/hot.json?limit=${limit}&sort=hot`
+      const response = await this.fetchWithRetry(
+        `${this.baseUrl}/r/${subreddit}/hot.json?limit=${limit}&sort=hot`,
+        { signal }
       );
       
-      if (!response.ok) {
-        throw new Error(`API 请求失败: ${response.status}`);
-      }
-
       const data = await response.json();
       
       return data.data.children.map((item: any) => ({
@@ -182,6 +215,9 @@ class RedditApiClient {
         url: item.data.url,
       }));
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
       console.error("获取 Subreddit 帖子失败:", error);
       return [];
     }
@@ -191,16 +227,18 @@ class RedditApiClient {
    * 获取多个帖子的评论
    * @param posts 帖子数组
    * @param maxComments 每个帖子获取的最大评论数
+   * @param signal AbortSignal 用于取消请求
    * @returns Promise<Comment[]> 所有评论的合并列表
    */
-  async getMultiplePostComments(posts: Post[], maxComments: number = 100): Promise<Comment[]> {
+  async getMultiplePostComments(posts: Post[], maxComments: number = 100, signal?: AbortSignal): Promise<Comment[]> {
     if (!Array.isArray(posts) || posts.length === 0) {
       return [];
     }
 
     const allComments: Comment[] = [];
+    // 并行请求，但限制并发数可能更好，这里简单处理
     const promises = posts.slice(0, 10).map(async (post) => {
-      const comments = await this.getComments(post.id, post.subreddit);
+      const comments = await this.getComments(post.id, post.subreddit, signal);
       return comments.slice(0, maxComments);
     });
     
@@ -210,6 +248,9 @@ class RedditApiClient {
         allComments.push(...comments);
       }
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
       console.error("批量获取评论失败:", error);
     }
     
@@ -221,21 +262,26 @@ class RedditApiClient {
    * @param subreddit Subreddit 名称
    * @param postLimit 热门帖子数量限制
    * @param commentLimit 每个帖子的评论数量限制
+   * @param signal AbortSignal 用于取消请求
    * @returns Promise<Comment[]> 评论列表
    */
   async getSubredditComments(
     subreddit: string,
     postLimit: number = 5,
-    commentLimit: number = 50
+    commentLimit: number = 50,
+    signal?: AbortSignal
   ): Promise<Comment[]> {
     try {
-      const posts = await this.getSubredditPosts(subreddit, postLimit);
+      const posts = await this.getSubredditPosts(subreddit, postLimit, signal);
       if (posts.length === 0) {
         return [];
       }
-      const comments = await this.getMultiplePostComments(posts, commentLimit);
+      const comments = await this.getMultiplePostComments(posts, commentLimit, signal);
       return comments;
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
       console.error("获取 Subreddit 评论失败:", error);
       return [];
     }
