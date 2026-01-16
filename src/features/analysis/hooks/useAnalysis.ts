@@ -146,7 +146,7 @@ export function useAnalysis(): UseAnalysisReturn {
   const abortControllerRef = useRef<AbortController | null>(null);
   const workerManagerRef = useRef<ReturnType<typeof getNLPWorkerManager> | null>(null);
   const configRef = useRef<AnalysisConfig>({
-    maxComments: 500,
+    maxComments: 1000,
     minKeywordLength: 3,
     topKeywordsCount: 30,
     sentimentThreshold: 0.3,
@@ -664,17 +664,17 @@ export function useAnalysis(): UseAnalysisReturn {
         }
         sections.push("");
 
-        // 5. 评论数据（前100条）
-        sections.push("=== 评论数据（前100条） ===");
+        // 5. 评论数据
+        sections.push("=== 评论数据 ===");
         sections.push("作者,评分,情感,情感分数,评论内容");
-        for (const comment of result.comments.slice(0, 100)) {
+        for (const comment of result.comments) {
           const sentimentLabels = {
             positive: "正面",
             negative: "负面",
             neutral: "中性",
           };
           sections.push(
-            `"${comment.author}",${comment.score},"${sentimentLabels[comment.sentiment]}",${comment.sentimentScore.toFixed(2)},"${comment.body.replace(/"/g, '""').substring(0, 200)}"`
+            `"${comment.author}",${comment.score},"${sentimentLabels[comment.sentiment]}",${comment.sentimentScore.toFixed(2)},"${comment.body.replace(/"/g, '""').substring(0, 500)}"`
           );
         }
 
@@ -787,7 +787,7 @@ export function useAnalysis(): UseAnalysisReturn {
     const keywordsSheet = XLSX.utils.json_to_sheet(keywordsData);
     XLSX.utils.book_append_sheet(workbook, keywordsSheet, "关键词");
 
-    // 4. 洞察工作表
+    // 5. 洞察工作表
     const typeLabels: Record<string, string> = {
       pain_point: "用户痛点",
       feature_request: "功能需求",
@@ -805,7 +805,7 @@ export function useAnalysis(): UseAnalysisReturn {
     const insightsSheet = XLSX.utils.json_to_sheet(insightsData);
     XLSX.utils.book_append_sheet(workbook, insightsSheet, "洞察");
 
-    // 5. 洞察详细评论工作表
+    // 6. 洞察详细评论工作表
     const insightCommentsData: any[] = [];
     for (const insight of result.insights) {
       // 找到该洞察相关的评论
@@ -834,7 +834,7 @@ export function useAnalysis(): UseAnalysisReturn {
     const insightCommentsSheet = XLSX.utils.json_to_sheet(insightCommentsData);
     XLSX.utils.book_append_sheet(workbook, insightCommentsSheet, "洞察详细评论");
 
-    // 6. 情感分析工作表
+    // 7. 情感分析工作表
     const sentimentLabels = {
       positive: "正面",
       negative: "负面",

@@ -67,7 +67,7 @@ class RedditApiClient {
    */
   async searchSubreddits(query: string, signal?: AbortSignal): Promise<Subreddit[]> {
     try {
-      const url = `${this.baseUrl}/subreddits/search.json?q=${encodeURIComponent(query)}&limit=10`;
+      const url = `${this.baseUrl}/subreddits/search.json?q=${encodeURIComponent(query)}&limit=20`;
       console.log("正在请求 Subreddits:", url);
       
       const response = await this.fetchWithRetry(url, { signal });

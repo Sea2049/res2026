@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TopicSearchInput } from "./components/TopicSearchInput";
 import { TopicList } from "./components/TopicList";
 import { AdvancedSearchOptions, type SearchOptions } from "./components/AdvancedSearchOptions";
@@ -18,6 +18,10 @@ interface TopicSelectionProps {
    */
   onSelectedTopicsChange?: (topics: (Subreddit | Post)[]) => void;
   /**
+   * 搜索结果变化回调
+   */
+  onSearchResultsChange?: (results: (Subreddit | Post)[]) => void;
+  /**
    * 额外的类名
    */
   className?: string;
@@ -27,7 +31,11 @@ interface TopicSelectionProps {
  * 主题筛选组件
  * 整合搜索输入框、搜索结果列表、历史记录、高级搜索选项和主题选择功能
  */
-export function TopicSelection({ onSelectedTopicsChange, className }: TopicSelectionProps) {
+export function TopicSelection({ 
+  onSelectedTopicsChange, 
+  onSearchResultsChange,
+  className 
+}: TopicSelectionProps) {
   const {
     keyword,
     results,
@@ -47,6 +55,13 @@ export function TopicSelection({ onSelectedTopicsChange, className }: TopicSelec
   const { history, addToHistory, clearHistory, removeFromHistory } = useSearchHistory(10);
 
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  /**
+   * 当搜索结果变化时，通知父组件
+   */
+  useEffect(() => {
+    onSearchResultsChange?.(results);
+  }, [results, onSearchResultsChange]);
 
   /**
    * 当已选主题变化时，通知父组件

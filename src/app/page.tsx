@@ -10,9 +10,8 @@ import type { Subreddit, Post } from "@/lib/types";
  * 整合主题筛选和评论分析功能
  */
 export default function Home() {
-  const [selectedTopics, setSelectedTopics] = useState<(Subreddit | Post)[]>(
-    []
-  );
+  const [selectedTopics, setSelectedTopics] = useState<(Subreddit | Post)[]>([]);
+  const [allSearchResults, setAllSearchResults] = useState<(Subreddit | Post)[]>([]);
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -31,6 +30,9 @@ export default function Home() {
                 onSelectedTopicsChange={(topics) => {
                   setSelectedTopics(topics);
                 }}
+                onSearchResultsChange={(results) => {
+                  setAllSearchResults(results);
+                }}
               />
             </div>
           </section>
@@ -39,6 +41,7 @@ export default function Home() {
             <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 min-h-[600px]">
               <AnalysisDashboard
                 selectedTopics={selectedTopics}
+                allSearchResults={allSearchResults}
                 onSelectedTopicsChange={setSelectedTopics}
               />
             </div>

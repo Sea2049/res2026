@@ -95,7 +95,7 @@ interface UseTopicSearchReturn {
 const defaultSearchOptions: SearchOptions = {
   sortBy: "relevance",
   timeRange: "all",
-  limit: 20,
+  limit: 50,
   subredditOnly: false,
   postOnly: false,
 };

@@ -91,7 +91,7 @@ export function AnalysisDashboard({
   };
 
   const handleExportExcel = () => {
-    const blob = exportToExcel();
+    const blob = exportToExcel(allSearchResults);
     if (blob) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
