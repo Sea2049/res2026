@@ -21,11 +21,15 @@ import { Download, RotateCcw, Play, AlertCircle } from "lucide-react";
  */
 interface AnalysisDashboardProps {
   /**
-   * 已选主题列表
+   * 选中的主题列表
    */
   selectedTopics: SearchResult[];
   /**
-   * 已选主题变化回调
+   * 所有搜索结果（用于导出）
+   */
+  allSearchResults?: SearchResult[];
+  /**
+   * 选中主题变化回调
    */
   onSelectedTopicsChange?: (topics: SearchResult[]) => void;
   /**
@@ -40,6 +44,7 @@ interface AnalysisDashboardProps {
  */
 export function AnalysisDashboard({
   selectedTopics,
+  allSearchResults = [],
   onSelectedTopicsChange,
   className,
 }: AnalysisDashboardProps) {

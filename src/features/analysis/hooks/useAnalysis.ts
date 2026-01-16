@@ -688,9 +688,10 @@ export function useAnalysis(): UseAnalysisReturn {
 
   /**
    * 导出为 Excel 文件（多工作表）
+   * @param allSearchResults 所有搜索结果（可选）
    * @returns Blob 对象，可用于下载
    */
-  const exportToExcel = useCallback((): Blob | null => {
+  const exportToExcel = useCallback((allSearchResults?: SearchResult[]): Blob | null => {
     if (!session?.result) {
       return null;
     }
@@ -700,7 +701,41 @@ export function useAnalysis(): UseAnalysisReturn {
     // 创建工作簿
     const workbook = XLSX.utils.book_new();
 
-    // 1. 主题信息工作表
+    // 1. 所有搜索结果工作表（如果提供）
+    if (allSearchResults && allSearchResults.length > 0) {
+      const allResultsData = allSearchResults.map((topic, index) => {
+        if ("subscriber_count" in topic) {
+          return {
+            "序号": index + 1,
+            "类型": "Subreddit",
+            "ID": topic.id,
+            "名称": topic.display_name,
+            "标题": topic.title,
+            "描述": topic.description.substring(0, 200),
+            "订阅数": topic.subscriber_count,
+            "是否已选": topics.some(t => t.id === topic.id) ? "是" : "否",
+            "URL": topic.url,
+          };
+        } else {
+          return {
+            "序号": index + 1,
+            "类型": "Post",
+            "ID": topic.id,
+            "标题": topic.title,
+            "作者": topic.author,
+            "所属社区": topic.subreddit,
+            "评分": topic.score,
+            "评论数": topic.num_comments,
+            "是否已选": topics.some(t => t.id === topic.id) ? "是" : "否",
+            "URL": topic.url,
+          };
+        }
+      });
+      const allResultsSheet = XLSX.utils.json_to_sheet(allResultsData);
+      XLSX.utils.book_append_sheet(workbook, allResultsSheet, "所有搜索结果");
+    }
+
+    // 2. 已选主题信息工作表
     const topicsData = topics.map(topic => {
       if ("subscriber_count" in topic) {
         return {
@@ -726,9 +761,9 @@ export function useAnalysis(): UseAnalysisReturn {
       }
     });
     const topicsSheet = XLSX.utils.json_to_sheet(topicsData);
-    XLSX.utils.book_append_sheet(workbook, topicsSheet, "主题信息");
+    XLSX.utils.book_append_sheet(workbook, topicsSheet, "已选主题");
 
-    // 2. 统计概览工作表
+    // 3. 统计概览工作表
     const statsData = [
       { "指标": "总评论数", "数值": result.comments.length },
       { "指标": "总关键词数", "数值": result.keywords.length },
@@ -743,7 +778,7 @@ export function useAnalysis(): UseAnalysisReturn {
     const statsSheet = XLSX.utils.json_to_sheet(statsData);
     XLSX.utils.book_append_sheet(workbook, statsSheet, "统计概览");
 
-    // 3. 关键词工作表
+    // 4. 关键词工作表
     const keywordsData = result.keywords.map(kw => ({
       "关键词": kw.word,
       "出现次数": kw.count,
@@ -770,7 +805,36 @@ export function useAnalysis(): UseAnalysisReturn {
     const insightsSheet = XLSX.utils.json_to_sheet(insightsData);
     XLSX.utils.book_append_sheet(workbook, insightsSheet, "洞察");
 
-    // 5. 情感分析工作表
+    // 5. 洞察详细评论工作表
+    const insightCommentsData: any[] = [];
+    for (const insight of result.insights) {
+      // 找到该洞察相关的评论
+      const relatedComments = result.comments.filter(c =>
+        insight.relatedComments.includes(c.id)
+      );
+      
+      for (const comment of relatedComments) {
+        const sentimentLabels = {
+          positive: "正面",
+          negative: "负面",
+          neutral: "中性",
+        };
+        insightCommentsData.push({
+          "洞察类型": typeLabels[insight.type],
+          "洞察标题": insight.title,
+          "评论作者": comment.author,
+          "评论评分": comment.score,
+          "情感": sentimentLabels[comment.sentiment],
+          "情感分数": comment.sentimentScore.toFixed(2),
+          "评论内容": comment.body,
+          "评论链接": comment.permalink ? `https://www.reddit.com${comment.permalink}` : "",
+        });
+      }
+    }
+    const insightCommentsSheet = XLSX.utils.json_to_sheet(insightCommentsData);
+    XLSX.utils.book_append_sheet(workbook, insightCommentsSheet, "洞察详细评论");
+
+    // 6. 情感分析工作表
     const sentimentLabels = {
       positive: "正面",
       negative: "负面",
