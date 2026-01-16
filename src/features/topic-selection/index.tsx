@@ -52,8 +52,16 @@ export function TopicSelection({ onSelectedTopicsChange, className }: TopicSelec
    * 当已选主题变化时，通知父组件
    */
   const handleToggleSelect = (topic: Subreddit | Post) => {
+    const isSelecting = !selectedTopicIds.has(topic.id);
+    
     toggleSelectTopic(topic);
-    onSelectedTopicsChange?.(selectedTopics);
+    
+    // 计算新的已选主题列表
+    const newSelectedTopics = isSelecting
+      ? [...selectedTopics, topic]
+      : selectedTopics.filter(t => t.id !== topic.id);
+    
+    onSelectedTopicsChange?.(newSelectedTopics);
   };
 
   /**

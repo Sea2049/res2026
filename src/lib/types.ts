@@ -40,6 +40,9 @@ export interface Comment {
   score: number;
   created_utc: number;
   parent_id: string;
+  subreddit?: string;
+  link_id?: string;
+  permalink?: string;
 }
 
 /**
@@ -137,3 +140,74 @@ export const defaultAnalysisConfig: AnalysisConfig = {
   sentimentThreshold: 0.3,
   enableInsightDetection: true,
 };
+
+/**
+ * 错误信息接口（用于 UI 展示）
+ */
+export interface ErrorInfo {
+  /**
+   * 错误类型
+   */
+  type: string;
+  /**
+   * 错误代码
+   */
+  code: string;
+  /**
+   * 用户友好的错误消息
+   */
+  userMessage: string;
+  /**
+   * 错误严重程度
+   */
+  severity: 'low' | 'medium' | 'high';
+  /**
+   * 恢复建议
+   */
+  recoveryActions: Array<{
+    label: string;
+    description: string;
+    autoRecoverable: boolean;
+    autoRecoverDelay?: number;
+  }>;
+  /**
+   * 是否可以自动重试
+   */
+  canRetry: boolean;
+  /**
+   * 建议的自动重试延迟（毫秒）
+   */
+  retryDelay?: number;
+}
+
+/**
+ * 分析阶段类型
+ */
+export type AnalysisStage = "keywords" | "sentiment" | "insights";
+
+/**
+ * 分析进度接口
+ */
+export interface AnalysisProgress {
+  /**
+   * 当前分析阶段
+   */
+  stage: AnalysisStage;
+  /**
+   * 已处理的数量
+   */
+  current: number;
+  /**
+   * 总数量
+   */
+  total: number;
+  /**
+   * 进度描述信息
+   */
+  message: string;
+}
+
+/**
+ * 分析进度回调类型
+ */
+export type AnalysisProgressCallback = (progress: AnalysisProgress) => void;

@@ -68,7 +68,8 @@ const getVariantStyles = (variant: AlertVariant) => {
       iconColor: "text-red-500",
     },
   };
-  return variants[variant];
+  
+  return variants[variant] || variants.default;
 };
 
 /**

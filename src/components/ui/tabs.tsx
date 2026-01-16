@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { createContext, useContext, useState, HTMLAttributes, ReactNode } from "react";
+import { createContext, useContext, useState, HTMLAttributes, ReactNode, useEffect } from "react";
 
 /**
  * Tabs 上下文类型
@@ -9,7 +9,7 @@ import { createContext, useContext, useState, HTMLAttributes, ReactNode } from "
 type TabsContextType = {
   activeTab: string;
   setActiveTab: (value: string) => void;
-  defaultValue: string;
+  defaultValue?: string;
 };
 
 /**
@@ -20,11 +20,19 @@ const TabsContext = createContext<TabsContextType | undefined>(undefined);
 /**
  * Tabs 组件 Props 接口
  */
-export interface TabsProps extends HTMLAttributes<HTMLDivElement> {
+export interface TabsProps extends Omit<HTMLAttributes<HTMLDivElement>, 'defaultValue'> {
   /**
    * 默认激活的标签页值
    */
-  defaultValue: string;
+  defaultValue?: string;
+  /**
+   * 受控模式下的激活标签页值
+   */
+  value?: string;
+  /**
+   * 标签页切换回调
+   */
+  onValueChange?: (value: string) => void;
   /**
    * 标签页内容
    */
@@ -72,8 +80,22 @@ const useTabsContext = () => {
  * 标签页容器组件
  * 管理标签页的状态和内容
  */
-export const Tabs = ({ defaultValue, className, children, ...props }: TabsProps) => {
-  const [activeTab, setActiveTab] = useState(defaultValue);
+export const Tabs = ({ defaultValue, value, onValueChange, className, children, ...props }: TabsProps) => {
+  const [activeTab, setActiveTabState] = useState(value || defaultValue || "");
+
+  // 受控模式下同步 value 属性
+  useEffect(() => {
+    if (value !== undefined) {
+      setActiveTabState(value);
+    }
+  }, [value]);
+
+  const setActiveTab = (newValue: string) => {
+    if (value === undefined) {
+      setActiveTabState(newValue);
+    }
+    onValueChange?.(newValue);
+  };
 
   return (
     <TabsContext.Provider value={{ activeTab, setActiveTab, defaultValue }}>

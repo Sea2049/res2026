@@ -13,21 +13,31 @@ export type SearchTimeRange = "all" | "hour" | "day" | "week" | "month" | "year"
 /**
  * Reddit API 客户端
  * 提供与 Reddit API 交互的方法
+ * 使用 corsproxy.io 代理服务绕过 CORS 限制
  */
 class RedditApiClient {
   private baseUrl = "https://www.reddit.com";
+  private proxyUrl = "https://api.corsproxy.io/?";
 
   /**
    * 通用 Fetch 方法，支持重试和 AbortSignal
+   * 通过 CORS 代理发送请求
    */
   private async fetchWithRetry(url: string, options: RequestInit = {}, retries = 3): Promise<Response> {
+    const proxyUrl = `${this.proxyUrl}${encodeURIComponent(url)}`;
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'application/json',
+      ...options.headers,
+    };
+    
     try {
-      const response = await fetch(url, options);
+      const response = await fetch(proxyUrl, { ...options, headers });
 
       if (response.status === 429) {
         if (retries > 0) {
           const retryAfter = response.headers.get("Retry-After");
-          const waitTime = retryAfter ? parseInt(retryAfter, 10) * 1000 : 2000; // 默认等待 2 秒
+          const waitTime = retryAfter ? parseInt(retryAfter, 10) * 1000 : 2000;
           console.warn(`Rate limited. Retrying in ${waitTime}ms...`);
           await new Promise((resolve) => setTimeout(resolve, waitTime));
           return this.fetchWithRetry(url, options, retries - 1);
@@ -43,7 +53,7 @@ class RedditApiClient {
       return response;
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        throw error; // 直接抛出 AbortError，不进行重试
+        throw error;
       }
       throw error;
     }
@@ -57,22 +67,31 @@ class RedditApiClient {
    */
   async searchSubreddits(query: string, signal?: AbortSignal): Promise<Subreddit[]> {
     try {
-      const response = await this.fetchWithRetry(
-        `${this.baseUrl}/api/subreddit_autocomplete_v2.json?query=${encodeURIComponent(query)}&include_over_18=false`,
-        { signal }
-      );
+      const url = `${this.baseUrl}/subreddits/search.json?q=${encodeURIComponent(query)}&limit=10`;
+      console.log("正在请求 Subreddits:", url);
+      
+      const response = await this.fetchWithRetry(url, { signal });
+      console.log("响应状态:", response.status);
       
       const data = await response.json();
       
-      return data.children.map((item: any) => ({
+      if (!data.data || !data.data.children) {
+        console.warn("API 返回空结果");
+        return [];
+      }
+      
+      const results = data.data.children.map((item: any) => ({
         id: item.data.id,
         name: item.data.name,
         display_name: item.data.display_name,
         title: item.data.title,
-        description: item.data.public_description,
-        subscriber_count: item.data.subscribers,
+        description: item.data.public_description || '',
+        subscriber_count: item.data.subscribers || 0,
         url: item.data.url,
       }));
+      
+      console.log(`找到 ${results.length} 个 Subreddits`);
+      return results;
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         throw error;
@@ -101,21 +120,27 @@ class RedditApiClient {
     signal?: AbortSignal
   ): Promise<Post[]> {
     try {
-      let endpoint = `${this.baseUrl}/search.json?q=${encodeURIComponent(query)}&sort=${sortBy}&limit=${limit}`;
+      let url = `${this.baseUrl}/search.json?q=${encodeURIComponent(query)}&sort=${sortBy}&limit=${limit}`;
       
       if (timeRange !== "all") {
-        endpoint += `&t=${timeRange}`;
+        url += `&t=${timeRange}`;
       }
       
       if (subreddit) {
-        endpoint += `&restrict_sr=true&sr=${encodeURIComponent(subreddit)}`;
+        url += `&restrict_sr=true&sr=${encodeURIComponent(subreddit)}`;
       }
 
-      const response = await this.fetchWithRetry(endpoint, { signal });
-      
+      console.log("正在请求 Posts:", url);
+
+      const response = await this.fetchWithRetry(url, { signal });
       const data = await response.json();
       
-      return data.data.children.map((item: any) => ({
+      if (!data.data || !data.data.children) {
+        console.warn("API 返回空结果");
+        return [];
+      }
+      
+      const results = data.data.children.map((item: any) => ({
         id: item.data.id,
         title: item.data.title,
         selftext: item.data.selftext,
@@ -126,6 +151,9 @@ class RedditApiClient {
         created_utc: item.data.created_utc,
         url: item.data.url,
       }));
+      
+      console.log(`找到 ${results.length} 个 Posts`);
+      return results;
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         throw error;
@@ -144,12 +172,12 @@ class RedditApiClient {
    */
   async getComments(postId: string, subreddit: string, signal?: AbortSignal): Promise<Comment[]> {
     try {
-      const response = await this.fetchWithRetry(
-        `${this.baseUrl}/r/${subreddit}/comments/${postId}.json?limit=100&sort=confidence`,
-        { signal }
-      );
-      
+      const url = `${this.baseUrl}/r/${subreddit}/comments/${postId}.json?limit=100&sort=confidence`;
+      console.log("正在请求 Comments:", url);
+
+      const response = await this.fetchWithRetry(url, { signal });
       const data = await response.json();
+      
       const comments: Comment[] = [];
 
       const extractComments = (listing: any[]) => {
@@ -164,6 +192,9 @@ class RedditApiClient {
                 score: commentData.score,
                 created_utc: commentData.created_utc,
                 parent_id: commentData.parent_id,
+                subreddit: commentData.subreddit || subreddit,
+                link_id: commentData.link_id,
+                permalink: commentData.permalink,
               });
             }
             if (commentData.replies && commentData.replies.data) {
@@ -177,6 +208,7 @@ class RedditApiClient {
         extractComments(data[1].data.children);
       }
 
+      console.log(`找到 ${comments.length} 条评论`);
       return comments;
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -196,12 +228,15 @@ class RedditApiClient {
    */
   async getSubredditPosts(subreddit: string, limit: number = 10, signal?: AbortSignal): Promise<Post[]> {
     try {
-      const response = await this.fetchWithRetry(
-        `${this.baseUrl}/r/${subreddit}/hot.json?limit=${limit}&sort=hot`,
-        { signal }
-      );
-      
+      const url = `${this.baseUrl}/r/${subreddit}/hot.json?limit=${limit}&sort=hot`;
+      console.log("正在请求 Subreddit Posts:", url);
+
+      const response = await this.fetchWithRetry(url, { signal });
       const data = await response.json();
+      
+      if (!data.data || !data.data.children) {
+        return [];
+      }
       
       return data.data.children.map((item: any) => ({
         id: item.data.id,
@@ -236,16 +271,27 @@ class RedditApiClient {
     }
 
     const allComments: Comment[] = [];
-    // 并行请求，但限制并发数可能更好，这里简单处理
-    const promises = posts.slice(0, 10).map(async (post) => {
-      const comments = await this.getComments(post.id, post.subreddit, signal);
-      return comments.slice(0, maxComments);
-    });
-    
+    const CONCURRENCY_LIMIT = 3;
+    const chunks = [];
+    for (let i = 0; i < posts.length; i += CONCURRENCY_LIMIT) {
+      chunks.push(posts.slice(i, i + CONCURRENCY_LIMIT));
+    }
+
     try {
-      const results = await Promise.all(promises);
-      for (const comments of results) {
-        allComments.push(...comments);
+      for (const chunk of chunks) {
+        if (signal?.aborted) break;
+        
+        const promises = chunk.map(async (post) => {
+          const comments = await this.getComments(post.id, post.subreddit, signal);
+          return comments.slice(0, maxComments);
+        });
+
+        const results = await Promise.all(promises);
+        for (const comments of results) {
+          allComments.push(...comments);
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {

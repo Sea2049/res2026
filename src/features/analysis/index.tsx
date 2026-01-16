@@ -7,7 +7,14 @@ import { SentimentChart } from "./components/SentimentChart";
 import { InsightCard } from "./components/InsightCard";
 import { CommentList } from "./components/CommentList";
 import { AnalysisProgress } from "./components/AnalysisProgress";
+import { EmptyState, EmptyStateActions } from "./components/EmptyState";
 import type { SearchResult, Insight } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Download, RotateCcw, Play, AlertCircle } from "lucide-react";
 
 /**
  * AnalysisDashboard 组件 Props 接口
@@ -36,11 +43,9 @@ export function AnalysisDashboard({
   onSelectedTopicsChange,
   className,
 }: AnalysisDashboardProps) {
-  const { session, startAnalysis, cancelAnalysis, resetAnalysis, exportResult } =
+  const { session, startAnalysis, cancelAnalysis, resetAnalysis, exportResult, exportToExcel } =
     useAnalysis();
-  const [activeTab, setActiveTab] = useState<
-    "keywords" | "sentiment" | "insights" | "comments"
-  >("keywords");
+  const [activeTab, setActiveTab] = useState<string>("keywords");
   const [selectedSentiment, setSelectedSentiment] = useState<
     "all" | "positive" | "negative" | "neutral"
   >("all");
@@ -80,12 +85,19 @@ export function AnalysisDashboard({
     }
   };
 
-  const tabs = [
-    { id: "keywords", label: "关键词", icon: "🏷️" },
-    { id: "sentiment", label: "情感分布", icon: "📊" },
-    { id: "insights", label: "洞察", icon: "💡" },
-    { id: "comments", label: "评论", icon: "💬" },
-  ];
+  const handleExportExcel = () => {
+    const blob = exportToExcel();
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `reddit-insight-analysis-${Date.now()}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
 
   const hasAnalysisResult =
     session?.status === "completed" && session.result;
@@ -93,207 +105,241 @@ export function AnalysisDashboard({
   return (
     <div className={className}>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
           评论分析
         </h2>
-        <p className="text-gray-600 text-sm">
+        <p className="text-gray-500 text-sm">
           对选中主题的评论进行深度分析，发现用户痛点和需求洞察
         </p>
       </div>
 
       {selectedTopics.length > 0 && !session && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center justify-between">
+        <Card className="mb-6 bg-blue-50 border-blue-200">
+          <CardContent className="flex items-center justify-between p-6">
             <div>
-              <p className="font-medium text-blue-900">
+              <p className="font-semibold text-blue-900 text-lg">
                 已选择 {selectedTopics.length} 个主题待分析
               </p>
               <p className="text-sm text-blue-700 mt-1">
                 点击"开始分析"按钮获取评论数据并进行分析
               </p>
             </div>
-            <button
+            <Button
               onClick={handleStartAnalysis}
-              className="px-6 py-2 bg-reddit-orange text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              size="lg"
             >
+              <Play className="mr-2 h-4 w-4" />
               开始分析
-            </button>
-          </div>
-        </div>
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {selectedTopics.length === 0 && !session && (
-        <div className="mb-6 p-8 text-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          <p className="text-gray-500">
-            请先在"主题筛选"中选择要分析的主题
+        <div className="mb-6 p-12 text-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+          <p className="text-gray-500 text-lg">
+            请先在左侧"主题筛选"中选择要分析的主题
           </p>
         </div>
       )}
 
-      {session && session.status !== "completed" && (
+      {session && session.status !== "completed" && session.status !== "error" && (
         <AnalysisProgress session={session} onCancel={cancelAnalysis} />
       )}
 
-      {hasAnalysisResult && session.result && (
-        <>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex gap-2">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    activeTab === tab.id
-                      ? "bg-blue-100 text-blue-700 ring-2 ring-blue-500"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                >
-                  <span className="mr-1">{tab.icon}</span>
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleExportJson}
-                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+      {session?.status === "error" && (
+        <Alert variant="error" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>分析失败</AlertTitle>
+          <AlertDescription>
+            {session.error || "发生未知错误"}
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                className="bg-white hover:bg-red-50 text-red-600 border-red-200"
+                onClick={() => {
+                  resetAnalysis();
+                  if (selectedTopics.length > 0) {
+                    handleStartAnalysis();
+                  }
+                }}
               >
-                导出 JSON
-              </button>
-              <button
-                onClick={handleExportCsv}
-                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                导出 CSV
-              </button>
-              <button
-                onClick={resetAnalysis}
-                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                重新分析
-              </button>
+                <RotateCcw className="mr-2 h-4 w-4" />
+                重试
+              </Button>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {activeTab === "keywords" && (
-              <div className="lg:col-span-2">
-                <KeywordCloud
-                  keywords={session.result.keywords}
-                  maxKeywords={40}
-                  onKeywordClick={(keyword) => {
-                    console.log("Clicked keyword:", keyword);
-                  }}
-                />
-              </div>
-            )}
-
-            {activeTab === "sentiment" && (
-              <div className="lg:col-span-2">
-                <SentimentChart sentiment={session.result.sentiment} />
-              </div>
-            )}
-
-            {activeTab === "insights" && (
-              <div className="lg:col-span-2">
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    分析洞察 (
-                    {session.result.insights.length > 0
-                      ? session.result.insights.length
-                      : 0}
-                    )
-                  </h3>
-                  {session.result.insights.length === 0 ? (
-                    <p className="text-gray-500 text-center py-8">
-                      未检测到明显的用户痛点或需求洞察
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {session.result.insights.slice(0, 6).map((insight) => (
-                        <InsightCard
-                          key={insight.id}
-                          insight={insight}
-                          isExpanded={selectedInsight?.id === insight.id}
-                          onClick={() =>
-                            setSelectedInsight(
-                              selectedInsight?.id === insight.id
-                                ? null
-                                : insight
-                            )
-                          }
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {activeTab === "comments" && (
-              <div className="lg:col-span-2">
-                <CommentList
-                  comments={session.result.comments}
-                  selectedSentiment={selectedSentiment}
-                  onSentimentChange={setSelectedSentiment}
-                />
-              </div>
-            )}
-          </div>
-
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h4 className="font-medium text-gray-900 mb-2">分析统计</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">分析主题数</span>
-                <p className="font-semibold text-gray-900">
-                  {session.topics.length}
-                </p>
-              </div>
-              <div>
-                <span className="text-gray-500">评论总数</span>
-                <p className="font-semibold text-gray-900">
-                  {session.result.comments.length}
-                </p>
-              </div>
-              <div>
-                <span className="text-gray-500">关键词数</span>
-                <p className="font-semibold text-gray-900">
-                  {session.result.keywords.length}
-                </p>
-              </div>
-              <div>
-                <span className="text-gray-500">洞察数</span>
-                <p className="font-semibold text-gray-900">
-                  {session.result.insights.length}
-                </p>
-              </div>
-            </div>
-          </div>
-        </>
+          </AlertDescription>
+        </Alert>
       )}
 
-      {session?.status === "error" && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-red-900">分析失败</p>
-              <p className="text-sm text-red-700 mt-1">
-                {session.error || "发生未知错误"}
-              </p>
+      {hasAnalysisResult && session.result && (
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Badge variant="outline" className="text-gray-600">
+                {session.topics.length} 个主题
+              </Badge>
+              <Badge variant="outline" className="text-gray-600">
+                {session.result.comments.length} 条评论
+              </Badge>
+              <Badge variant="outline" className="text-gray-600">
+                {session.result.keywords.length} 个关键词
+              </Badge>
             </div>
-            <button
-              onClick={() => {
-                resetAnalysis();
-                if (selectedTopics.length > 0) {
-                  handleStartAnalysis();
-                }
-              }}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-            >
-              重试
-            </button>
+            
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleExportExcel}>
+                <Download className="mr-2 h-4 w-4" />
+                Excel
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportJson}>
+                <Download className="mr-2 h-4 w-4" />
+                JSON
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportCsv}>
+                <Download className="mr-2 h-4 w-4" />
+                CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={resetAnalysis}>
+                <RotateCcw className="mr-2 h-4 w-4" />
+                重新分析
+              </Button>
+            </div>
           </div>
+
+          <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-4 lg:w-[400px]">
+              <TabsTrigger value="keywords">关键词</TabsTrigger>
+              <TabsTrigger value="sentiment">情感</TabsTrigger>
+              <TabsTrigger value="insights">洞察</TabsTrigger>
+              <TabsTrigger value="comments">评论</TabsTrigger>
+            </TabsList>
+
+            <div className="mt-6">
+              <TabsContent value="keywords" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>高频关键词</CardTitle>
+                    <CardDescription>
+                      分析评论中出现频率最高的词汇，反映讨论焦点
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {session.result.keywords.length === 0 ? (
+                      <EmptyState
+                        type="no-keywords"
+                        actions={EmptyStateActions.forNoKeywords(() => {
+                          resetAnalysis();
+                          if (selectedTopics.length > 0) {
+                            handleStartAnalysis();
+                          }
+                        })}
+                        className="py-8"
+                      />
+                    ) : (
+                      <KeywordCloud
+                        keywords={session.result.keywords}
+                        maxKeywords={50}
+                        onKeywordClick={(keyword) => {
+                          console.log("Clicked keyword:", keyword);
+                        }}
+                      />
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="sentiment" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>情感分布</CardTitle>
+                    <CardDescription>
+                      评论的情感倾向统计，了解用户整体态度
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <SentimentChart sentiment={session.result.sentiment} />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="insights" className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {session.result.insights.length === 0 ? (
+                    <div className="col-span-2">
+                      <EmptyState
+                        type="no-insights"
+                        actions={EmptyStateActions.forNoInsights(
+                          () => {
+                            resetAnalysis();
+                            if (selectedTopics.length > 0) {
+                              handleStartAnalysis();
+                            }
+                          },
+                          () => {
+                            resetAnalysis();
+                          }
+                        )}
+                      />
+                    </div>
+                  ) : (
+                    session.result.insights.map((insight) => (
+                      <InsightCard
+                        key={insight.id}
+                        insight={insight}
+                        allComments={session.result?.comments}
+                        isExpanded={selectedInsight?.id === insight.id}
+                        onClick={() =>
+                          setSelectedInsight(
+                            selectedInsight?.id === insight.id
+                              ? null
+                              : insight
+                          )
+                        }
+                      />
+                    ))
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="comments" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>评论列表</CardTitle>
+                    <CardDescription>
+                      查看原始评论内容，支持按情感筛选
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {session.result.comments.length === 0 ? (
+                      <EmptyState
+                        type="no-comments"
+                        actions={EmptyStateActions.forNoComments(
+                          () => {
+                            resetAnalysis();
+                            if (selectedTopics.length > 0) {
+                              handleStartAnalysis();
+                            }
+                          },
+                          () => {
+                            resetAnalysis();
+                          }
+                        )}
+                        className="py-8"
+                      />
+                    ) : (
+                      <CommentList
+                        comments={session.result.comments}
+                        selectedSentiment={selectedSentiment}
+                        onSentimentChange={setSelectedSentiment}
+                      />
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </div>
+          </Tabs>
         </div>
       )}
     </div>
