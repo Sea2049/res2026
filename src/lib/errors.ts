@@ -217,9 +217,10 @@ export function createRateLimitError(
   retryAfter?: number,
   context?: Record<string, any>
 ): AppError {
+  const retryMinutes = retryAfter ? Math.ceil(retryAfter / 60) : 1;
   const retryMessage = retryAfter
-    ? `请在 ${Math.ceil(retryAfter / 60)} 分钟后重试`
-    : '请稍后重试';
+    ? `请在 ${retryMinutes} 分钟后重试`
+    : '请稍后重试（通常等待 1-2 分钟即可恢复）';
 
   return new AppError({
     type: ErrorType.API_RATE_LIMIT,
@@ -230,13 +231,18 @@ export function createRateLimitError(
     recoveryActions: [
       {
         label: '等待后重试',
-        description: retryMessage,
+        description: `系统检测到请求频率过高，${retryMessage}`,
         autoRecoverable: true,
         autoRecoverDelay: retryAfter ? retryAfter * 1000 : 60000,
       },
       {
         label: '减少请求频率',
-        description: '请减少同时分析的主题数量',
+        description: '请减少同时分析的主题数量，建议每次选择 2-3 个主题',
+        autoRecoverable: false,
+      },
+      {
+        label: '避开高峰期',
+        description: 'Reddit 在活跃时段可能更频繁地触发限流，建议稍后再试',
         autoRecoverable: false,
       },
     ],

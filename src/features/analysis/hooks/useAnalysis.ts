@@ -59,6 +59,12 @@ interface UseAnalysisReturn {
    * @returns 导出数据
    */
   exportResult: (format: "json" | "csv") => string | null;
+  /**
+   * 导出为 Excel 格式
+   * @param searchResults 搜索结果数据
+   * @returns Excel 文件 Blob
+   */
+  exportToExcel: (searchResults: SearchResult[]) => Blob | null;
 }
 
 /**
@@ -220,7 +226,7 @@ export function useAnalysis(): UseAnalysisReturn {
           updateSession({
             currentStep: `正在获取社区 r/${topic.display_name} 的评论...`,
           });
-          return await redditApi.getSubredditComments(topic.display_name, 5, 50);
+          return await redditApi.getSubredditComments(topic.display_name, 10, 100);
         } else {
           updateSession({
             currentStep: `正在获取帖子 "${topic.title.substring(0, 30)}..." 的评论...`,
@@ -255,11 +261,11 @@ export function useAnalysis(): UseAnalysisReturn {
       const workerManager = getWorkerManager();
 
       try {
-        // 设置 30 秒超时
+        // 设置 60 秒超时（处理 1000 条评论需要更长时间）
         const result = await workerManager.execute<AnalysisResult>(
           comments,
           configRef.current,
-          30000
+          60000
         );
 
         return result;

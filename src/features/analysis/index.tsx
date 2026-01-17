@@ -9,12 +9,13 @@ import { CommentList } from "./components/CommentList";
 import { AnalysisProgress } from "./components/AnalysisProgress";
 import { EmptyState, EmptyStateActions } from "./components/EmptyState";
 import type { SearchResult, Insight } from "@/lib/types";
+import { getCurrentTimeStatus } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Download, RotateCcw, Play, AlertCircle } from "lucide-react";
+import { Download, RotateCcw, Play, AlertCircle, Info, Sun, Sunset, Moon } from "lucide-react";
 
 /**
  * AnalysisDashboard 组件 Props 接口
@@ -117,6 +118,11 @@ export function AnalysisDashboard({
           对选中主题的评论进行深度分析，发现用户痛点和需求洞察
         </p>
       </div>
+
+      {/* 时段提示 */}
+      {selectedTopics.length > 0 && !session && (
+        <TimePeriodTip />
+      )}
 
       {selectedTopics.length > 0 && !session && (
         <Card className="mb-6 bg-blue-50 border-blue-200">
@@ -347,6 +353,77 @@ export function AnalysisDashboard({
           </Tabs>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * 时段提示组件
+ * 根据当前时段显示不同的建议和提示
+ */
+function TimePeriodTip() {
+  const timeStatus = getCurrentTimeStatus();
+  const [isDismissed, setIsDismissed] = useState(false);
+
+  if (isDismissed) {
+    return null;
+  }
+
+  // 根据状态选择颜色
+  const getAlertStyle = () => {
+    switch (timeStatus.status) {
+      case "peak":
+        return "bg-amber-50 border-amber-200 text-amber-800";
+      case "transition":
+        return "bg-blue-50 border-blue-200 text-blue-800";
+      default:
+        return "bg-green-50 border-green-200 text-green-800";
+    }
+  };
+
+  // 根据状态选择图标
+  const getIcon = () => {
+    switch (timeStatus.status) {
+      case "peak":
+        return <Moon className="h-5 w-5" />;
+      case "transition":
+        return <Sunset className="h-5 w-5" />;
+      default:
+        return <Sun className="h-5 w-5" />;
+    }
+  };
+
+  return (
+    <div className={`mb-4 p-4 rounded-lg border ${getAlertStyle()}`}>
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0 mt-0.5">
+          {getIcon()}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-semibold text-sm">
+              {timeStatus.label}
+            </p>
+            <button
+              onClick={() => setIsDismissed(true)}
+              className="text-xs opacity-60 hover:opacity-100 transition-opacity"
+            >
+              知道了
+            </button>
+          </div>
+          <p className="text-sm mt-1 opacity-90">
+            {timeStatus.description}
+          </p>
+          <ul className="mt-2 space-y-1">
+            {timeStatus.recommendations.map((rec, index) => (
+              <li key={index} className="text-xs flex items-start gap-1.5">
+                <span className="text-current opacity-50">•</span>
+                {rec}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }

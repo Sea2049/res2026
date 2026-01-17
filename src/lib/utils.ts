@@ -154,3 +154,97 @@ export function getSentimentColor(
   };
   return colors[sentiment];
 }
+
+/**
+ * 时间段状态类型
+ */
+export type TimePeriodStatus = "peak" | "off_peak" | "transition";
+
+/**
+ * 检测当前是否处于 Reddit 高峰时段
+ * 美国时间白天 (UTC 12:00-24:00) 为高峰时段
+ * @returns 是否处于高峰时段
+ */
+export function isPeakHours(): boolean {
+  const now = new Date();
+  const utcHours = now.getUTCHours();
+  return utcHours >= 12 && utcHours < 24;
+}
+
+/**
+ * 获取当前时间状态
+ * @returns 时间段状态和描述
+ */
+export function getCurrentTimeStatus(): {
+  status: TimePeriodStatus;
+  label: string;
+  description: string;
+  recommendations: string[];
+} {
+  const now = new Date();
+  const utcHours = now.getUTCHours();
+  
+  // 计算本地时间（大致）
+  const localHours = utcHours + 8; // UTC+8 中国时间
+  const localHoursNormalized = localHours >= 24 ? localHours - 24 : localHours;
+  
+  if (utcHours >= 12 && utcHours < 18) {
+    // UTC 12:00-18:00 (美国上午到下午，中国晚上 20:00-02:00)
+    return {
+      status: "peak",
+      label: "高峰时段 🌙",
+      description: "当前是 Reddit 高峰期（美国白天），API 限流风险较高",
+      recommendations: [
+        "建议减少同时分析的主题数量（1-2个）",
+        "避免频繁刷新和重新分析",
+        "如果遇到限流，请等待1-2分钟后重试",
+      ],
+    };
+  } else if (utcHours >= 18 && utcHours < 24) {
+    // UTC 18:00-24:00 (美国下午到晚上，中国凌晨 02:00-08:00)
+    return {
+      status: "transition",
+      label: "过渡时段 🌆",
+      description: "Reddit 活跃度正在下降，但仍需注意",
+      recommendations: [
+        "可以正常分析，建议不超过3个主题",
+        "注意观察是否触发限流",
+      ],
+    };
+  } else {
+    // UTC 0:00-12:00 (美国深夜到上午，中国上午 08:00-20:00)
+    return {
+      status: "off_peak",
+      label: "非高峰时段 ☀️",
+      description: "当前是 Reddit 低峰期（美国深夜），API 稳定性最佳",
+      recommendations: [
+        "适合进行大规模分析（可选择3-5个主题）",
+        "可以充分利用系统性能",
+      ],
+    };
+  }
+}
+
+/**
+ * 根据当前时段获取优化的 API 配置
+ * @returns API 调用配置
+ */
+export function getTimeBasedApiConfig(): {
+  maxRetries: number;
+  baseRetryDelay: number;
+  concurrencyLimit: number;
+  requestInterval: number;
+} {
+  const isPeak = isPeakHours();
+  
+  return {
+    // 高峰期减少重试次数，避免长时间等待
+    maxRetries: isPeak ? 3 : 5,
+    // 高峰期增加等待时间
+    baseRetryDelay: isPeak ? 5000 : 3000,
+    // 高峰期降低并发
+    concurrencyLimit: isPeak ? 2 : 3,
+    // 高峰期添加请求间隔
+    requestInterval: isPeak ? 500 : 0,
+  };
+}

@@ -1,4 +1,5 @@
 import type { Subreddit, Post, Comment } from "../types";
+import { getTimeBasedApiConfig } from "../utils";
 
 /**
  * 搜索排序方式
@@ -14,6 +15,7 @@ export type SearchTimeRange = "all" | "hour" | "day" | "week" | "month" | "year"
  * Reddit API 客户端
  * 提供与 Reddit API 交互的方法
  * 使用 corsproxy.io 代理服务绕过 CORS 限制
+ * 智能根据时段调整调用策略
  */
 class RedditApiClient {
   private baseUrl = "https://www.reddit.com";
@@ -22,8 +24,12 @@ class RedditApiClient {
   /**
    * 通用 Fetch 方法，支持重试和 AbortSignal
    * 通过 CORS 代理发送请求
+   * 智能根据时段调整重试策略
    */
-  private async fetchWithRetry(url: string, options: RequestInit = {}, retries = 3): Promise<Response> {
+  private async fetchWithRetry(url: string, options: RequestInit = {}, retries?: number): Promise<Response> {
+    const timeConfig = getTimeBasedApiConfig();
+    const effectiveRetries = retries ?? timeConfig.maxRetries;
+    
     const proxyUrl = `${this.proxyUrl}${encodeURIComponent(url)}`;
     const headers = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -35,18 +41,24 @@ class RedditApiClient {
       const response = await fetch(proxyUrl, { ...options, headers });
 
       if (response.status === 429) {
-        if (retries > 0) {
+        if (effectiveRetries > 0) {
           const retryAfter = response.headers.get("Retry-After");
-          const waitTime = retryAfter ? parseInt(retryAfter, 10) * 1000 : 2000;
-          console.warn(`Rate limited. Retrying in ${waitTime}ms...`);
+          const waitTime = retryAfter ? parseInt(retryAfter, 10) * 1000 : timeConfig.baseRetryDelay;
+          console.warn(`Rate limited. Retrying in ${waitTime}ms... (${effectiveRetries} attempts remaining)`);
           await new Promise((resolve) => setTimeout(resolve, waitTime));
-          return this.fetchWithRetry(url, options, retries - 1);
+          return this.fetchWithRetry(url, options, effectiveRetries - 1);
         } else {
           throw new Error("API 请求过于频繁 (429)，请稍后再试");
         }
       }
 
       if (!response.ok) {
+        if (effectiveRetries > 0 && response.status >= 500) {
+          const waitTime = timeConfig.baseRetryDelay / 2;
+          console.warn(`Server error ${response.status}. Retrying in ${waitTime}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
+          return this.fetchWithRetry(url, options, effectiveRetries - 1);
+        }
         throw new Error(`API 请求失败: ${response.status}`);
       }
 
@@ -270,11 +282,11 @@ class RedditApiClient {
       return [];
     }
 
+    const timeConfig = getTimeBasedApiConfig();
     const allComments: Comment[] = [];
-    const CONCURRENCY_LIMIT = 3;
     const chunks = [];
-    for (let i = 0; i < posts.length; i += CONCURRENCY_LIMIT) {
-      chunks.push(posts.slice(i, i + CONCURRENCY_LIMIT));
+    for (let i = 0; i < posts.length; i += timeConfig.concurrencyLimit) {
+      chunks.push(posts.slice(i, i + timeConfig.concurrencyLimit));
     }
 
     try {
@@ -291,7 +303,12 @@ class RedditApiClient {
           allComments.push(...comments);
         }
         
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // 根据时段添加请求间隔
+        if (timeConfig.requestInterval > 0) {
+          await new Promise(resolve => setTimeout(resolve, timeConfig.requestInterval));
+        } else {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
       }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
