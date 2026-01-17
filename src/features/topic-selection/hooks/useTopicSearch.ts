@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { redditApi } from "@/lib/api/reddit";
 import type { Subreddit, Post } from "@/lib/types";
-import { isValidSearchKeyword } from "@/lib/utils";
+import { isValidSearchKeyword, debounce } from "@/lib/utils";
 
 /**
  * 搜索结果类型
@@ -80,6 +80,24 @@ interface UseTopicSearchReturn {
    */
   toggleSelectTopic: (topic: SearchResult) => void;
   /**
+   * 批量选择主题
+   * @param topics 要选择的主题列表
+   */
+  selectTopics: (topics: SearchResult[]) => void;
+  /**
+   * 批量取消选择主题
+   * @param topicIds 要取消选择的主题 ID 列表
+   */
+  deselectTopics: (topicIds: string[]) => void;
+  /**
+   * 全选当前搜索结果
+   */
+  selectAll: () => void;
+  /**
+   * 取消全选当前搜索结果
+   */
+  deselectAll: () => void;
+  /**
    * 清空搜索结果
    */
   clearResults: () => void;
@@ -113,12 +131,97 @@ export function useTopicSearch(): UseTopicSearchReturn {
   const [searchOptions, setSearchOptions] = useState<SearchOptions>(defaultSearchOptions);
   
   const abortControllerRef = useRef<AbortController | null>(null);
+  
+  /**
+   * 防抖搜索函数
+   * 避免频繁搜索导致的性能问题
+   */
+  const debouncedSearchRef = useRef<ReturnType<typeof debounce> | null>(null);
+  
+  /**
+   * 初始化防抖搜索函数
+   */
+  useEffect(() => {
+    const debouncedSearch = debounce(async (searchKeyword: string, options: SearchOptions) => {
+      if (!isValidSearchKeyword(searchKeyword)) {
+        setError("请输入有效的搜索关键词");
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      abortControllerRef.current = new AbortController();
+      const { signal } = abortControllerRef.current;
+
+      try {
+        let searchResults: SearchResult[] = [];
+
+        if (!options.postOnly) {
+          const subreddits = await redditApi.searchSubreddits(searchKeyword, signal);
+          searchResults = [...searchResults, ...subreddits.slice(0, options.limit)];
+        }
+
+        if (!options.subredditOnly) {
+          const posts = await redditApi.searchPosts(
+            searchKeyword,
+            undefined,
+            options.sortBy,
+            options.timeRange,
+            options.limit,
+            signal
+          );
+          searchResults = [...searchResults, ...posts.slice(0, options.limit)];
+        }
+
+        if (!signal.aborted) {
+          setResults(searchResults);
+        }
+      } catch (err) {
+        if (!signal.aborted) {
+          const errorMessage = err instanceof Error ? err.message : "搜索失败，请稍后重试";
+          setError(errorMessage);
+          console.error("搜索失败:", err);
+        }
+      } finally {
+        if (!signal.aborted) {
+          setIsLoading(false);
+        }
+      }
+    }, 500);
+
+    // 赋值给 ref
+    debouncedSearchRef.current = debouncedSearch;
+
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, []);
+
+  /**
+   * 自动搜索
+   * 当关键词长度达到阈值时自动触发搜索
+   */
+  useEffect(() => {
+    if (keyword.length >= 2 && debouncedSearchRef.current) {
+      debouncedSearchRef.current(keyword, searchOptions);
+    }
+  }, [keyword, searchOptions]);
 
   /**
    * 执行搜索
    * 根据搜索选项执行搜索，支持排序、时间范围等参数
    */
   const search = useCallback(async () => {
+    // 取消防抖搜索，立即执行搜索
+    if (debouncedSearchRef.current) {
+      debouncedSearchRef.current.cancel();
+    }
+    
     if (!isValidSearchKeyword(keyword)) {
       setError("请输入有效的搜索关键词");
       return;
@@ -187,6 +290,52 @@ export function useTopicSearch(): UseTopicSearchReturn {
   }, []);
 
   /**
+   * 批量选择主题
+   * @param topics 要选择的主题列表
+   */
+  const selectTopics = useCallback((topics: SearchResult[]) => {
+    setSelectedTopicIds((prev) => {
+      const newSet = new Set(prev);
+      topics.forEach(topic => newSet.add(topic.id));
+      return newSet;
+    });
+  }, []);
+
+  /**
+   * 批量取消选择主题
+   * @param topicIds 要取消选择的主题 ID 列表
+   */
+  const deselectTopics = useCallback((topicIds: string[]) => {
+    setSelectedTopicIds((prev) => {
+      const newSet = new Set(prev);
+      topicIds.forEach(id => newSet.delete(id));
+      return newSet;
+    });
+  }, []);
+
+  /**
+   * 全选当前搜索结果
+   */
+  const selectAll = useCallback(() => {
+    setSelectedTopicIds((prev) => {
+      const newSet = new Set(prev);
+      results.forEach(topic => newSet.add(topic.id));
+      return newSet;
+    });
+  }, [results]);
+
+  /**
+   * 取消全选当前搜索结果
+   */
+  const deselectAll = useCallback(() => {
+    setSelectedTopicIds((prev) => {
+      const newSet = new Set(prev);
+      results.forEach(topic => newSet.delete(topic.id));
+      return newSet;
+    });
+  }, [results]);
+
+  /**
    * 清空搜索结果
    */
   const clearResults = useCallback(() => {
@@ -218,6 +367,10 @@ export function useTopicSearch(): UseTopicSearchReturn {
     setSearchOptions,
     search,
     toggleSelectTopic,
+    selectTopics,
+    deselectTopics,
+    selectAll,
+    deselectAll,
     clearResults,
     clearSelectedTopics,
   };

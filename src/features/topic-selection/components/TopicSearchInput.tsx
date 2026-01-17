@@ -51,7 +51,7 @@ interface TopicSearchInputProps {
 
 /**
  * 主题搜索输入框组件
- * 提供搜索输入框，支持输入验证、回车键搜索和历史记录
+ * 提供搜索输入框，支持输入验证、回车键搜索、历史记录和键盘导航
  */
 export function TopicSearchInput({
   value,
@@ -67,6 +67,7 @@ export function TopicSearchInput({
 }: TopicSearchInputProps) {
   const [error, setError] = useState<string>("");
   const [showHistory, setShowHistory] = useState(false);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -91,6 +92,7 @@ export function TopicSearchInput({
         !inputRef.current.contains(event.target as Node)
       ) {
         setShowHistory(false);
+        setHistoryIndex(-1);
       }
     };
 
@@ -114,6 +116,7 @@ export function TopicSearchInput({
     
     setError("");
     onChange(newValue);
+    setHistoryIndex(-1);
   };
 
   /**
@@ -125,6 +128,7 @@ export function TopicSearchInput({
       return;
     }
     setShowHistory(false);
+    setHistoryIndex(-1);
     onSearch();
   };
 
@@ -133,7 +137,43 @@ export function TopicSearchInput({
    * @param e 键盘事件
    */
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // 如果有搜索历史且下拉框显示，处理上下键导航
+    if (showHistory && searchHistory.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHistoryIndex((prev) => 
+          prev < searchHistory.length - 1 ? prev + 1 : prev
+        );
+        return;
+      }
+      
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHistoryIndex((prev) => prev > 0 ? prev - 1 : -1);
+        return;
+      }
+      
+      if (e.key === "Enter" && historyIndex >= 0) {
+        e.preventDefault();
+        const selectedKeyword = searchHistory[historyIndex];
+        onChange(selectedKeyword);
+        setShowHistory(false);
+        setHistoryIndex(-1);
+        onHistoryClick?.(selectedKeyword);
+        return;
+      }
+      
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setShowHistory(false);
+        setHistoryIndex(-1);
+        return;
+      }
+    }
+
+    // 默认回车键搜索
     if (e.key === "Enter") {
+      e.preventDefault();
       handleSearchClick();
     }
   };
@@ -154,6 +194,7 @@ export function TopicSearchInput({
   const handleHistoryItemClick = (keyword: string) => {
     onChange(keyword);
     setShowHistory(false);
+    setHistoryIndex(-1);
     onHistoryClick?.(keyword);
   };
 
@@ -168,6 +209,13 @@ export function TopicSearchInput({
   ) => {
     e.stopPropagation();
     onRemoveHistory?.(keyword);
+  };
+
+  /**
+   * 获取高亮的历史记录项
+   */
+  const getHighlightedHistoryItem = (index: number) => {
+    return index === historyIndex;
   };
 
   return (
@@ -194,6 +242,7 @@ export function TopicSearchInput({
             aria-describedby={error ? "search-error" : undefined}
             aria-expanded={showHistory}
             aria-controls="search-history-dropdown"
+            autoComplete="off"
           />
           <button
             onClick={handleSearchClick}
@@ -231,6 +280,7 @@ export function TopicSearchInput({
             <button
               onClick={() => {
                 setShowHistory(false);
+                setHistoryIndex(-1);
                 onClearHistory?.();
               }}
               className="text-xs text-blue-600 hover:text-blue-800 underline"
@@ -244,8 +294,14 @@ export function TopicSearchInput({
               <li
                 key={keyword}
                 role="option"
-                className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between group"
+                className={cn(
+                  "px-3 py-2 cursor-pointer flex items-center justify-between group",
+                  "hover:bg-gray-100",
+                  getHighlightedHistoryItem(index) && "bg-blue-100"
+                )}
                 onClick={() => handleHistoryItemClick(keyword)}
+                onMouseEnter={() => setHistoryIndex(index)}
+                aria-selected={getHighlightedHistoryItem(index)}
               >
                 <span className="flex-1 text-sm text-gray-700 truncate">
                   {keyword}

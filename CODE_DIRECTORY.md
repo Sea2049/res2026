@@ -115,7 +115,7 @@ features 目录按业务功能组织代码，每个子目录代表一个独立�
 
 | 文件路径 | 类型 | 说明 |
 |----------|------|------|
-| src/features/topic-selection/hooks/useTopicSearch.ts | TS | 搜索逻辑钩子，处理搜索请求、状态管理和结果缓存 |
+| src/features/topic-selection/hooks/useTopicSearch.ts | TS | 搜索逻辑钩子，处理搜索请求、状态管理、防抖搜索、批量选择和全选功能 |
 | src/features/topic-selection/hooks/useSearchHistory.ts | TS | 搜索历史钩子，管理用户搜索历史的存储和读取 |
 
 #### 5.1.4 单元测试
@@ -276,6 +276,7 @@ lib 目录包含项目的工具函数、类型定义、外部服务封装、API 
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.2.0 | 2026-01-18 | 话题选择模块优化：新增防抖搜索、智能建议、分类显示、批量选择和全选功能；使用 React.memo 和 useMemo 优化组件渲染性能；增强键盘导航支持 |
 | v2.1.0 | 2026-01-16 | 文档全面更新：更新文件统计（29 组件、17 工具）、修正不一致的文件路径和描述、更新 API Routes 和 Worker 架构说明 |
 | v2.0.0 | 2026-01-15 | 新增 Web Worker 架构、错误处理模块、EmptyState 组件，TypeScript 工具文件从 14 个增加到 17 个，组件文件从 28 个增加到 29 个 |
 | v1.2.0 | 2026-01-12 | 新增 3 个 API Routes 端点（subreddit、search、comments），新增 fetch-helper 工具模块，TypeScript 工具文件从 10 个增加到 14 个 |

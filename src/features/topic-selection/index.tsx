@@ -48,6 +48,8 @@ export function TopicSelection({
     setSearchOptions,
     search,
     toggleSelectTopic,
+    selectAll,
+    deselectAll,
     clearResults,
     clearSelectedTopics,
   } = useTopicSearch();
@@ -116,6 +118,44 @@ export function TopicSelection({
     }
   };
 
+  /**
+   * 处理全选
+   */
+  const handleSelectAll = () => {
+    const unselectedResults = results.filter(t => !selectedTopicIds.has(t.id));
+    if (unselectedResults.length > 0) {
+      selectAll();
+      onSelectedTopicsChange?.([...selectedTopics, ...unselectedResults]);
+    }
+  };
+
+  /**
+   * 处理取消全选
+   */
+  const handleDeselectAll = () => {
+    if (selectedTopicIds.size > 0) {
+      deselectAll();
+      onSelectedTopicsChange?.([]);
+    }
+  };
+
+  /**
+   * 获取当前搜索结果的子集信息
+   */
+  const getCurrentResultInfo = () => {
+    const subredditCount = results.filter(t => "subscriber_count" in t).length;
+    const postCount = results.filter(t => !("subscriber_count" in t)).length;
+    
+    if (subredditCount > 0 && postCount > 0) {
+      return `${subredditCount} 个社区，${postCount} 个帖子`;
+    } else if (subredditCount > 0) {
+      return `${subredditCount} 个社区`;
+    } else if (postCount > 0) {
+      return `${postCount} 个帖子`;
+    }
+    return "0 个结果";
+  };
+
   return (
     <div className={className}>
       <div className="space-y-6">
@@ -153,6 +193,31 @@ export function TopicSelection({
           options={searchOptions}
           onOptionsChange={setSearchOptions}
         />
+
+        {results.length > 0 && (
+          <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <span className="text-sm text-gray-600">
+              当前结果：{getCurrentResultInfo()}
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSelectAll}
+                disabled={isLoading}
+                className="text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
+              >
+                全选
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                onClick={handleDeselectAll}
+                disabled={isLoading || selectedTopicIds.size === 0}
+                className="text-sm text-gray-600 hover:text-gray-800 disabled:opacity-50"
+              >
+                取消全选
+              </button>
+            </div>
+          </div>
+        )}
 
         {selectedTopics.length > 0 && (
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">

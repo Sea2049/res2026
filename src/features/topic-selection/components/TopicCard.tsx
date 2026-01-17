@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { escapeHtml, truncateText, formatSubscriberCount, formatTimestamp } from "@/lib/utils";
 import type { Subreddit, Post } from "@/lib/types";
@@ -27,70 +28,94 @@ interface TopicCardProps {
 }
 
 /**
+ * 判断是否为 Subreddit 类型
+ */
+const isSubredditType = (topic: Subreddit | Post): topic is Subreddit => {
+  return "subscriber_count" in topic;
+};
+
+/**
+ * 获取主题类型标签文本
+ */
+const getTypeLabel = (isSubreddit: boolean): string => {
+  return isSubreddit ? "社区" : "帖子";
+};
+
+/**
+ * 获取主题类型标签颜色
+ */
+const getTypeLabelColor = (isSubreddit: boolean): string => {
+  return isSubreddit ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800";
+};
+
+/**
  * 主题卡片组件
  * 显示 Subreddit 或 Post 信息，支持选择/取消选择
+ * 使用 React.memo 优化渲染性能
  */
-export function TopicCard({ topic, isSelected = false, onToggleSelect, className }: TopicCardProps) {
-  const isSubreddit = "subscriber_count" in topic;
-  
-  /**
-   * 判断主题类型
-   */
-  const topicType = isSubreddit ? "subreddit" : "post";
+export const TopicCard = memo(function TopicCard({
+  topic,
+  isSelected = false,
+  onToggleSelect,
+  className,
+}: TopicCardProps) {
+  const isSubreddit = useMemo(() => isSubredditType(topic), [topic]);
   
   /**
    * 获取主题标题
    */
-  const getTopicTitle = (): string => {
+  const title = useMemo(() => {
+    const subreddit = topic as Subreddit;
+    const post = topic as Post;
     if (isSubreddit) {
-      return escapeHtml(topic.title || topic.display_name);
+      return escapeHtml(subreddit.title || subreddit.display_name);
     }
-    return escapeHtml(topic.title);
-  };
+    return escapeHtml(post.title);
+  }, [isSubreddit, topic]);
   
   /**
    * 获取主题描述或内容
    */
-  const getTopicDescription = (): string => {
+  const description = useMemo(() => {
+    const subreddit = topic as Subreddit;
+    const post = topic as Post;
     if (isSubreddit) {
-      return escapeHtml(truncateText(topic.description || "暂无描述", 150));
+      return escapeHtml(truncateText(subreddit.description || "暂无描述", 150));
     }
-    return escapeHtml(truncateText(topic.selftext || topic.title, 150));
-  };
+    return escapeHtml(truncateText(post.selftext || post.title, 150));
+  }, [isSubreddit, topic]);
   
   /**
    * 获取主题元信息
    */
-  const getTopicMeta = (): string => {
+  const meta = useMemo(() => {
+    const subreddit = topic as Subreddit;
+    const post = topic as Post;
     if (isSubreddit) {
-      return `${formatSubscriberCount(topic.subscriber_count)} 订阅者`;
+      return `${formatSubscriberCount(subreddit.subscriber_count)} 订阅者`;
     }
-    return `${topic.score} 点赞 · ${topic.num_comments} 评论 · ${formatTimestamp(topic.created_utc)}`;
-  };
+    return `${post.score} 点赞 · ${post.num_comments} 评论 · ${formatTimestamp(post.created_utc)}`;
+  }, [isSubreddit, topic]);
   
   /**
    * 获取主题链接
    */
-  const getTopicUrl = (): string => {
+  const url = useMemo(() => {
+    const subreddit = topic as Subreddit;
+    const post = topic as Post;
     if (isSubreddit) {
-      return `https://www.reddit.com${topic.url}`;
+      return `https://www.reddit.com${subreddit.url}`;
     }
-    return topic.url;
-  };
+    return post.url;
+  }, [isSubreddit, topic]);
   
   /**
-   * 获取主题类型标签文本
+   * 获取社区名称
    */
-  const getTypeLabel = (): string => {
-    return isSubreddit ? "社区" : "帖子";
-  };
-  
-  /**
-   * 获取主题类型标签颜色
-   */
-  const getTypeLabelColor = (): string => {
-    return isSubreddit ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800";
-  };
+  const subredditName = useMemo(() => {
+    const subreddit = topic as Subreddit;
+    return isSubreddit ? escapeHtml(subreddit.name) : "";
+  }, [isSubreddit, topic]);
   
   /**
    * 处理卡片点击
@@ -125,22 +150,22 @@ export function TopicCard({ topic, isSelected = false, onToggleSelect, className
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
-            <span className={cn("px-2 py-0.5 text-xs font-medium rounded", getTypeLabelColor())}>
-              {getTypeLabel()}
+            <span className={cn("px-2 py-0.5 text-xs font-medium rounded", getTypeLabelColor(isSubreddit))}>
+              {getTypeLabel(isSubreddit)}
             </span>
             <h3 className="font-semibold text-gray-900 truncate">
-              {getTopicTitle()}
+              {title}
             </h3>
           </div>
           
           <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-            {getTopicDescription()}
+            {description}
           </p>
           
           <div className="flex items-center justify-between text-xs text-gray-500">
-            <span>{getTopicMeta()}</span>
+            <span>{meta}</span>
             {isSubreddit && (
-              <span className="text-gray-400">r/{escapeHtml(topic.name)}</span>
+              <span className="text-gray-400">r/{subredditName}</span>
             )}
           </div>
         </div>
@@ -154,15 +179,15 @@ export function TopicCard({ topic, isSelected = false, onToggleSelect, className
               onToggleSelect?.();
             }}
             className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
-            aria-label={`选择${getTypeLabel()}`}
+            aria-label={`选择${getTypeLabel(isSubreddit)}`}
           />
           <a
-            href={getTopicUrl()}
+            href={url}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
             className="text-xs text-blue-600 hover:text-blue-800"
-            aria-label={`打开${getTypeLabel()}链接`}
+            aria-label={`打开${getTypeLabel(isSubreddit)}链接`}
           >
             查看详情
           </a>
@@ -170,4 +195,4 @@ export function TopicCard({ topic, isSelected = false, onToggleSelect, className
       </div>
     </div>
   );
-}
+});

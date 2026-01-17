@@ -115,18 +115,26 @@ export function isValidSearchKeyword(keyword: string): boolean {
 }
 
 /**
+ * 防抖函数返回类型
+ */
+interface DebouncedFunction<T extends (...args: any[]) => any> {
+  (...args: Parameters<T>): void;
+  cancel(): void;
+}
+
+/**
  * 防抖函数，限制函数调用频率
  * @param func 需要防抖的函数
  * @param wait 等待时间（毫秒）
- * @returns 防抖后的函数
+ * @returns 防抖后的函数，包含 cancel 方法
  */
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
-): (...args: Parameters<T>) => void {
+): DebouncedFunction<T> {
   let timeout: NodeJS.Timeout | null = null;
   
-  return function executedFunction(...args: Parameters<T>) {
+  const debounced = function executedFunction(...args: Parameters<T>) {
     const later = () => {
       timeout = null;
       func(...args);
@@ -136,7 +144,16 @@ export function debounce<T extends (...args: any[]) => any>(
       clearTimeout(timeout);
     }
     timeout = setTimeout(later, wait);
+  } as DebouncedFunction<T>;
+  
+  debounced.cancel = function cancel() {
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = null;
+    }
   };
+  
+  return debounced;
 }
 
 /**

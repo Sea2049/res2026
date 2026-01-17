@@ -29,7 +29,7 @@ interface SearchSuggestionsProps {
 
 /**
  * 搜索建议/自动完成组件
- * 根据输入关键词提供搜索建议，使用防抖优化性能
+ * 根据输入关键词提供搜索建议，使用防抖优化性能，支持智能建议生成
  */
 export function SearchSuggestions({
   keyword,
@@ -42,48 +42,97 @@ export function SearchSuggestions({
   const containerRef = useRef<HTMLDivElement>(null);
 
   /**
-   * 生成搜索建议
-   * 使用 useMemo 优化性能，避免重复计算
+   * 生成智能搜索建议
+   * 根据关键词类型生成不同类别的建议
    */
   const generatedSuggestions = useMemo(() => {
     if (!keyword || keyword.length < 2) {
       return [];
     }
 
-    const lowerKeyword = keyword.toLowerCase();
+    const lowerKeyword = keyword.toLowerCase().trim();
     const suggestions: string[] = [];
 
+    // 技术类关键词建议
+    const techKeywords = [
+      "javascript", "typescript", "python", "java", "react", "vue", "angular",
+      "node.js", "docker", "kubernetes", "aws", "azure", "machine learning",
+      "data science", "web development", "mobile development", "devops"
+    ];
+
+    // 兴趣爱好类关键词建议
+    const hobbyKeywords = [
+      "gaming", "photography", "cooking", "fitness", "travel", "music",
+      "movies", "books", "art", "writing", "cooking", "sports", "cars"
+    ];
+
+    // 通用前缀建议
     const prefixes = [
-      "how to", "best", "top", "guide", "tutorial",
-      "tips", "tricks", "help", "what is", "why"
+      "how to", "best", "top", "guide", "tutorial", "tips", "tricks",
+      "help", "what is", "why", "vs", "review", "comparison"
     ];
 
-    prefixes.forEach(prefix => {
-      suggestions.push(`${prefix} ${keyword}`);
-    });
-
+    // 通用后缀建议
     const suffixes = [
-      "for beginners", "tutorial", "guide", "tips",
-      "best practices", "examples", "vs", "vs"
+      "for beginners", "tutorial", "guide", "tips", "best practices",
+      "examples", "vs", "alternatives", "problems", "solutions"
     ];
 
-    suffixes.forEach(suffix => {
-      suggestions.push(`${keyword} ${suffix}`);
-    });
+    // 根据关键词类型生成建议
+    const isTechKeyword = techKeywords.some(kw => lowerKeyword.includes(kw));
+    const isHobbyKeyword = hobbyKeywords.some(kw => lowerKeyword.includes(kw));
 
-    const commonTopics = [
-      "javascript", "python", "gaming", "cooking",
-      "fitness", "travel", "photography", "music",
-      "movies", "books", "technology", "science"
-    ];
-
-    commonTopics.forEach(topic => {
-      if (topic.includes(lowerKeyword)) {
-        suggestions.push(topic);
+    // 生成前缀建议
+    prefixes.forEach(prefix => {
+      const suggestion = `${prefix} ${keyword}`;
+      if (suggestion.length <= 50) {
+        suggestions.push(suggestion);
       }
     });
 
-    return Array.from(new Set(suggestions)).slice(0, 8);
+    // 生成后缀建议
+    suffixes.forEach(suffix => {
+      const suggestion = `${keyword} ${suffix}`;
+      if (suggestion.length <= 50) {
+        suggestions.push(suggestion);
+      }
+    });
+
+    // 如果是技术关键词，添加相关技术建议
+    if (isTechKeyword) {
+      techKeywords.forEach(tech => {
+        if (tech !== lowerKeyword && tech.includes(lowerKeyword) && suggestions.length < 10) {
+          suggestions.push(tech);
+        }
+      });
+    }
+
+    // 如果是兴趣爱好关键词，添加相关兴趣建议
+    if (isHobbyKeyword) {
+      hobbyKeywords.forEach(hobby => {
+        if (hobby !== lowerKeyword && hobby.includes(lowerKeyword) && suggestions.length < 10) {
+          suggestions.push(hobby);
+        }
+      });
+    }
+
+    // 如果是通用词，添加热门分类建议
+    if (!isTechKeyword && !isHobbyKeyword && keyword.length >= 3) {
+      const popularCategories = [
+        ...techKeywords.slice(0, 3),
+        ...hobbyKeywords.slice(0, 3)
+      ];
+      popularCategories.forEach(cat => {
+        if (cat.includes(lowerKeyword) || lowerKeyword.includes(cat)) {
+          suggestions.push(`${keyword} ${cat}`);
+        }
+      });
+    }
+
+    // 去重并限制数量
+    return Array.from(new Set(suggestions))
+      .filter(s => s.length > keyword.length) // 过滤掉与关键词相同的建议
+      .slice(0, 8);
   }, [keyword]);
 
   /**
