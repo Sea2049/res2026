@@ -76,6 +76,8 @@ export interface KeywordCount {
   word: string;
   count: number;
   sentiment?: "positive" | "negative" | "neutral";
+  tfidf?: number;
+  documentFrequency?: number;
 }
 
 /**
@@ -91,6 +93,16 @@ export interface SentimentResult {
 }
 
 /**
+ * 洞察趋势类型
+ */
+export type InsightTrend = "up" | "down" | "stable";
+
+/**
+ * 洞察严重程度
+ */
+export type InsightSeverity = "low" | "medium" | "high" | "critical";
+
+/**
  * 用户洞察接口
  */
 export interface Insight {
@@ -102,6 +114,62 @@ export interface Insight {
   relatedComments: string[];
   keyword?: string;
   count?: number;
+  // 新增字段
+  trend?: InsightTrend;
+  severity?: InsightSeverity;
+  impactScore?: number;
+  tags?: string[];
+  relatedInsights?: string[];
+  createdAt?: number;
+  sourceTopics?: string[];
+}
+
+/**
+ * 洞察趋势数据点
+ */
+export interface InsightTrendDataPoint {
+  timestamp: number;
+  count: number;
+  avgConfidence: number;
+  sentiment: "positive" | "negative" | "neutral";
+}
+
+/**
+ * 洞察趋势结果
+ */
+export interface InsightTrendResult {
+  insightId: string;
+  trend: InsightTrend;
+  changePercentage: number;
+  dataPoints: InsightTrendDataPoint[];
+  prediction: {
+    nextCount: number;
+    confidence: number;
+  };
+}
+
+/**
+ * 洞察筛选条件
+ */
+export interface InsightFilter {
+  types?: Array<Insight["type"]>;
+  minConfidence?: number;
+  maxConfidence?: number;
+  keywords?: string[];
+  trends?: InsightTrend[];
+  severities?: InsightSeverity[];
+  dateRange?: {
+    start: number;
+    end: number;
+  };
+}
+
+/**
+ * 洞察排序选项
+ */
+export interface InsightSortOption {
+  field: "confidence" | "count" | "createdAt" | "impactScore";
+  direction: "asc" | "desc";
 }
 
 /**

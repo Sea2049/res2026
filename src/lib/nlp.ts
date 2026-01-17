@@ -205,6 +205,164 @@ export const stemmer = (function() {
   };
 })();
 
+/**
+ * 贝叶斯置信度计算器
+ * 基于贝叶斯定理计算洞察的置信度，考虑多个因素：
+ * - 评论数量
+ * - 情感强度
+ * - 指示词匹配度
+ * - 关键词频率
+ */
+class BayesianConfidenceCalculator {
+  /**
+   * 计算贝叶斯置信度
+   * @param commentCount 相关评论数量
+   * @param avgSentimentScore 平均情感分数 (-1 到 1)
+   * @param indicatorScore 指示词匹配得分 (0 到 1)
+   * @param totalComments 总评论数
+   * @returns 置信度 (0 到 1)
+   */
+  calculate(
+    commentCount: number,
+    avgSentimentScore: number,
+    indicatorScore: number,
+    totalComments: number
+  ): number {
+    // 1. 计算似然比 (Likelihood Ratio)
+    const likelihoodRatio = this.calculateLikelihoodRatio(
+      commentCount,
+      avgSentimentScore,
+      indicatorScore
+    );
+
+    // 2. 计算先验概率
+    const prior = this.getPriorProbability(commentCount, totalComments);
+
+    // 3. 贝叶斯更新: P(H|E) = P(E|H) * P(H) / P(E)
+    // 使用对数域计算以避免数值下溢
+    const logLikelihood = Math.log(likelihoodRatio + Number.EPSILON);
+    const logPrior = Math.log(prior + Number.EPSILON);
+    
+    // 后验概率的对数
+    const logPosterior = logPrior + logLikelihood;
+    
+    // 转换回概率域并归一化
+    let posterior = Math.exp(logPosterior);
+    
+    // 归一化 (确保在 0 到 1 之间)
+    posterior = Math.min(1, Math.max(0, posterior));
+
+    // 4. 应用指示词权重进行最终调整
+    const finalConfidence = posterior * (0.7 + indicatorScore * 0.3);
+
+    return Math.min(1, finalConfidence);
+  }
+
+  /**
+   * 计算似然比
+   * @param commentCount 评论数量
+   * @param avgSentimentScore 平均情感分数
+   * @param indicatorScore 指示词得分
+   * @returns 似然比
+   */
+  private calculateLikelihoodRatio(
+    commentCount: number,
+    avgSentimentScore: number,
+    indicatorScore: number
+  ): number {
+    // 评论数量的影响（对数增长）
+    const countFactor = Math.log1p(commentCount) / Math.log(11);
+
+    // 情感分数的影响
+    const sentimentFactor = 1 + Math.abs(avgSentimentScore);
+
+    // 指示词得分的影响
+    const indicatorFactor = 1 + indicatorScore;
+
+    // 综合似然比
+    return countFactor * sentimentFactor * indicatorFactor;
+  }
+
+  /**
+   * 获取先验概率
+   * 根据评论数量调整先验概率
+   * @param commentCount 相关评论数量
+   * @param totalComments 总评论数
+   * @returns 先验概率
+   */
+  private getPriorProbability(
+    commentCount: number,
+    totalComments: number
+  ): number {
+    // 基础先验
+    let prior = 0.5;
+
+    // 根据评论占比调整
+    if (totalComments > 0) {
+      const ratio = commentCount / totalComments;
+      // 使用 sigmoid 函数平滑调整
+      const ratioAdjustment = 1 / (1 + Math.exp(-10 * (ratio - 0.1)));
+      prior = 0.3 + 0.4 * ratioAdjustment;
+    }
+
+    return prior;
+  }
+}
+
+// 创建单例置信度计算器
+const confidenceCalculator = new BayesianConfidenceCalculator();
+
+/**
+ * TF-IDF 计算工具类
+ */
+export class TFIDFCalculator {
+  private documentFrequency: Map<string, number> = new Map();
+  private totalDocuments: number = 0;
+
+  /**
+   * 添加文档并更新词频
+   * @param tokens 文档的词列表
+   */
+  addDocument(tokens: string[]): void {
+    this.totalDocuments++;
+    
+    // 统计词频（使用词干）
+    const tokenSet = new Set(tokens);
+    const uniqueTokens = Array.from(tokenSet);
+    for (const token of uniqueTokens) {
+      this.documentFrequency.set(
+        token,
+        (this.documentFrequency.get(token) || 0) + 1
+      );
+    }
+  }
+
+  /**
+   * 计算 TF-IDF 值
+   * @param term 词语
+   * @param termFrequency 词频
+   * @returns TF-IDF 值
+   */
+  calculateTFIDF(term: string, termFrequency: number): number {
+    // TF (Term Frequency)
+    const tf = termFrequency;
+
+    // IDF (Inverse Document Frequency)
+    const df = this.documentFrequency.get(term) || 1;
+    const idf = Math.log(this.totalDocuments / df);
+
+    return tf * idf;
+  }
+
+  /**
+   * 重置计算器
+   */
+  reset(): void {
+    this.documentFrequency.clear();
+    this.totalDocuments = 0;
+  }
+}
+
 const POSITIVE_KEYWORDS = new Set([
   // 通用正面词
   "good", "great", "amazing", "awesome", "excellent", "best", "better",
@@ -296,27 +454,53 @@ export function extractKeywords(
   config: AnalysisConfig,
   onProgress?: AnalysisProgressCallback
 ): KeywordCount[] {
-  // stem -> { total: number, words: Map<word, count> }
-  const stemMap = new Map<string, { total: number; words: Map<string, number> }>();
-
   const total = comments.length;
   const batchSize = Math.max(1, Math.floor(total / 10)); // 每 10% 触发一次进度回调
+
+  // TF-IDF 计算器实例
+  const tfidfCalculator = new TFIDFCalculator();
+
+  // 词频统计：stem -> { tf: number, words: Map<word, count>, docsWithWord: Set<docId> }
+  const termStats = new Map<
+    string,
+    {
+      tf: number;
+      words: Map<string, number>;
+      docsWithWord: Set<number>;
+    }
+  >();
 
   for (let i = 0; i < comments.length; i++) {
     const comment = comments[i];
     const tokens = tokenize(comment.body);
     const filteredWords = removeStopWords(tokens, config.minKeywordLength);
 
+    // 统计词频（每个词在当前评论中出现的次数）
+    const wordCounts = new Map<string, number>();
     for (const word of filteredWords) {
+      wordCounts.set(word, (wordCounts.get(word) || 0) + 1);
+    }
+
+    // 更新每个词的统计信息
+    const wordEntries = Array.from(wordCounts.entries());
+    for (const [word, count] of wordEntries) {
       const stem = stemmer.stem(word);
-      
-      if (!stemMap.has(stem)) {
-        stemMap.set(stem, { total: 0, words: new Map() });
+
+      if (!termStats.has(stem)) {
+        termStats.set(stem, {
+          tf: 0,
+          words: new Map(),
+          docsWithWord: new Set(),
+        });
       }
-      
-      const entry = stemMap.get(stem)!;
-      entry.total++;
-      entry.words.set(word, (entry.words.get(word) || 0) + 1);
+
+      const stats = termStats.get(stem)!;
+      stats.tf += count;
+      stats.words.set(word, (stats.words.get(word) || 0) + count);
+      stats.docsWithWord.add(i);
+
+      // 更新 TF-IDF 计算器
+      tfidfCalculator.addDocument(filteredWords);
     }
 
     // 每处理一定数量的评论触发一次进度回调
@@ -330,33 +514,57 @@ export function extractKeywords(
     }
   }
 
-  const keywords: KeywordCount[] = Array.from(stemMap.entries())
+  // 计算 TF-IDF 并排序
+  const keywords: KeywordCount[] = Array.from(termStats.entries())
     .map(([stem, data]) => {
       // 找出该词干下出现最多次的原词作为代表
       let bestWord = stem;
       let maxCount = 0;
-      
+
       const wordEntries = Array.from(data.words.entries());
       for (const [word, count] of wordEntries) {
         if (count > maxCount) {
           maxCount = count;
           bestWord = word;
         } else if (count === maxCount && word.length < bestWord.length) {
-           // 频率相同取短的
-           bestWord = word;
+          // 频率相同取短的
+          bestWord = word;
         }
       }
 
+      // 计算 TF-IDF 分数
+      const tfidf = tfidfCalculator.calculateTFIDF(stem, data.tf);
+
+      // 确定情感倾向
       let sentiment: "positive" | "negative" | "neutral" = "neutral";
       if (POSITIVE_KEYWORDS.has(bestWord) || POSITIVE_KEYWORDS.has(stem)) {
         sentiment = "positive";
       } else if (NEGATIVE_KEYWORDS.has(bestWord) || NEGATIVE_KEYWORDS.has(stem)) {
         sentiment = "negative";
       }
-      return { word: bestWord, count: data.total, sentiment };
+
+      return {
+        word: bestWord,
+        count: data.tf,
+        sentiment,
+        tfidf,
+        documentFrequency: data.docsWithWord.size,
+      };
     })
-    .sort((a, b) => b.count - a.count)
-    .slice(0, config.topKeywordsCount);
+    // 综合排序：TF-IDF * (1 + 情感权重)
+    .map((kw) => ({
+      ...kw,
+      score:
+        kw.tfidf *
+        (kw.sentiment !== "neutral" ? 1.2 : 1),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, config.topKeywordsCount)
+    .map(({ word, count, sentiment }) => ({
+      word,
+      count,
+      sentiment,
+    }));
 
   // 触发完成进度回调
   if (onProgress) {
@@ -612,7 +820,7 @@ function extractInsights(
       type: data.type,
       title,
       description: descriptions[data.type],
-      confidence: Math.min(data.comments.length / 10, 1),
+      confidence: calculateInsightConfidence(data.type, data.comments.length, comments),
       relatedComments: data.comments,
       keyword: data.keyword,
       count: data.comments.length,
@@ -620,6 +828,69 @@ function extractInsights(
   }
 
   return insights.sort((a, b) => b.confidence - a.confidence).slice(0, 20);
+}
+
+/**
+ * 计算洞察的置信度
+ * 使用贝叶斯置信度计算器，考虑评论数量、情感强度和指示词匹配度
+ * @param insightType 洞察类型
+ * @param commentCount 相关评论数量
+ * @param allComments 所有评论
+ * @returns 置信度 (0 到 1)
+ */
+function calculateInsightConfidence(
+  insightType: "pain_point" | "feature_request" | "praise" | "question",
+  commentCount: number,
+  allComments: SentimentComment[]
+): number {
+  // 1. 计算平均情感分数
+  let totalSentimentScore = 0;
+  let analyzedCount = 0;
+  
+  for (const comment of allComments) {
+    if (comment.sentimentScore !== undefined) {
+      totalSentimentScore += comment.sentimentScore;
+      analyzedCount++;
+    }
+  }
+  
+  const avgSentimentScore = analyzedCount > 0 
+    ? totalSentimentScore / analyzedCount 
+    : 0;
+
+  // 2. 计算指示词得分
+  const indicatorScore = calculateIndicatorScore(insightType);
+
+  // 3. 使用贝叶斯置信度计算器
+  return confidenceCalculator.calculate(
+    commentCount,
+    avgSentimentScore,
+    indicatorScore,
+    allComments.length
+  );
+}
+
+/**
+ * 根据洞察类型计算指示词得分
+ * @param insightType 洞察类型
+ * @returns 指示词得分 (0 到 1)
+ */
+function calculateIndicatorScore(
+  insightType: "pain_point" | "feature_request" | "praise" | "question"
+): number {
+  // 基于各类型指示词的数量和权重计算得分
+  switch (insightType) {
+    case "pain_point":
+      return Math.min(PAIN_POINT_INDICATORS.size / 15, 1);
+    case "feature_request":
+      return Math.min(FEATURE_REQUEST_INDICATORS.size / 15, 1);
+    case "praise":
+      return 0.5; // 赞美主要依赖情感分析
+    case "question":
+      return Math.min(QUESTION_INDICATORS.size / 10, 1);
+    default:
+      return 0.3;
+  }
 }
 
 export function getInsightTypeStyle(

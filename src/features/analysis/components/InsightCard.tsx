@@ -1,6 +1,74 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import type { Insight, SentimentComment } from "@/lib/types";
 import { getInsightTypeStyle, getInsightIconColor } from "@/lib/nlp";
+
+/**
+ * 洞察类型标签映射
+ */
+const INSIGHT_TYPE_LABELS: Record<Insight["type"], string> = {
+  pain_point: "用户痛点",
+  feature_request: "功能需求",
+  praise: "用户赞美",
+  question: "用户问题",
+};
+
+/**
+ * 洞察类型描述映射
+ */
+const INSIGHT_TYPE_DESCRIPTIONS: Record<Insight["type"], string> = {
+  pain_point: "用户遇到的问题或不满意的地方",
+  feature_request: "用户期望添加或改进的功能",
+  praise: "用户表达满意或赞赏的内容",
+  question: "用户提出的疑问或求助",
+};
+
+/**
+ * 洞察类型图标映射
+ */
+const INSIGHT_TYPE_ICONS: Record<Insight["type"], string> = {
+  pain_point: "🔴",
+  feature_request: "🔵",
+  praise: "🟢",
+  question: "🟡",
+};
+
+/**
+ * 趋势图标映射
+ */
+const TREND_ICONS: Record<Insight["trend"], string> = {
+  up: "📈",
+  down: "📉",
+  stable: "➡️",
+};
+
+/**
+ * 趋势标签映射
+ */
+const TREND_LABELS: Record<Insight["trend"], string> = {
+  up: "上升",
+  down: "下降",
+  stable: "稳定",
+};
+
+/**
+ * 严重程度标签映射
+ */
+const SEVERITY_LABELS: Record<Insight["severity"], string> = {
+  low: "低",
+  medium: "中",
+  high: "高",
+  critical: "严重",
+};
+
+/**
+ * 严重程度颜色映射
+ */
+const SEVERITY_COLORS: Record<Insight["severity"], string> = {
+  low: "bg-gray-100 text-gray-700",
+  medium: "bg-yellow-100 text-yellow-700",
+  high: "bg-orange-100 text-orange-700",
+  critical: "bg-red-100 text-red-700",
+};
 
 /**
  * InsightCard 组件 Props 接口
@@ -37,11 +105,77 @@ interface InsightCardProps {
 }
 
 /**
+ * 渲染评论项
+ * @param comment 评论数据
+ * @param index 索引
+ * @returns JSX 元素
+ */
+function renderCommentItem(comment: SentimentComment, index: number): JSX.Element {
+  // 构建 Reddit 评论链接
+  const commentUrl = comment.permalink 
+    ? `https://www.reddit.com${comment.permalink}`
+    : comment.subreddit && comment.link_id
+    ? `https://www.reddit.com/r/${comment.subreddit}/comments/${comment.link_id.replace('t3_', '')}/_/${comment.id}`
+    : null;
+
+  return (
+    <div 
+      key={comment.id} 
+      className="text-xs bg-gray-50 p-3 rounded border border-gray-100 hover:bg-gray-100 transition-colors"
+    >
+      <p className="text-gray-700 line-clamp-3">{comment.body}</p>
+      <div className="mt-2 flex items-center justify-between text-gray-400 text-[10px]">
+        <span className="flex items-center gap-1">
+          <span className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-[9px] font-medium">
+            {comment.author.charAt(0).toUpperCase()}
+          </span>
+          <span>u/{comment.author}</span>
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1">
+            <span>▲</span>
+            <span>{comment.score}</span>
+          </span>
+          {commentUrl && (
+            <a
+              href={commentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:text-blue-700 hover:underline flex items-center gap-0.5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span>查看原帖</span>
+              <span className="text-[8px]">↗</span>
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 处理"剩余评论"的展开/收起
+ * @param e 鼠标事件
+ * @param setShowRemainingComments 设置显示剩余评论的函数
+ * @param showRemainingComments 当前显示状态
+ */
+function handleToggleRemainingComments(
+  e: React.MouseEvent,
+  setShowRemainingComments: React.Dispatch<React.SetStateAction<boolean>>,
+  showRemainingComments: boolean
+): void {
+  e.stopPropagation();
+  setShowRemainingComments(!showRemainingComments);
+}
+
+/**
  * 洞察卡片组件
  * 展示分析发现的用户痛点、功能需求、问题或赞美信息
  * 默认展示前 2 条相关评论预览，无需点击即可快速查看
+ * 使用 memo 包装以优化性能，避免不必要的重渲染
  */
-export function InsightCard({
+export const InsightCard = memo(function InsightCard({
   insight,
   allComments = [],
   isExpanded = false,
@@ -53,29 +187,17 @@ export function InsightCard({
   // 内部状态：控制"剩余评论"的展开/收起
   const [showRemainingComments, setShowRemainingComments] = useState(false);
 
-  const bgColor = getInsightTypeStyle(insight.type);
-  const iconColor = getInsightIconColor(insight.type);
-
-  const typeLabels: Record<Insight["type"], string> = {
-    pain_point: "用户痛点",
-    feature_request: "功能需求",
-    praise: "用户赞美",
-    question: "用户问题",
-  };
-
-  const typeDescriptions: Record<Insight["type"], string> = {
-    pain_point: "用户遇到的问题或不满意的地方",
-    feature_request: "用户期望添加或改进的功能",
-    praise: "用户表达满意或赞赏的内容",
-    question: "用户提出的疑问或求助",
-  };
-
-  const icons: Record<Insight["type"], string> = {
-    pain_point: "🔴",
-    feature_request: "🔵",
-    praise: "🟢",
-    question: "🟡",
-  };
+  // 获取洞察类型样式
+  const bgColor = useMemo(
+    () => getInsightTypeStyle(insight.type),
+    [insight.type]
+  );
+  
+  // 获取洞察类型图标颜色
+  const iconColor = useMemo(
+    () => getInsightIconColor(insight.type),
+    [insight.type]
+  );
 
   // 构建评论 ID 映射，用于快速查找
   const commentIdMap = useMemo(() => {
@@ -99,12 +221,12 @@ export function InsightCard({
   }, [insight.relatedComments, commentIdMap]);
 
   // 统计找到和未找到的评论数量
-  const { foundCount, missingCount, missingIds } = useMemo(() => {
-    const found = new Set<SentimentComment>();
+  const { foundCount, missingCount } = useMemo(() => {
+    const found = new Set<string>();
     const missing: string[] = [];
     for (const id of insight.relatedComments) {
       if (commentIdMap.has(id)) {
-        found.add(commentIdMap.get(id)!);
+        found.add(id);
       } else {
         missing.push(id);
       }
@@ -112,72 +234,67 @@ export function InsightCard({
     return {
       foundCount: found.size,
       missingCount: missing.length,
-      missingIds: missing,
     };
   }, [insight.relatedComments, commentIdMap]);
 
   // 默认展示前 2 条评论预览
-  const previewComments = relatedCommentsData.slice(0, 2);
+  const previewComments = useMemo(
+    () => relatedCommentsData.slice(0, 2),
+    [relatedCommentsData]
+  );
+  
   // 剩余的评论（从第 3 条开始）
-  const remainingComments = relatedCommentsData.slice(2);
-  const hasMoreComments = remainingComments.length > 0;
-  const remainingCount = remainingComments.length;
+  const remainingComments = useMemo(
+    () => relatedCommentsData.slice(2),
+    [relatedCommentsData]
+  );
+  
+  // 是否有更多评论
+  const hasMoreComments = useMemo(
+    () => remainingComments.length > 0,
+    [remainingComments]
+  );
+  
+  // 剩余评论数量
+  const remainingCount = useMemo(
+    () => remainingComments.length,
+    [remainingComments]
+  );
 
-  // 处理"剩余评论"的展开/收起
-  const handleToggleRemainingComments = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowRemainingComments(!showRemainingComments);
-  };
+  // 处理展开状态变化
+  const handleExpandChange = useCallback(() => {
+    if (onExpandChange) {
+      onExpandChange(!isExpanded);
+    }
+  }, [onExpandChange, isExpanded]);
 
   // 处理卡片点击
-  const handleCardClick = () => {
+  const handleCardClick = useCallback(() => {
     onClick?.();
-  };
+  }, [onClick]);
 
-  // 渲染评论项
-  const renderCommentItem = (comment: SentimentComment, index: number) => {
-    // 构建 Reddit 评论链接
-    const commentUrl = comment.permalink 
-      ? `https://www.reddit.com${comment.permalink}`
-      : comment.subreddit && comment.link_id
-      ? `https://www.reddit.com/r/${comment.subreddit}/comments/${comment.link_id.replace('t3_', '')}/_/${comment.id}`
-      : null;
+  // 获取洞察类型图标
+  const icon = useMemo(
+    () => INSIGHT_TYPE_ICONS[insight.type],
+    [insight.type]
+  );
 
-    return (
-      <div 
-        key={comment.id} 
-        className="text-xs bg-gray-50 p-3 rounded border border-gray-100 hover:bg-gray-100 transition-colors"
-      >
-        <p className="text-gray-700 line-clamp-3">{comment.body}</p>
-        <div className="mt-2 flex items-center justify-between text-gray-400 text-[10px]">
-          <span className="flex items-center gap-1">
-            <span className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-[9px] font-medium">
-              {comment.author.charAt(0).toUpperCase()}
-            </span>
-            <span>u/{comment.author}</span>
-          </span>
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1">
-              <span>▲</span>
-              <span>{comment.score}</span>
-            </span>
-            {commentUrl && (
-              <a
-                href={commentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:text-blue-700 hover:underline flex items-center gap-0.5"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <span>查看原帖</span>
-                <span className="text-[8px]">↗</span>
-              </a>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // 获取趋势图标
+  const trendIcon = useMemo(
+    () => insight.trend ? TREND_ICONS[insight.trend] : null,
+    [insight.trend]
+  );
+
+  // 获取严重程度标签和颜色
+  const severityLabel = useMemo(
+    () => insight.severity ? SEVERITY_LABELS[insight.severity] : null,
+    [insight.severity]
+  );
+  
+  const severityColor = useMemo(
+    () => insight.severity ? SEVERITY_COLORS[insight.severity] : null,
+    [insight.severity]
+  );
 
   return (
     <div
@@ -187,13 +304,13 @@ export function InsightCard({
       <div className={`p-4 ${bgColor}`}>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
-            <span className={`text-xl ${iconColor}`}>{icons[insight.type]}</span>
+            <span className={`text-xl ${iconColor}`}>{icon}</span>
             <div>
               <h4 className="font-semibold">
-                {typeLabels[insight.type]}
+                {INSIGHT_TYPE_LABELS[insight.type]}
               </h4>
               <p className="text-xs text-gray-500 mt-0.5">
-                {typeDescriptions[insight.type]}
+                {INSIGHT_TYPE_DESCRIPTIONS[insight.type]}
               </p>
             </div>
           </div>
@@ -201,6 +318,18 @@ export function InsightCard({
             {insight.count && insight.count > 1 && (
               <span className="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded-full">
                 {insight.count} 条
+              </span>
+            )}
+            {/* 严重程度标签 */}
+            {severityLabel && (
+              <span className={`px-2 py-1 text-xs rounded-full ${severityColor}`}>
+                {severityLabel}
+              </span>
+            )}
+            {/* 趋势图标 */}
+            {trendIcon && (
+              <span className="text-lg" title={`趋势: ${TREND_LABELS[insight.trend!]}`}>
+                {trendIcon}
               </span>
             )}
             <span className="text-xs font-medium text-gray-600">
@@ -242,7 +371,7 @@ export function InsightCard({
             {hasMoreComments && (
               <button
                 className="w-full mt-2 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1"
-                onClick={handleToggleRemainingComments}
+                onClick={(e) => handleToggleRemainingComments(e, setShowRemainingComments, showRemainingComments)}
               >
                 <span>{showRemainingComments ? `收起剩余 ${remainingCount} 条评论` : `查看剩余 ${remainingCount} 条评论`}</span>
                 <span className="text-lg">{showRemainingComments ? "▲" : "▼"}</span>
@@ -268,4 +397,4 @@ export function InsightCard({
       </div>
     </div>
   );
-}
+});
