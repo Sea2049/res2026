@@ -38,7 +38,7 @@ describe('useSearchHistory', () => {
     });
     
     expect(result.current.history).toEqual(['javascript']);
-    expect(localStorage.getItem('reddit_search_history')).toBe(JSON.stringify(['javascript']));
+    expect(localStorage.setItem).toHaveBeenCalledWith('reddit_search_history', JSON.stringify(['javascript']));
   });
 
   /**
@@ -80,13 +80,13 @@ describe('useSearchHistory', () => {
    */
   it('不应该添加空关键词到历史', () => {
     const { result } = renderHook(() => useSearchHistory());
-    
+
     act(() => {
       result.current.addToHistory('');
     });
-    
+
     expect(result.current.history).toEqual([]);
-    expect(localStorage.getItem('reddit_search_history')).toBeNull();
+    expect(localStorage.setItem).not.toHaveBeenCalled();
   });
 
   /**
@@ -107,7 +107,7 @@ describe('useSearchHistory', () => {
     });
     
     expect(result.current.history).toEqual([]);
-    expect(localStorage.getItem('reddit_search_history')).toBeNull();
+    expect(localStorage.removeItem).toHaveBeenCalledWith('reddit_search_history');
   });
 
   /**
@@ -137,11 +137,18 @@ describe('useSearchHistory', () => {
    * 测试：从 localStorage 加载历史记录
    */
   it('应该从 localStorage 加载历史记录', () => {
-    localStorage.setItem('reddit_search_history', JSON.stringify(['javascript', 'python']));
+    const mockHistory = ['javascript', 'python'];
     
+    (localStorage.getItem as jest.Mock).mockReturnValueOnce(JSON.stringify(mockHistory));
+
     const { result } = renderHook(() => useSearchHistory());
     
+    expect(localStorage.getItem).toHaveBeenCalledWith('reddit_search_history');
     expect(result.current.history).toEqual(['javascript', 'python']);
+  });
+
+  afterEach(() => {
+    (localStorage.getItem as jest.Mock).mockRestore();
   });
 
   /**

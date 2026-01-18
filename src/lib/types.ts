@@ -279,3 +279,89 @@ export interface AnalysisProgress {
  * 分析进度回调类型
  */
 export type AnalysisProgressCallback = (progress: AnalysisProgress) => void;
+
+/**
+ * 深度洞见生成状态
+ */
+export type DeepInsightStatus = "idle" | "loading" | "success" | "error";
+
+/**
+ * 深度洞见结果接口
+ */
+export interface DeepInsight {
+  /**
+   * 洞见唯一标识
+   */
+  id: string;
+  /**
+   * 生成时间
+   */
+  createdAt: number;
+  /**
+   * 分析主题列表
+   */
+  topics: SearchResult[];
+  /**
+   * AI生成的深度洞见内容（Markdown格式）
+   */
+  content: string;
+  /**
+   * 关键发现摘要
+   */
+  keyFindings: string[];
+  /**
+   * 行动建议
+   */
+  recommendations: Array<{
+    priority: "high" | "medium" | "low";
+    action: string;
+    expectedImpact: string;
+    difficulty: string;
+  }>;
+  /**
+   * Token使用统计
+   */
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+}
+
+/**
+ * 深度洞见会话接口
+ */
+export interface DeepInsightSession {
+  /**
+   * 会话唯一标识
+   */
+  id: string;
+  /**
+   * 生成状态
+   */
+  status: DeepInsightStatus;
+  /**
+   * 进度百分比（0-100）
+   */
+  progress: number;
+  /**
+   * 当前步骤描述
+   */
+  currentStep: string;
+  /**
+   * 洞见结果
+   */
+  result: DeepInsight | null;
+  /**
+   * 错误信息
+   */
+  error: string | null;
+  /**
+   * 开始时间
+   */
+  createdAt: number;
+  /**
+   * 完成时间
+   */
+  completedAt: number | null;
+}

@@ -25,6 +25,7 @@
 | CODE_DIRECTORY.md | MD | 代码目录，记录所有源文件的位置和作用 |
 | README.md | MD | 项目说明文档，包含功能介绍和使用指南 |
 | DEPLOYMENT.md | MD | 部署文档，阿里云 ECS 环境部署指南 |
+| TESTING.md | MD | 测试文档，包含测试策略、覆盖率和最佳实践 |
 
 ## 二、源代码目录结构
 
@@ -122,10 +123,10 @@ features 目录按业务功能组织代码，每个子目录代表一个独立�
 
 | 文件路径 | 类型 | 说明 |
 |----------|------|------|
-| src/features/topic-selection/hooks/__tests__/useTopicSearch.test.ts | TS | useTopicSearch 钩子的单元测试，覆盖搜索场景 |
-| src/features/topic-selection/hooks/__tests__/useSearchHistory.test.ts | TS | useSearchHistory 钩子的单元测试，覆盖历史管理场景 |
-| src/features/topic-selection/components/__tests__/TopicSearchInput.test.tsx | TSX | TopicSearchInput 组件的单元测试 |
-| src/features/topic-selection/components/__tests__/TopicCard.test.tsx | TSX | TopicCard 组件的单元测试 |
+| src/features/topic-selection/hooks/__tests__/useTopicSearch.test.ts | TS | useTopicSearch 钩子的单元测试，覆盖搜索场景（8个测试用例） |
+| src/features/topic-selection/hooks/__tests__/useSearchHistory.test.ts | TS | useSearchHistory 钩子的单元测试，覆盖历史管理场景（4个测试用例） |
+| src/features/topic-selection/components/__tests__/TopicSearchInput.test.tsx | TSX | TopicSearchInput 组件的单元测试（4个测试用例） |
+| src/features/topic-selection/components/__tests__/TopicCard.test.tsx | TSX | TopicCard 组件的单元测试（4个测试用例） |
 
 ### 5.2 分析模块（analysis）
 
@@ -146,6 +147,10 @@ features 目录按业务功能组织代码，每个子目录代表一个独立�
 | src/features/analysis/components/KeywordCloud.tsx | TSX | 关键词云组件，以词云形式展示高频关键词 |
 | src/features/analysis/components/AnalysisProgress.tsx | TSX | 分析进度组件，展示当前分析阶段和整体进度 |
 | src/features/analysis/components/InsightCard.tsx | TSX | 洞察卡片组件，呈现检测到的用户痛点和建议，**默认展示前 2 条相关评论预览，支持展开查看全部评论** |
+| src/features/analysis/components/InsightFilters.tsx | TSX | 洞察筛选组件，提供按类型、情感和关键词过滤洞察的功能 |
+| src/features/analysis/components/InsightGraph.tsx | TSX | 洞察图谱组件，以图谱形式展示洞察之间的关系和关联性 |
+| src/features/analysis/components/InsightTrendChart.tsx | TSX | 洞察趋势图表组件，支持按时间维度分析洞察变化 |
+| src/features/analysis/components/DeepInsights.tsx | TSX | AI深度洞见组件，展示GLM-4模型生成的深度分析报告，支持Markdown渲染和导出 |
 | src/features/analysis/components/EmptyState.tsx | TSX | 空状态组件，在无数据时显示友好的空状态提示 |
 
 #### 5.2.3 业务逻辑
@@ -153,6 +158,15 @@ features 目录按业务功能组织代码，每个子目录代表一个独立�
 | 文件路径 | 类型 | 说明 |
 |----------|------|------|
 | src/features/analysis/hooks/useAnalysis.ts | TS | 分析流程钩子，管理分析状态机和流水线处理 |
+| src/features/analysis/hooks/useDeepInsights.ts | TS | 深度洞见生成钩子，管理AI洞见生成状态和错误处理 |
+| src/features/analysis/hooks/useInsightTrend.ts | TS | 洞察趋势钩子，负责洞察趋势数据的计算和聚合，支持按时间维度分析洞察变化 |
+
+#### 5.2.4 单元测试
+
+| 文件路径 | 类型 | 说明 |
+|----------|------|------|
+| src/features/analysis/hooks/__tests__/useAnalysis.test.ts | TS | useAnalysis 钩子的单元测试，覆盖分析流程（9个测试用例） |
+| src/features/analysis/components/__tests__/AnalysisProgress.test.tsx | TSX | AnalysisProgress 组件的单元测试（8个测试用例） |
 
 ## 六、基础支撑目录（lib）
 
@@ -173,6 +187,13 @@ lib 目录包含项目的工具函数、类型定义、外部服务封装、API 
 | src/lib/nlp.ts | TS | 自然语言处理模块(v2.3.0优化版)，包含分词、情感分析和关键词提取，新增LRU缓存、MinHeap堆算法、批量TF-IDF计算等性能优化 |
 | src/lib/errors.ts | TS | 错误处理模块，定义统一的错误类型和处理机制 |
 
+### 6.2.1 AI集成模块
+
+| 文件路径 | 类型 | 说明 |
+|----------|------|------|
+| src/lib/ai/zhipu-ai.ts | TS | 智谱AI客户端，封装GLM-4 API调用逻辑，实现JWT token生成和请求签名 |
+| src/lib/ai/prompts.ts | TS | Prompt模板系统，将分析结果转换为AI友好的格式，包含结构化的分析维度 |
+
 ### 6.3 Worker 线程
 
 | 文件路径 | 类型 | 说明 |
@@ -184,7 +205,9 @@ lib 目录包含项目的工具函数、类型定义、外部服务封装、API 
 
 | 文件路径 | 类型 | 说明 |
 |----------|------|------|
-| src/lib/__tests__/nlp.test.ts | TS | NLP 模块的单元测试，覆盖核心处理函数 |
+| src/lib/__tests__/nlp.test.ts | TS | NLP 模块的单元测试，覆盖核心处理函数（7个测试用例） |
+| src/lib/api/__tests__/fetch-helper.test.ts | TS | Fetch 辅助工具的单元测试，覆盖多策略回退机制（8个测试用例） |
+| src/lib/api/__tests__/reddit.test.ts | TS | Reddit API 客户端的单元测试，覆盖所有 API 方法（9个测试用例） |
 
 ### 6.5 类型定义
 
@@ -198,24 +221,25 @@ lib 目录包含项目的工具函数、类型定义、外部服务封装、API 
 
 | 文件类型 | 数量 | 占比 |
 |----------|------|------|
-| TypeScript 组件（.tsx） | 29 | 63.0% |
-| TypeScript 工具（.ts） | 17 | 36.9% |
+| TypeScript 组件（.tsx） | 35 | 61.4% |
+| TypeScript 工具（.ts） | 22 | 38.6% |
+| 测试文件（.test.ts/.test.tsx） | 12 | - |
 | 配置文件 | 18 | - |
-| 文档文件 | 4 | - |
+| 文档文件 | 5 | - |
 
 ### 7.2 按目录统计
 
 | 目录 | 组件 | 工具 | 测试 | API | Worker | 小计 |
 |------|------|------|------|-----|------|------|
-| src/app | 2 | 0 | 0 | 3 | 0 | 5 |
-| src/components/ui | 13 | 0 | 0 | 0 | 0 | 13 |
+| src/app | 2 | 0 | 0 | 4 | 0 | 6 |
+| src/components/ui | 13 | 0 | 3 | 0 | 0 | 16 |
 | src/components | 0 | 1 | 0 | 0 | 0 | 1 |
-| src/features/topic-selection | 5 | 2 | 2 | 0 | 0 | 9 |
-| src/features/analysis | 6 | 1 | 0 | 0 | 0 | 7 |
-| src/lib/api | 0 | 2 | 0 | 0 | 0 | 2 |
+| src/features/topic-selection | 5 | 2 | 4 | 0 | 0 | 11 |
+| src/features/analysis | 9 | 2 | 1 | 0 | 0 | 12 |
+| src/lib/api | 0 | 2 | 2 | 0 | 0 | 4 |
 | src/lib | 0 | 4 | 1 | 0 | 2 | 7 |
-| 测试文件 | 0 | 0 | 6 | 0 | 0 | 6 |
-| **总计** | **29** | **10** | **9** | **3** | **2** | **53** |
+| src/integration | 0 | 0 | 1 | 0 | 0 | 1 |
+| **总计** | **35** | **12** | **12** | **4** | **2** | **65** |
 
 ### 7.3 文件清单
 
@@ -223,59 +247,109 @@ lib 目录包含项目的工具函数、类型定义、外部服务封装、API 
 
 | 序号 | 文件路径 |
 |------|----------|
-| 1 | src/app/api/reddit/comments/route.ts |
-| 2 | src/app/api/reddit/search/route.ts |
-| 3 | src/app/api/reddit/subreddit/route.ts |
-| 4 | src/app/layout.tsx |
-| 5 | src/app/page.tsx |
-| 6 | src/components/index.ts |
-| 7 | src/components/ui/alert.tsx |
-| 8 | src/components/ui/badge.tsx |
-| 9 | src/components/ui/button.tsx |
-| 10 | src/components/ui/card.tsx |
-| 11 | src/components/ui/dialog.tsx |
-| 12 | src/components/ui/dropdown-menu.tsx |
-| 13 | src/components/ui/input.tsx |
-| 14 | src/components/ui/progress.tsx |
-| 15 | src/components/ui/select.tsx |
-| 16 | src/components/ui/separator.tsx |
-| 17 | src/components/ui/spinner.tsx |
-| 18 | src/components/ui/tabs.tsx |
-| 19 | src/components/ui/tooltip.tsx |
-| 20 | src/features/analysis/components/AnalysisProgress.tsx |
-| 21 | src/features/analysis/components/CommentList.tsx |
-| 22 | src/features/analysis/components/EmptyState.tsx |
-| 23 | src/features/analysis/components/InsightCard.tsx |
-| 24 | src/features/analysis/components/KeywordCloud.tsx |
-| 25 | src/features/analysis/components/SentimentChart.tsx |
-| 26 | src/features/analysis/hooks/useAnalysis.ts |
-| 27 | src/features/analysis/index.tsx |
-| 28 | src/features/topic-selection/components/AdvancedSearchOptions.tsx |
-| 29 | src/features/topic-selection/components/SearchSuggestions.tsx |
-| 30 | src/features/topic-selection/components/TopicCard.tsx |
-| 31 | src/features/topic-selection/components/TopicList.tsx |
-| 32 | src/features/topic-selection/components/TopicSearchInput.tsx |
-| 33 | src/features/topic-selection/components/__tests__/TopicCard.test.tsx |
-| 34 | src/features/topic-selection/components/__tests__/TopicSearchInput.test.tsx |
-| 35 | src/features/topic-selection/hooks/__tests__/useSearchHistory.test.ts |
-| 36 | src/features/topic-selection/hooks/__tests__/useTopicSearch.test.ts |
-| 37 | src/features/topic-selection/hooks/useSearchHistory.ts |
-| 38 | src/features/topic-selection/hooks/useTopicSearch.ts |
-| 39 | src/features/topic-selection/index.tsx |
-| 40 | src/lib/__tests__/nlp.test.ts |
-| 41 | src/lib/api/fetch-helper.ts |
-| 42 | src/lib/api/reddit.ts |
-| 43 | src/lib/errors.ts |
-| 44 | src/lib/nlp.ts |
-| 45 | src/lib/types.ts |
-| 46 | src/lib/utils.ts |
-| 47 | src/lib/workers/nlp.worker.ts |
-| 48 | src/lib/workers/worker-manager.ts |
+| 1 | src/app/api/ai/insights/route.ts |
+| 2 | src/app/api/reddit/comments/route.ts |
+| 3 | src/app/api/reddit/search/route.ts |
+| 4 | src/app/api/reddit/subreddit/route.ts |
+| 5 | src/app/layout.tsx |
+| 6 | src/app/page.tsx |
+| 7 | src/components/index.ts |
+| 8 | src/components/ui/__tests__/Button.test.tsx |
+| 9 | src/components/ui/__tests__/Card.test.tsx |
+| 10 | src/components/ui/__tests__/Input.test.tsx |
+| 11 | src/components/ui/alert.tsx |
+| 12 | src/components/ui/badge.tsx |
+| 13 | src/components/ui/button.tsx |
+| 14 | src/components/ui/card.tsx |
+| 15 | src/components/ui/dialog.tsx |
+| 16 | src/components/ui/dropdown-menu.tsx |
+| 17 | src/components/ui/input.tsx |
+| 18 | src/components/ui/progress.tsx |
+| 19 | src/components/ui/select.tsx |
+| 20 | src/components/ui/separator.tsx |
+| 21 | src/components/ui/spinner.tsx |
+| 22 | src/components/ui/tabs.tsx |
+| 23 | src/components/ui/tooltip.tsx |
+| 24 | src/features/analysis/components/AnalysisProgress.tsx |
+| 25 | src/features/analysis/components/CommentList.tsx |
+| 26 | src/features/analysis/components/DeepInsights.tsx |
+| 27 | src/features/analysis/components/EmptyState.tsx |
+| 28 | src/features/analysis/components/InsightCard.tsx |
+| 29 | src/features/analysis/components/InsightFilters.tsx |
+| 30 | src/features/analysis/components/InsightGraph.tsx |
+| 31 | src/features/analysis/components/InsightTrendChart.tsx |
+| 32 | src/features/analysis/components/KeywordCloud.tsx |
+| 33 | src/features/analysis/components/SentimentChart.tsx |
+| 34 | src/features/analysis/hooks/useAnalysis.ts |
+| 35 | src/features/analysis/hooks/useDeepInsights.ts |
+| 36 | src/features/analysis/hooks/useInsightTrend.ts |
+| 37 | src/features/analysis/index.tsx |
+| 38 | src/features/topic-selection/components/AdvancedSearchOptions.tsx |
+| 39 | src/features/topic-selection/components/SearchSuggestions.tsx |
+| 40 | src/features/topic-selection/components/TopicCard.tsx |
+| 41 | src/features/topic-selection/components/TopicList.tsx |
+| 42 | src/features/topic-selection/components/TopicSearchInput.tsx |
+| 43 | src/features/topic-selection/components/__tests__/TopicCard.test.tsx |
+| 44 | src/features/topic-selection/components/__tests__/TopicSearchInput.test.tsx |
+| 45 | src/features/topic-selection/hooks/__tests__/useSearchHistory.test.ts |
+| 46 | src/features/topic-selection/hooks/__tests__/useTopicSearch.test.ts |
+| 47 | src/features/topic-selection/hooks/useSearchHistory.ts |
+| 48 | src/features/topic-selection/hooks/useTopicSearch.ts |
+| 49 | src/features/topic-selection/index.tsx |
+| 50 | src/integration/__tests__/user-flow.test.ts |
+| 51 | src/lib/__tests__/nlp.test.ts |
+| 52 | src/lib/ai/prompts.ts |
+| 53 | src/lib/ai/zhipu-ai.ts |
+| 54 | src/lib/api/fetch-helper.ts |
+| 55 | src/lib/api/reddit.ts |
+| 56 | src/lib/errors.ts |
+| 57 | src/lib/nlp.ts |
+| 58 | src/lib/types.ts |
+| 59 | src/lib/utils.ts |
+| 60 | src/lib/workers/nlp.worker.ts |
+| 61 | src/lib/workers/worker-manager.ts |
 
-## 八、更新日志
+## 八、测试覆盖情况
+
+### 8.1 测试统计
+
+- **测试套件总数**: 12 个
+- **测试用例总数**: 约 85+ 个
+- **整体覆盖率**: 约 30%
+
+### 8.2 模块覆盖率
+
+| 模块 | 语句覆盖率 | 分支覆盖率 | 函数覆盖率 | 行覆盖率 |
+|------|-----------|-----------|-----------|---------|
+| lib/api/fetch-helper.ts | 100% | 85.71% | 100% | 100% |
+| lib/api/reddit.ts | 51.06% | 38.15% | 56.25% | 51.14% |
+| lib/nlp.ts | 48.35% | 50% | 47.05% | 49.22% |
+| features/analysis/hooks/useAnalysis.ts | 54.61% | 24% | 61.76% | 55.55% |
+| features/analysis/components/AnalysisProgress.tsx | 92.06% | 92.85% | 100% | 94.73% |
+| features/topic-selection/hooks/useTopicSearch.ts | 55.75% | 45.83% | 43.47% | 57.4% |
+| features/topic-selection/components/TopicCard.tsx | 97.95% | 83.33% | 100% | 97.87% |
+| components/ui/Button.tsx | ~95% | ~85% | 100% | ~95% |
+| components/ui/Card.tsx | ~95% | ~85% | 100% | ~95% |
+| components/ui/Input.tsx | ~90% | ~80% | 100% | ~90% |
+
+### 8.3 测试类型分布
+
+| 测试类型 | 文件数量 | 说明 |
+|----------|----------|------|
+| 单元测试（组件） | 5 | Button、Card、Input、TopicCard、TopicSearchInput |
+| 单元测试（钩子） | 5 | useAnalysis、useTopicSearch、useSearchHistory |
+| 单元测试（工具） | 3 | nlp、fetch-helper、reddit |
+| 集成测试 | 1 | user-flow 端到端测试 |
+
+详细测试文档请参考 [TESTING.md](./TESTING.md)
+
+## 九、更新日志
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.5.0 | 2026-01-18 | 可视化增强：新增 InsightFilters、InsightGraph、InsightTrendChart 三个可视化组件；趋势分析：新增 useInsightTrend 钩子，支持按时间维度分析洞察变化；测试完善：新增集成测试模块（user-flow.test.ts）和 UI 组件测试（Button、Card、Input）；文件总数从 48 个增加到 61 个 |
+| v2.4.0 | 2026-01-17 | AI深度洞见：集成智谱AI GLM-4模型，新增 zhipu-ai.ts 和 prompts.ts；新增 useDeepInsights 钩子和 DeepInsights 组件；新增 /api/ai/insights API端点 |
+| v2.3.0 | 2026-01-18 | 测试体系建立：新增 9 个测试文件，81 个测试用例，整体覆盖率 28.71%；新增 jest.setup.js 和 TESTING.md 文档；文件总数从 53 个增加到 55 个 |
 | v2.2.0 | 2026-01-18 | 话题选择模块优化：新增防抖搜索、智能建议、分类显示、批量选择和全选功能；使用 React.memo 和 useMemo 优化组件渲染性能；增强键盘导航支持 |
 | v2.1.0 | 2026-01-16 | 文档全面更新：更新文件统计（29 组件、17 工具）、修正不一致的文件路径和描述、更新 API Routes 和 Worker 架构说明 |
 | v2.0.0 | 2026-01-15 | 新增 Web Worker 架构、错误处理模块、EmptyState 组件，TypeScript 工具文件从 14 个增加到 17 个，组件文件从 28 个增加到 29 个 |

@@ -640,9 +640,9 @@ export function useAnalysis(): UseAnalysisReturn {
         sections.push(`"总评论数",${result.comments.length}`);
         sections.push(`"总关键词数",${result.keywords.length}`);
         sections.push(`"总洞察数",${result.insights.length}`);
-        sections.push(`"正面评论",${result.sentiment.positive}`);
-        sections.push(`"负面评论",${result.sentiment.negative}`);
-        sections.push(`"中性评论",${result.sentiment.neutral}`);
+        sections.push(`"正面评论",${result.sentiment?.positive || 0}`);
+        sections.push(`"负面评论",${result.sentiment?.negative || 0}`);
+        sections.push(`"中性评论",${result.sentiment?.neutral || 0}`);
         sections.push("");
 
         // 3. 关键词数据

@@ -6,7 +6,7 @@ Reddit Insight Tool 是一个功能强大的 Reddit 社区话题分析与洞察�
 
 本工具提供两大核心功能模块，分别对应用户旅程的不同阶段。第一模块是话题选择模块，负责 Reddit 数据的搜索与筛选。用户可以通过输入 Subreddit 名称或帖子关键词进行搜索，系统会实时返回相关的话题列表。每个话题以卡片形式展示，包含标题、摘要、评论数和发布时间等关键信息。用户可以选中感兴趣的话题进入分析流程，也可以将话题添加到收藏夹以便后续查看。
 
-第二模块是分析模块，负责对选中话题进行深度分析。分析流程首先自动抓取话题下的热门评论，然后对每条评论进行情感分析和关键词提取。情感分析将评论分为积极、消极和中性三类，并以可视化图表形式展示分布情况。关键词提取识别评论中的高频主题词，帮助用户快速把握讨论焦点。最重要的是洞察检测功能，通过模式匹配算法识别用户反馈中的痛点描述、功能建议和需求表达，为产品改进和商业决策提供数据支撑。
+第二模块是分析模块，负责对选中话题进行深度分析。分析流程首先自动抓取话题下的热门评论，然后对每条评论进行情感分析和关键词提取。情感分析将评论分为积极、消极和中性三类，并以可视化图表形式展示分布情况。关键词提取识别评论中的高频主题词，帮助用户快速把握讨论焦点。洞察检测功能通过模式匹配算法识别用户反馈中的痛点描述、功能建议和需求表达，为产品改进和商业决策提供数据支撑。**分析模块还提供丰富的可视化功能**：InsightFilters 支持按类型、情感和关键词筛选洞察；InsightGraph 以图谱形式展示洞察之间的关系；InsightTrendChart 展示洞察随时间变化的趋势；DeepInsights 集成智谱AI GLM-4模型，生成深度分析报告。
 
 ## 技术栈
 
@@ -89,25 +89,28 @@ res2026/
 ├── src/
 │   ├── app/                    # Next.js App Router 页面和 API Routes
 │   │   ├── api/                # API Routes 端点
-│   │   │   └── reddit/         # Reddit API 代理端点
-│   ├── layout.tsx          # 根布局组件
-│   └── page.tsx            # 首页组件
-├── components/             # 通用 UI 组件库
-│   └── ui/                 # Shadcn/UI 基础组件
-├── features/               # 功能模块
-│   ├── topic-selection/    # 话题选择模块
-│   │   ├── components/     # 搜索和列表组件
-│   │   └── hooks/          # 搜索逻辑钩子
-│   └── analysis/           # 分析模块
-│       ├── components/     # 可视化组件
-│       └── hooks/          # 分析流程钩子
-└── lib/                    # 基础支撑代码
-│       ├── api/                # API 工具和类型定义
-│       ├── workers/             # Web Worker 线程
-│       ├── nlp.ts              # 自然语言处理
-│       ├── errors.ts            # 错误处理模块
-│       ├── types.ts            # 类型定义
-│       └── utils.ts            # 工具函数
+│   │   │   ├── reddit/         # Reddit API 代理端点
+│   │   │   └── ai/             # AI 深度洞见端点
+│   │   ├── layout.tsx          # 根布局组件
+│   │   └── page.tsx            # 首页组件
+│   ├── components/             # 通用 UI 组件库
+│   │   └── ui/                 # Shadcn/UI 基础组件
+│   ├── features/               # 功能模块
+│   │   ├── topic-selection/    # 话题选择模块
+│   │   │   ├── components/     # 搜索和列表组件
+│   │   │   └── hooks/          # 搜索逻辑钩子
+│   │   └── analysis/           # 分析模块
+│   │       ├── components/     # 可视化组件
+│   │       └── hooks/          # 分析流程钩子
+│   ├── lib/                    # 基础支撑代码
+│   │   ├── api/                # API 工具和类型定义
+│   │   ├── ai/                 # 智谱AI集成
+│   │   ├── workers/            # Web Worker 线程
+│   │   ├── nlp.ts              # 自然语言处理
+│   │   ├── errors.ts           # 错误处理模块
+│   │   ├── types.ts            # 类型定义
+│   │   └── utils.ts            # 工具函数
+│   └── integration/            # 集成测试
 ├── Dockerfile                  # Docker 构建文件
 ├── docker-compose.yml          # 容器编排配置
 ├── package.json                # 项目依赖
@@ -126,6 +129,8 @@ res2026/
 **Search 端点**（/api/reddit/search）：提供帖子搜索功能，支持多维度筛选和时间范围限制。请求参数包含 Subreddit 名称、搜索关键词、排序方式和时间过滤，返回相关帖子的列表，每个帖子包含标题、摘要、评论数和发布时间等信息。
 
 **Comments 端点**（/api/reddit/comments）：提供评论获取功能，支持分页加载和数量限制。请求参数包含帖子 ID 和评论数量限制，返回按热度排序的评论数组，每条评论包含作者、内容、发布时间和投票数等信息。
+
+**AI Insights 端点**（/api/ai/insights）：提供 AI 深度洞见生成功能，调用智谱AI GLM-4 模型对分析结果进行深度解读。请求参数包含分析数据和洞察类型，返回结构化的深度分析报告，包含核心发现、用户痛点、需求趋势和行动建议。
 
 ### 自然语言处理模块
 
@@ -166,15 +171,35 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
 
 | 类型 | 数量 | 说明 |
 |------|------|------|
-| TypeScript 组件（.tsx） | 29 | UI 组件、功能模块组件和测试组件 |
-| TypeScript 工具（.ts） | 17 | 钩子、API Routes、API 客户端、NLP 处理、Worker、错误处理 |
-| 测试文件 | 6 | 单元测试覆盖核心功能 |
+| TypeScript 组件（.tsx） | 35 | UI 组件、功能模块组件和测试组件 |
+| TypeScript 工具（.ts） | 22 | 钩子、API Routes、API 客户端、NLP 处理、Worker、错误处理 |
+| 测试文件 | 12 | 单元测试和集成测试覆盖核心功能 |
 | 配置文件 | 18 | 项目构建和测试配置 |
-| 文档文件 | 4 | FRAMEWORK、CODE_DIRECTORY、README、DEPLOYMENT |
+| 文档文件 | 5 | FRAMEWORK、CODE_DIRECTORY、README、DEPLOYMENT、TESTING |
 
 ## 版本历史
 
-### v2.1.0（2026-01-16）
+### v2.5.0（2026-01-18）
+
+本版本完成了分析模块的可视化增强和测试体系完善。主要变更包括：
+
+**可视化增强**：新增 InsightFilters 组件，提供洞察筛选功能；新增 InsightGraph 组件，以图谱形式展示洞察之间的关系；新增 InsightTrendChart 组件，支持洞察趋势可视化。
+
+**趋势分析功能**：新增 useInsightTrend 钩子，负责洞察趋势数据的计算和聚合，支持按时间维度分析洞察变化。
+
+**测试体系完善**：新增集成测试模块（src/integration/__tests__/user-flow.test.ts），覆盖用户流程测试；新增 UI 组件单元测试（Button、Card、Input），提升组件测试覆盖率。
+
+**文件统计**：TypeScript 组件从 31 个增加到 35 个，TypeScript 工具从 19 个增加到 22 个，测试文件从 9 个增加到 12 个。
+
+### v2.4.0（2026-01-17）
+
+本版本完成了 AI 深度洞见功能的集成，通过智谱AI GLM-4 模型提供智能化的数据分析报告。主要变更包括：
+
+**AI 集成**：新增智谱AI 客户端（zhipu-ai.ts），封装 GLM-4 API 调用逻辑；实现 JWT token 生成和请求签名机制；新增 Prompt 模板系统（prompts.ts），将分析结果转换为 AI 友好的格式。
+
+**深度洞见功能**：创建 useDeepInsights 钩子，管理深度洞见生成状态；开发 DeepInsights 组件，展示 AI 生成的深度分析报告；支持 Markdown 格式渲染和折叠展开交互；新增深度洞见 API 路由（/api/ai/insights），处理服务端逻辑。
+
+### v2.3.0（2026-01-18）
 
 本版本完成了文档的全面更新，确保所有文档与代码库保持同步。主要变更包括：更新文件统计信息（29 个 TypeScript 组件，17 个 TypeScript 工具文件）；更新 API Routes 相关描述以反映最新的服务端代理架构；更新 Web Worker 架构说明以匹配当前的 Worker 线程实现；更新错误处理模块说明以匹配 errors.ts 的功能；更新单元测试覆盖范围说明。文档更新覆盖 FRAMEWORK.md、CODE_DIRECTORY.md 和 README.md 三个核心文档，确保新开发者能够快速理解项目架构和代码分布。Bug 修复包括修正了文档中不一致的文件路径和组件描述。
 

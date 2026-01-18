@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useAnalysis } from "./hooks/useAnalysis";
+import { useDeepInsights } from "./hooks/useDeepInsights";
 import { KeywordCloud } from "./components/KeywordCloud";
 import { SentimentChart } from "./components/SentimentChart";
 import { InsightCard } from "./components/InsightCard";
 import { CommentList } from "./components/CommentList";
 import { AnalysisProgress } from "./components/AnalysisProgress";
+import { DeepInsights } from "./components/DeepInsights";
 import { EmptyState, EmptyStateActions } from "./components/EmptyState";
 import type { SearchResult, Insight } from "@/lib/types";
 import { getCurrentTimeStatus } from "@/lib/utils";
@@ -51,6 +53,8 @@ export function AnalysisDashboard({
 }: AnalysisDashboardProps) {
   const { session, startAnalysis, cancelAnalysis, resetAnalysis, exportResult, exportToExcel } =
     useAnalysis();
+  const { session: deepInsightSession, generateDeepInsights, cancelGeneration: cancelDeepInsight, resetSession: resetDeepInsight } =
+    useDeepInsights();
   const [activeTab, setActiveTab] = useState<string>("keywords");
   const [selectedSentiment, setSelectedSentiment] = useState<
     "all" | "positive" | "negative" | "neutral"
@@ -220,10 +224,11 @@ export function AnalysisDashboard({
           </div>
 
           <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 lg:w-[400px]">
+            <TabsList className="grid w-full grid-cols-5 lg:w-[500px]">
               <TabsTrigger value="keywords">关键词</TabsTrigger>
               <TabsTrigger value="sentiment">情感</TabsTrigger>
               <TabsTrigger value="insights">洞察</TabsTrigger>
+              <TabsTrigger value="deep-insights">AI深度洞见</TabsTrigger>
               <TabsTrigger value="comments">评论</TabsTrigger>
             </TabsList>
 
@@ -312,6 +317,17 @@ export function AnalysisDashboard({
                     ))
                   )}
                 </div>
+              </TabsContent>
+
+              <TabsContent value="deep-insights" className="space-y-4">
+                <DeepInsights
+                  session={deepInsightSession}
+                  onGenerate={generateDeepInsights}
+                  onCancel={cancelDeepInsight}
+                  onReset={resetDeepInsight}
+                  topics={selectedTopics}
+                  analysisResult={session?.result || null}
+                />
               </TabsContent>
 
               <TabsContent value="comments" className="space-y-4">
