@@ -79,14 +79,135 @@ const ENGLISH_STOP_WORDS = new Set([
 ]);
 
 /**
- * Porter Stemmer 简化版词干提取算法
+ * LRU缓存类
+ * 用于缓存词干提取结果,提升性能
+ */
+class LRUCache<K, V> {
+  private cache: Map<K, V>;
+  private maxSize: number;
+
+  constructor(maxSize: number = 1000) {
+    this.cache = new Map();
+    this.maxSize = maxSize;
+  }
+
+  get(key: K): V | undefined {
+    if (!this.cache.has(key)) return undefined;
+    const value = this.cache.get(key)!;
+    this.cache.delete(key);
+    this.cache.set(key, value);
+    return value;
+  }
+
+  set(key: K, value: V): void {
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    } else if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+    this.cache.set(key, value);
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+/**
+ * 最小堆类(用于Top-K算法)
+ * 维护K个最大元素,比全排序更高效
+ */
+class MinHeap<T> {
+  private heap: T[];
+  private compareFn: (a: T, b: T) => number;
+
+  constructor(compareFn: (a: T, b: T) => number) {
+    this.heap = [];
+    this.compareFn = compareFn;
+  }
+
+  private parent(i: number): number {
+    return Math.floor((i - 1) / 2);
+  }
+
+  private leftChild(i: number): number {
+    return 2 * i + 1;
+  }
+
+  private rightChild(i: number): number {
+    return 2 * i + 2;
+  }
+
+  private swap(i: number, j: number): void {
+    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+  }
+
+  private heapifyUp(i: number): void {
+    while (i > 0 && this.compareFn(this.heap[i], this.heap[this.parent(i)]) < 0) {
+      this.swap(i, this.parent(i));
+      i = this.parent(i);
+    }
+  }
+
+  private heapifyDown(i: number): void {
+    let minIndex = i;
+    const left = this.leftChild(i);
+    const right = this.rightChild(i);
+
+    if (left < this.heap.length && this.compareFn(this.heap[left], this.heap[minIndex]) < 0) {
+      minIndex = left;
+    }
+
+    if (right < this.heap.length && this.compareFn(this.heap[right], this.heap[minIndex]) < 0) {
+      minIndex = right;
+    }
+
+    if (minIndex !== i) {
+      this.swap(i, minIndex);
+      this.heapifyDown(minIndex);
+    }
+  }
+
+  push(item: T): void {
+    this.heap.push(item);
+    this.heapifyUp(this.heap.length - 1);
+  }
+
+  pop(): T | undefined {
+    if (this.heap.length === 0) return undefined;
+    if (this.heap.length === 1) return this.heap.pop();
+
+    const root = this.heap[0];
+    this.heap[0] = this.heap.pop()!;
+    this.heapifyDown(0);
+    return root;
+  }
+
+  peek(): T | undefined {
+    return this.heap[0];
+  }
+
+  size(): number {
+    return this.heap.length;
+  }
+
+  toArray(): T[] {
+    return [...this.heap].sort(this.compareFn);
+  }
+}
+
+/**
+ * Porter Stemmer 简化版词干提取算法(优化版)
  * 用于将单词还原为其词根形式，例如：
  * - "enjoy", "enjoyed", "enjoying" -> "enjoy"
  * - "running", "runs", "ran" -> "run"
  * - "better", "best" -> "good/best"
+ * 优化点:添加LRU缓存,避免重复计算
  */
 export const stemmer = (function() {
-  // 常见的不规则动词词根映射
+  const stemCache = new LRUCache<string, string>(2000);
+  
   const irregularMap: Record<string, string> = {
     "ate": "eat", "be": "be", "became": "become", "begun": "begin",
     "bent": "bend", "broke": "break", "brought": "bring",
@@ -162,38 +283,45 @@ export const stemmer = (function() {
     { suffix: "ly", replace: "", minLength: 4 },
   ];
 
-  function stemWord(word: string): string {
+  function stemWord(word: string, depth: number = 0): string {
     if (word.length < 3) {
       return word;
     }
 
-    // 检查不规则动词
-    if (irregularMap[word]) {
-      return irregularMap[word]!;
+    const cached = stemCache.get(word);
+    if (cached !== undefined) {
+      return cached;
     }
 
-    // 检查非常短的词
+    if (irregularMap[word]) {
+      const result = irregularMap[word]!;
+      stemCache.set(word, result);
+      return result;
+    }
+
     if (word.length <= 4) {
+      stemCache.set(word, word);
       return word;
     }
 
-    // 应用词缀规则
     for (const rule of suffixRules) {
       if (word.length >= rule.minLength && word.endsWith(rule.suffix)) {
         const stemmed = word.slice(0, -rule.suffix.length) + rule.replace;
 
-        // 确保词干不会太短
         if (stemmed.length >= 3) {
-          // 递归检查是否还需要进一步词干提取
-          if (stemmed !== word) {
-            return stemWord(stemmed);
+          if (stemmed !== word && depth < 1) {
+            const result = stemWord(stemmed, depth + 1);
+            stemCache.set(word, result);
+            return result;
           }
         }
 
+        stemCache.set(word, stemmed);
         return stemmed;
       }
     }
 
+    stemCache.set(word, word);
     return word;
   }
 
@@ -313,20 +441,37 @@ class BayesianConfidenceCalculator {
 const confidenceCalculator = new BayesianConfidenceCalculator();
 
 /**
- * TF-IDF 计算工具类
+ * TF-IDF 计算工具类(优化版)
+ * 优化点:批量处理文档,避免重复遍历
  */
 export class TFIDFCalculator {
   private documentFrequency: Map<string, number> = new Map();
   private totalDocuments: number = 0;
 
   /**
-   * 添加文档并更新词频
+   * 批量添加文档并更新词频(优化版)
+   * @param documentsTokens 多个文档的词列表数组
+   */
+  addDocuments(documentsTokens: string[][]): void {
+    for (const tokens of documentsTokens) {
+      this.totalDocuments++;
+      const tokenSet = new Set(tokens);
+      const uniqueTokens = Array.from(tokenSet);
+      for (const token of uniqueTokens) {
+        this.documentFrequency.set(
+          token,
+          (this.documentFrequency.get(token) || 0) + 1
+        );
+      }
+    }
+  }
+
+  /**
+   * 添加单个文档并更新词频(保留兼容性)
    * @param tokens 文档的词列表
    */
   addDocument(tokens: string[]): void {
     this.totalDocuments++;
-    
-    // 统计词频（使用词干）
     const tokenSet = new Set(tokens);
     const uniqueTokens = Array.from(tokenSet);
     for (const token of uniqueTokens) {
@@ -344,13 +489,9 @@ export class TFIDFCalculator {
    * @returns TF-IDF 值
    */
   calculateTFIDF(term: string, termFrequency: number): number {
-    // TF (Term Frequency)
     const tf = termFrequency;
-
-    // IDF (Inverse Document Frequency)
     const df = this.documentFrequency.get(term) || 1;
     const idf = Math.log(this.totalDocuments / df);
-
     return tf * idf;
   }
 
@@ -455,12 +596,10 @@ export function extractKeywords(
   onProgress?: AnalysisProgressCallback
 ): KeywordCount[] {
   const total = comments.length;
-  const batchSize = Math.max(1, Math.floor(total / 10)); // 每 10% 触发一次进度回调
+  const batchSize = Math.max(1, Math.floor(total / 10));
 
-  // TF-IDF 计算器实例
   const tfidfCalculator = new TFIDFCalculator();
 
-  // 词频统计：stem -> { tf: number, words: Map<word, count>, docsWithWord: Set<docId> }
   const termStats = new Map<
     string,
     {
@@ -470,20 +609,22 @@ export function extractKeywords(
     }
   >();
 
+  const allFilteredWords: string[][] = [];
+
   for (let i = 0; i < comments.length; i++) {
     const comment = comments[i];
     const tokens = tokenize(comment.body);
     const filteredWords = removeStopWords(tokens, config.minKeywordLength);
+    
+    allFilteredWords.push(filteredWords);
 
-    // 统计词频（每个词在当前评论中出现的次数）
     const wordCounts = new Map<string, number>();
     for (const word of filteredWords) {
       wordCounts.set(word, (wordCounts.get(word) || 0) + 1);
     }
 
-    // 更新每个词的统计信息
-    const wordEntries = Array.from(wordCounts.entries());
-    for (const [word, count] of wordEntries) {
+    const wordCountEntries = Array.from(wordCounts.entries());
+    for (const [word, count] of wordCountEntries) {
       const stem = stemmer.stem(word);
 
       if (!termStats.has(stem)) {
@@ -498,12 +639,8 @@ export function extractKeywords(
       stats.tf += count;
       stats.words.set(word, (stats.words.get(word) || 0) + count);
       stats.docsWithWord.add(i);
-
-      // 更新 TF-IDF 计算器
-      tfidfCalculator.addDocument(filteredWords);
     }
 
-    // 每处理一定数量的评论触发一次进度回调
     if (onProgress && (i + 1) % batchSize === 0) {
       onProgress({
         stage: "keywords",
@@ -514,52 +651,63 @@ export function extractKeywords(
     }
   }
 
-  // 计算 TF-IDF 并排序
-  const keywords: KeywordCount[] = Array.from(termStats.entries())
-    .map(([stem, data]) => {
-      // 找出该词干下出现最多次的原词作为代表
-      let bestWord = stem;
-      let maxCount = 0;
+  tfidfCalculator.addDocuments(allFilteredWords);
 
-      const wordEntries = Array.from(data.words.entries());
-      for (const [word, count] of wordEntries) {
-        if (count > maxCount) {
-          maxCount = count;
-          bestWord = word;
-        } else if (count === maxCount && word.length < bestWord.length) {
-          // 频率相同取短的
-          bestWord = word;
-        }
+  type KeywordWithScore = {
+    word: string;
+    count: number;
+    sentiment: "positive" | "negative" | "neutral";
+    score: number;
+  };
+
+  const minHeap = new MinHeap<KeywordWithScore>((a, b) => a.score - b.score);
+
+  const termStatsEntries = Array.from(termStats.entries());
+  for (const [stem, data] of termStatsEntries) {
+    let bestWord = stem;
+    let maxCount = 0;
+
+    const wordEntries = Array.from(data.words.entries());
+    for (const [word, count] of wordEntries) {
+      if (count > maxCount) {
+        maxCount = count;
+        bestWord = word;
+      } else if (count === maxCount && word.length < bestWord.length) {
+        bestWord = word;
       }
+    }
 
-      // 计算 TF-IDF 分数
-      const tfidf = tfidfCalculator.calculateTFIDF(stem, data.tf);
+    const tfidf = tfidfCalculator.calculateTFIDF(stem, data.tf);
 
-      // 确定情感倾向
-      let sentiment: "positive" | "negative" | "neutral" = "neutral";
-      if (POSITIVE_KEYWORDS.has(bestWord) || POSITIVE_KEYWORDS.has(stem)) {
-        sentiment = "positive";
-      } else if (NEGATIVE_KEYWORDS.has(bestWord) || NEGATIVE_KEYWORDS.has(stem)) {
-        sentiment = "negative";
-      }
+    let sentiment: "positive" | "negative" | "neutral" = "neutral";
+    const wordIsPositive = POSITIVE_KEYWORDS.has(bestWord);
+    const wordIsNegative = NEGATIVE_KEYWORDS.has(bestWord);
+    
+    if (wordIsPositive || (!wordIsPositive && !wordIsNegative && POSITIVE_KEYWORDS.has(stem))) {
+      sentiment = "positive";
+    } else if (wordIsNegative || (!wordIsPositive && !wordIsNegative && NEGATIVE_KEYWORDS.has(stem))) {
+      sentiment = "negative";
+    }
 
-      return {
-        word: bestWord,
-        count: data.tf,
-        sentiment,
-        tfidf,
-        documentFrequency: data.docsWithWord.size,
-      };
-    })
-    // 综合排序：TF-IDF * (1 + 情感权重)
-    .map((kw) => ({
-      ...kw,
-      score:
-        kw.tfidf *
-        (kw.sentiment !== "neutral" ? 1.2 : 1),
-    }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, config.topKeywordsCount)
+    const score = tfidf * (sentiment !== "neutral" ? 1.2 : 1);
+    const keyword: KeywordWithScore = {
+      word: bestWord,
+      count: data.tf,
+      sentiment,
+      score,
+    };
+
+    if (minHeap.size() < config.topKeywordsCount) {
+      minHeap.push(keyword);
+    } else if (minHeap.peek() && score > minHeap.peek()!.score) {
+      minHeap.pop();
+      minHeap.push(keyword);
+    }
+  }
+
+  const keywords: KeywordCount[] = minHeap
+    .toArray()
+    .reverse()
     .map(({ word, count, sentiment }) => ({
       word,
       count,
@@ -589,13 +737,17 @@ export function analyzeSentiment(text: string): {
 
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
-    // 尝试原词和词干
     const stemmedToken = stemmer.stem(token);
     
     let tokenScore = 0;
-    if (POSITIVE_KEYWORDS.has(token) || POSITIVE_KEYWORDS.has(stemmedToken)) {
+    const isPositive = POSITIVE_KEYWORDS.has(token);
+    const isNegative = NEGATIVE_KEYWORDS.has(token);
+    const stemIsPositive = !isPositive && POSITIVE_KEYWORDS.has(stemmedToken);
+    const stemIsNegative = !isNegative && NEGATIVE_KEYWORDS.has(stemmedToken);
+    
+    if (isPositive || stemIsPositive) {
       tokenScore = 1;
-    } else if (NEGATIVE_KEYWORDS.has(token) || NEGATIVE_KEYWORDS.has(stemmedToken)) {
+    } else if (isNegative || stemIsNegative) {
       tokenScore = -1;
     }
 
@@ -605,20 +757,13 @@ export function analyzeSentiment(text: string): {
       const prevToken = i > 0 ? tokens[i - 1] : null;
       const prevPrevToken = i > 1 ? tokens[i - 2] : null;
 
-      // 检查前一个词是否是否定词
       if (prevToken && NEGATORS.has(prevToken)) {
         tokenScore *= -1;
-      }
-      // 检查前前一个词是否是否定词 (例如 "did not like")
-      else if (prevPrevToken && NEGATORS.has(prevPrevToken)) {
+      } else if (prevPrevToken && NEGATORS.has(prevPrevToken)) {
         tokenScore *= -1;
       }
 
-      // 检查前一个词是否是程度副词 (如果在否定词之前，如 "very not good" - 不常见，或者是 "really dont like")
-      // 简化逻辑：如果前一个词是程度副词，增强语气
       if (prevToken && INTENSIFIERS.has(prevToken)) {
-        // 如果程度副词本身也是否定词 (从未发生?)，或者已经在否定词逻辑里处理了
-        // 这里主要处理 "very good" 或 "really bad"
         tokenScore *= 1.5;
       }
       
@@ -626,13 +771,11 @@ export function analyzeSentiment(text: string): {
     }
   }
 
-  // 归一化分数 (-1 到 1)
-  // 使用 sqrt(count) 来防止长评论分数过高，但也给多重情感词更多权重
   const normalizedScore = sentimentWordCount > 0 
     ? Math.max(-1, Math.min(1, score / Math.max(1, Math.sqrt(sentimentWordCount)))) 
     : 0;
 
-  if (normalizedScore > 0.15) { // 稍微降低阈值
+  if (normalizedScore > 0.15) {
     return { sentiment: "positive", score: normalizedScore };
   } else if (normalizedScore < -0.15) {
     return { sentiment: "negative", score: normalizedScore };
