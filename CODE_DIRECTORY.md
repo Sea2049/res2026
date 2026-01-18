@@ -347,8 +347,8 @@ lib 目录包含项目的工具函数、类型定义、外部服务封装、API 
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
-| v2.5.0 | 2026-01-18 | 可视化增强：新增 InsightFilters、InsightGraph、InsightTrendChart 三个可视化组件；趋势分析：新增 useInsightTrend 钩子，支持按时间维度分析洞察变化；测试完善：新增集成测试模块（user-flow.test.ts）和 UI 组件测试（Button、Card、Input）；文件总数从 48 个增加到 61 个 |
-| v2.4.0 | 2026-01-17 | AI深度洞见：集成智谱AI GLM-4模型，新增 zhipu-ai.ts 和 prompts.ts；新增 useDeepInsights 钩子和 DeepInsights 组件；新增 /api/ai/insights API端点 |
+| v2.3.11 | 2026-01-18 | 可视化增强：新增 InsightFilters、InsightGraph、InsightTrendChart 三个可视化组件；趋势分析：新增 useInsightTrend 钩子，支持按时间维度分析洞察变化；测试完善：新增集成测试模块（user-flow.test.ts）和 UI 组件测试（Button、Card、Input）；文件总数从 48 个增加到 61 个 |
+| v2.3.10 | 2026-01-17 | AI深度洞见：集成智谱AI GLM-4模型，新增 zhipu-ai.ts 和 prompts.ts；新增 useDeepInsights 钩子和 DeepInsights 组件；新增 /api/ai/insights API端点 |
 | v2.3.0 | 2026-01-18 | 测试体系建立：新增 9 个测试文件，81 个测试用例，整体覆盖率 28.71%；新增 jest.setup.js 和 TESTING.md 文档；文件总数从 53 个增加到 55 个 |
 | v2.2.0 | 2026-01-18 | 话题选择模块优化：新增防抖搜索、智能建议、分类显示、批量选择和全选功能；使用 React.memo 和 useMemo 优化组件渲染性能；增强键盘导航支持 |
 | v2.1.0 | 2026-01-16 | 文档全面更新：更新文件统计（29 组件、17 工具）、修正不一致的文件路径和描述、更新 API Routes 和 Worker 架构说明 |

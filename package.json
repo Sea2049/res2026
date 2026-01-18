@@ -1,6 +1,6 @@
 {
   "name": "res2026",
-  "version": "2.3.1",
+  "version": "2.3.11",
   "description": "Reddit Insight Tool - 发现热门主题，洞察用户痛点",
   "scripts": {
     "dev": "next dev",
