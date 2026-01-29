@@ -73,16 +73,22 @@ fetch-helper 工具模块提供统一的请求封装和错误处理逻辑。每�
 
 为提升自然语言处理性能，项目采用 Web Worker 实现并行计算。Worker 线程位于 src/lib/workers 目录下，包含 worker-manager.ts 和 nlp.worker.ts 两个文件。worker-manager 负责 Worker 线程的创建、任务分发和结果回收，nlp.worker 执行具体的 NLP 计算任务。这种架构将 CPU 密集型操作从主线程分离，避免阻塞 UI 渲染，提升用户体验。
 
-## 生产部署
+## Docker 部署
 
-### 方案一：Docker 本地部署
+### 构建生产镜像
 
-项目提供了完整的 Docker 部署支持，采用多阶段构建策略优化镜像大小。
+项目提供了完整的 Docker 部署支持，采用多阶段构建策略优化镜像大小。执行以下命令构建生产镜像。构建过程会自动安装依赖、编译应用并打包运行时文件。构建完成后，镜像大小约为 100MB，相比直接使用 Node.js 基础镜像减少了约 70% 的体积。
 
 ```bash
 # 构建 Docker 镜像
 docker build -t reddit-insight-tool:latest .
+```
 
+### 使用 Docker Compose 运行
+
+项目根目录提供了 docker-compose.yml 文件，定义了完整的容器运行环境。执行以下命令启动服务。Docker Compose 会自动创建网络、挂载数据卷并配置健康检查。服务启动后，可以通过 http://localhost:3000 访问应用。
+
+```bash
 # 启动服务
 docker-compose up -d
 
@@ -93,32 +99,9 @@ docker-compose logs -f
 docker-compose down
 ```
 
-适合开发测试环境，无需公网访问。
+### 阿里云 ECS 部署
 
-### 方案二：Cloudflare + 阿里云部署 ⭐ 推荐
-
-使用 Cloudflare 作为 CDN 和安全层，配合阿里云 ECS 部署，获得企业级性能和安全防护：
-
-✅ **全球加速** - 200+ 数据中心，访问速度提升 50-70%  
-✅ **安全防护** - 免费 DDoS、WAF、Bot 检测  
-✅ **免费 SSL** - 自动证书管理  
-✅ **成本节省** - 带宽节省 60-80%，仅需 ¥70-100/月
-
-**快速开始：**
-```bash
-# 在 ECS 服务器上运行
-./scripts/cloudflare-setup.sh
-```
-
-**完整文档：**
-- 📖 [Cloudflare 部署完整指南](./CLOUDFLARE_DEPLOYMENT.md)
-- ✅ [部署检查清单](./CLOUDFLARE_CHECKLIST.md)
-- ⚡ [快速参考](./CLOUDFLARE_QUICK_REFERENCE.md)
-- 📊 [架构对比](./DEPLOYMENT_ARCHITECTURE.md)
-
-### 方案三：传统阿里云部署
-
-详细的生产环境部署指南请参考 [DEPLOYMENT.md](./DEPLOYMENT.md) 文档。包含 ECS 实例配置、Docker 安装、Nginx 反向代理设置、SSL 证书申请等完整步骤。
+详细的生产环境部署指南请参考 DEPLOYMENT.md 文档。该文档包含了阿里云 ECS 实例配置、Docker 安装、Nginx 反向代理设置、SSL 证书申请等完整步骤。建议生产环境使用 Nginx 作为反向代理，并配置 HTTPS 加密传输以确保数据安全。
 
 ## 项目结构
 
