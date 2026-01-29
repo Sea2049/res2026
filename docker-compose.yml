@@ -13,14 +13,12 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    env_file:
+      - .env.production
     environment:
       - NODE_ENV=production
       - PORT=3000
       - DATABASE_URL=file:/app/data/prod.db
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123456}
-      - INVITE_COOKIE_MAX_AGE=${INVITE_COOKIE_MAX_AGE:-604800}
-    env_file:
-      - .env.production
     volumes:
       # 持久化 SQLite 数据库
       - sqlite-data:/app/data
