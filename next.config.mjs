@@ -13,6 +13,14 @@ const nextConfig = {
   // 输出独立部署模式（减小镜像体积）
   output: 'standalone',
   
+  // 禁用生产环境 source maps
+  productionBrowserSourceMaps: false,
+  
+  // 服务器地址配置
+  async rewrites() {
+    return [];
+  },
+  
   // 图片域名配置
   images: {
     remotePatterns: [

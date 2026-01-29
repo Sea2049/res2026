@@ -16,8 +16,14 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - DATABASE_URL=file:/app/data/prod.db
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123456}
+      - INVITE_COOKIE_MAX_AGE=${INVITE_COOKIE_MAX_AGE:-604800}
     env_file:
       - .env.production
+    volumes:
+      # 持久化 SQLite 数据库
+      - sqlite-data:/app/data
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
       interval: 30s
@@ -29,6 +35,10 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  sqlite-data:
+    driver: local
 
 # =============================================
 # 可选：Nginx 反向代理配置（需要取消注释以下内容）

@@ -35,7 +35,7 @@ export default defineConfig({
   // 全局依赖
   use: {
     // 基准URL（如果使用相对URL）
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:3001',
 
     // 跟踪操作
     trace: 'on-first-retry',
@@ -63,7 +63,7 @@ export default defineConfig({
   // 运行测试后生成报告
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3000',
+    url: 'http://localhost:3001',
     reuseExistingServer: !process.env.CI,
   },
 });

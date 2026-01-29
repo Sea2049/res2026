@@ -90,9 +90,11 @@ API Routes 实现服务端代理，统一处理与 Reddit API 的通信，保护
 | src/app/api/ai/insights/route.ts | TS | AI 深度洞见端点，调用智谱 GLM-4 模型生成深度分析报告 |
 | src/app/api/analysis/prioritize/route.ts | TS | 优先级计算端点，基于Impact×Frequency×Urgency/Effort公式批量计算洞察优先级 |
 | src/app/api/analysis/appeal/route.ts | TS | 产品吸引力评估端点，基于可欲性三角模型分析产品吸引力 |
-| src/app/api/export/route.ts | TS | 统一导出端点，支持多种格式数据导出 |
+| src/app/api/export/route.ts | TS | 统一导出端点，支持多种格式 |
 | src/app/api/export/excel/route.ts | TS | Excel导出端点，生成包含完整分析数据的电子表格 |
 | src/app/api/export/pdf/route.ts | TS | PDF导出端点，生成美观的分析报告文档 |
+| src/app/api/invite/verify/route.ts | TS | 邀请码验证端点，处理用户邀请码验证和Cookie设置 |
+| src/app/api/invite/admin/route.ts | TS | 邀请码管理端点，提供邀请码的 CRUD 操作（需管理员密码验证） |
 
 ## 四、组件库目录（components）
 
@@ -336,17 +338,22 @@ integration 目录包含跨模块的集成测试，验证多个功能模块协�
 | 1 | electron/main.ts |
 | 2 | electron/preload.ts |
 | 3 | electron/types.d.ts |
-| 4 | src/app/api/ai/insights/route.ts |
-| 5 | src/app/api/analysis/appeal/route.ts |
-| 6 | src/app/api/analysis/prioritize/route.ts |
-| 7 | src/app/api/export/excel/route.ts |
-| 8 | src/app/api/export/pdf/route.ts |
-| 9 | src/app/api/export/route.ts |
-| 10 | src/app/api/reddit/comments/route.ts |
-| 11 | src/app/api/reddit/search/route.ts |
-| 12 | src/app/api/reddit/subreddit/route.ts |
-| 13 | src/app/layout.tsx |
-| 14 | src/app/page.tsx |
+| 4 | src/middleware.ts |
+| 5 | src/app/admin/invite/page.tsx |
+| 6 | src/app/api/ai/insights/route.ts |
+| 7 | src/app/api/analysis/appeal/route.ts |
+| 8 | src/app/api/analysis/prioritize/route.ts |
+| 9 | src/app/api/export/excel/route.ts |
+| 10 | src/app/api/export/pdf/route.ts |
+| 11 | src/app/api/export/route.ts |
+| 12 | src/app/api/invite/admin/route.ts |
+| 13 | src/app/api/invite/verify/route.ts |
+| 14 | src/app/api/reddit/comments/route.ts |
+| 15 | src/app/api/reddit/search/route.ts |
+| 16 | src/app/api/reddit/subreddit/route.ts |
+| 17 | src/app/invite/page.tsx |
+| 18 | src/app/layout.tsx |
+| 19 | src/app/page.tsx |
 | 15 | src/components/index.ts |
 | 16 | src/components/ui/__tests__/Button.test.tsx |
 | 17 | src/components/ui/__tests__/Card.test.tsx |
@@ -447,6 +454,7 @@ integration 目录包含跨模块的集成测试，验证多个功能模块协�
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.6.1 | 2026-01-29 | **邀请码管理系统**：新增邀请码验证页面（/invite）；新增管理员邀请码管理后台（/admin/invite）；新增中间件拦截（middleware.ts）；集成 Prisma ORM 和 SQLite 数据库；新增2个 API 端点（/api/invite/verify、/api/invite/admin）；支持邀请码配置（最大使用次数、过期时间、备注）；TypeScript组件从38个增加到40个，工具文件从31个增加到33个，API Routes从9个增加到11个，总文件数从84个增加到89个 |
 | v2.6.0 | 2026-01-28 | **技能集成版**：集成3个Reddit分析技能的核心功能；新增WISH信号检测系统（7类模式）；新增智能分类系统（7种子分类）；新增优先级计算引擎（API端点 /api/analysis/prioritize）；新增产品吸引力评估模块（5个组件+API）；扩展Insight类型支持10+新字段；新增单元测试（sentiment-patterns、priority-calculator）；文件总数从 79 个增加到 84 个 |
 | v2.5.0 | 2026-01-27 | **洞察增强版**：新增洞察筛选组件(InsightFilters)、洞察关系图组件(InsightGraph)、洞察趋势图表组件(InsightTrendChart)；新增洞察趋势钩子(useInsightTrend)；新增 3 个 UI 组件单元测试(Button/Card/Input)；新增用户流程集成测试；新增 AI 深度洞见 API 端点；文件总数从 68 个增加到 79 个 |
 | v2.3.11 | 2026-01-19 | 桌面应用功能：新增 Electron 桌面应用支持，打包为 Windows 可执行文件；新增 electron 目录（3 个 TypeScript 文件）、tsconfig.electron.json 配置；新增 electron:dev 和 electron:build 脚本；文件总数从 55 个增加到 58 个 |

@@ -103,6 +103,35 @@ export type InsightTrend = "up" | "down" | "stable";
 export type InsightSeverity = "low" | "medium" | "high" | "critical";
 
 /**
+ * 洞察子分类类型
+ * v2.6.0 新增 - 基于 customer-feedback-analyzer skill
+ */
+export enum InsightSubType {
+  BUG = "bug",
+  PERFORMANCE = "performance",
+  UX_ISSUE = "ux_issue",
+  PRICING = "pricing",
+  DOCUMENTATION = "documentation",
+  INTEGRATION = "integration",
+  WISH = "wish",
+  GENERAL = "general"
+}
+
+/**
+ * 反对意见类型
+ * v2.6.0 新增 - 基于 product-appeal-analyzer skill
+ */
+export enum ObjectionType {
+  TRUST = "trust",
+  SKEPTICISM = "skepticism",
+  VALUE = "value",
+  COMPLEXITY = "complexity",
+  IDENTITY_MISMATCH = "identity_mismatch",
+  RISK = "risk",
+  PROCRASTINATION = "procrastination"
+}
+
+/**
  * 用户洞察接口
  */
 export interface Insight {
@@ -114,7 +143,7 @@ export interface Insight {
   relatedComments: string[];
   keyword?: string;
   count?: number;
-  // 新增字段
+  // v2.5.0 字段
   trend?: InsightTrend;
   severity?: InsightSeverity;
   impactScore?: number;
@@ -122,6 +151,13 @@ export interface Insight {
   relatedInsights?: string[];
   createdAt?: number;
   sourceTopics?: string[];
+  // v2.6.0 新增字段
+  subType?: InsightSubType;
+  priority?: number | PriorityResult;
+  urgency?: number;
+  identitySignals?: string[];
+  objections?: ObjectionType[];
+  isWish?: boolean;
 }
 
 /**
@@ -364,4 +400,88 @@ export interface DeepInsightSession {
    * 完成时间
    */
   completedAt: number | null;
+}
+
+/**
+ * 产品吸引力评分接口
+ * v2.6.0 新增 - 基于 product-appeal-analyzer skill
+ */
+export interface AppealScore {
+  /**
+   * 身份契合度 (0-10)
+   */
+  identityFit: number;
+  /**
+   * 问题紧急度 (0-10)
+   */
+  problemUrgency: number;
+  /**
+   * 信任信号 (0-10)
+   */
+  trustSignals: number;
+  /**
+   * 综合评分 (平均值)
+   */
+  overall: number;
+  /**
+   * 改进建议列表
+   */
+  recommendations: string[];
+  /**
+   * 目标用户画像信号
+   */
+  targetPersonas: string[];
+  /**
+   * 检测到的反对意见
+   */
+  objections: {
+    type: ObjectionType;
+    count: number;
+    examples: string[];
+  }[];
+}
+
+/**
+ * 优先级计算参数
+ * v2.6.0 新增 - 基于 customer-feedback-analyzer skill
+ */
+export interface PriorityCalculationParams {
+  /**
+   * 影响力 = 评论数 × 情感强度
+   */
+  impact: number;
+  /**
+   * 频率（置信度）
+   */
+  frequency: number;
+  /**
+   * 紧急度 (0-1)
+   */
+  urgency: number;
+  /**
+   * 实施难度 (1-10，默认5)
+   */
+  effort: number;
+}
+
+/**
+ * 优先级计算结果
+ */
+export interface PriorityResult {
+  /**
+   * 优先级分数
+   */
+  score: number;
+  /**
+   * 优先级等级
+   */
+  level: "critical" | "high" | "medium" | "low";
+  /**
+   * 计算参数
+   */
+  params: PriorityCalculationParams;
+  /**
+   * 建议行动
+   */
+  recommendedAction: string;
 }

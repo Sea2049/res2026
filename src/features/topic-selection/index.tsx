@@ -111,7 +111,7 @@ export function TopicSelection({
    */
   const handleInputChange = (value: string) => {
     setKeyword(value);
-    if (value.length >= 2) {
+    if (value.length >= 5) {
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
@@ -180,7 +180,8 @@ export function TopicSelection({
             onRemoveHistory={removeFromHistory}
           />
 
-          {showSuggestions && keyword.length >= 2 && (
+          {/* 只在没有搜索结果时显示建议，避免遮挡搜索结果 */}
+          {showSuggestions && keyword.length >= 5 && results.length === 0 && (
             <SearchSuggestions
               keyword={keyword}
               onSuggestionSelect={handleSuggestionSelect}

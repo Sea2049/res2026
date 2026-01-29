@@ -8,6 +8,14 @@ import type {
   AnalysisConfig,
   AnalysisProgressCallback,
 } from "./types";
+import { InsightSubType } from "./types";
+import {
+  detectWishSignal,
+  detectSubType,
+  detectIdentitySignals,
+  detectObjectionTypes,
+  calculateWishUrgency,
+} from "../features/analysis/utils/sentiment-patterns";
 
 const ENGLISH_STOP_WORDS = new Set([
   // 基础停用词 (原核心词汇)
@@ -840,6 +848,9 @@ function detectInsightType(
 ): "pain_point" | "feature_request" | "praise" | "question" | null {
   const lowerText = text.toLowerCase();
 
+  // v2.6.0: 首先检测WISH信号
+  const hasWish = detectWishSignal(text);
+
   const hasPainPoint = Array.from(PAIN_POINT_INDICATORS).some((indicator) =>
     lowerText.includes(indicator)
   );
@@ -852,6 +863,10 @@ function detectInsightType(
 
   const sentiment = analyzeSentiment(text);
 
+  // v2.6.0: WISH信号优先归类为feature_request
+  if (hasWish) {
+    return "feature_request";
+  }
   if (hasPainPoint && sentiment.sentiment === "negative") {
     return "pain_point";
   }
@@ -958,6 +973,32 @@ function extractInsights(
       question: `${data.comments.length} 位用户询问相关问题`,
     };
 
+    // v2.6.0: 检测相关评论文本以提取额外信息
+    const relatedTexts = comments
+      .filter(c => data.comments.includes(c.id))
+      .map(c => c.body)
+      .join(' ');
+
+    // 检测WISH信号
+    const isWish = detectWishSignal(relatedTexts);
+    
+    // 检测子分类
+    const subType = detectSubType(relatedTexts);
+    
+    // 检测身份信号
+    const identitySignals = detectIdentitySignals(relatedTexts);
+    
+    // 检测反对意见
+    const objections = detectObjectionTypes(relatedTexts);
+    
+    // 计算紧急度（仅针对WISH信号）
+    const urgency = isWish 
+      ? calculateWishUrgency(relatedTexts, data.comments.length)
+      : undefined;
+
+    // 计算严重程度（基于评论数和情感强度）
+    const severity = calculateSeverityLevel(data.comments.length, comments.length);
+
     insights.push({
       id: `insight_${idCounter++}`,
       type: data.type,
@@ -967,10 +1008,34 @@ function extractInsights(
       relatedComments: data.comments,
       keyword: data.keyword,
       count: data.comments.length,
+      // v2.6.0 新增字段
+      isWish,
+      subType: subType ? (subType as InsightSubType) : undefined,
+      identitySignals: identitySignals.length > 0 ? identitySignals : undefined,
+      objections: objections.length > 0 ? objections.map(o => o as any) : undefined,
+      urgency,
+      severity,
+      createdAt: Date.now(),
     });
   }
 
   return insights.sort((a, b) => b.confidence - a.confidence).slice(0, 20);
+}
+
+/**
+ * 计算严重程度等级
+ * v2.6.0 新增
+ */
+function calculateSeverityLevel(
+  commentCount: number,
+  totalComments: number
+): "low" | "medium" | "high" | "critical" {
+  const percentage = (commentCount / totalComments) * 100;
+  
+  if (percentage >= 20) return "critical";
+  if (percentage >= 10) return "high";
+  if (percentage >= 5) return "medium";
+  return "low";
 }
 
 /**

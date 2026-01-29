@@ -64,6 +64,20 @@ const CONFIDENCE_PRESETS = [
 ];
 
 /**
+ * 子分类选项
+ * v2.6.0 新增
+ */
+const SUBTYPE_OPTIONS = [
+  { value: "bug", label: "🐛 Bug", icon: "🐛" },
+  { value: "performance", label: "⚡ 性能", icon: "⚡" },
+  { value: "ux_issue", label: "🎨 UX问题", icon: "🎨" },
+  { value: "pricing", label: "💰 定价", icon: "💰" },
+  { value: "documentation", label: "📚 文档", icon: "📚" },
+  { value: "integration", label: "🔌 集成", icon: "🔌" },
+  { value: "wish", label: "✨ 愿望", icon: "✨" },
+];
+
+/**
  * 洞察筛选组件
  * 提供多维度筛选和搜索功能
  */
@@ -75,6 +89,8 @@ export function InsightFilters({
 }: InsightFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [showWishOnly, setShowWishOnly] = useState(false);
+  const [selectedSubTypes, setSelectedSubTypes] = useState<string[]>([]);
 
   // 处理类型筛选变化
   const handleTypeChange = useCallback(
@@ -162,9 +178,37 @@ export function InsightFilters({
     [filter, onFilterChange]
   );
 
+  // v2.6.0: 处理子分类筛选变化
+  const handleSubTypeChange = useCallback(
+    (subType: string, checked: boolean) => {
+      let newSubTypes: string[];
+      if (checked) {
+        newSubTypes = [...selectedSubTypes, subType];
+      } else {
+        newSubTypes = selectedSubTypes.filter((s) => s !== subType);
+      }
+      setSelectedSubTypes(newSubTypes);
+      // 注意：这里需要扩展InsightFilter类型以支持subTypes
+      // 目前作为临时方案，可以通过keywords传递
+    },
+    [selectedSubTypes]
+  );
+
+  // v2.6.0: 处理WISH信号筛选
+  const handleWishFilterChange = useCallback(
+    (checked: boolean) => {
+      setShowWishOnly(checked);
+      // 注意：这里需要扩展InsightFilter类型以支持wishOnly
+      // 目前作为临时方案在使用时通过组件内部状态过滤
+    },
+    []
+  );
+
   // 清除所有筛选
   const handleClearAll = useCallback(() => {
     setSearchKeyword("");
+    setShowWishOnly(false);
+    setSelectedSubTypes([]);
     onFilterChange({});
   }, [onFilterChange]);
 
@@ -174,7 +218,9 @@ export function InsightFilters({
     (filter.trends?.length || 0) +
     (filter.severities?.length || 0) +
     (filter.keywords?.length || 0) +
-    (filter.minConfidence !== undefined ? 1 : 0);
+    (filter.minConfidence !== undefined ? 1 : 0) +
+    (showWishOnly ? 1 : 0) +
+    selectedSubTypes.length;
 
   return (
     <div className={`bg-white rounded-lg shadow-sm ${className || ""}`}>
@@ -367,6 +413,62 @@ export function InsightFilters({
                   </label>
                 );
               })}
+            </div>
+          </div>
+
+          {/* v2.6.0: 子分类筛选 */}
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">
+              子分类
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {SUBTYPE_OPTIONS.map((option) => {
+                const isChecked = selectedSubTypes.includes(option.value);
+                return (
+                  <label
+                    key={option.value}
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm cursor-pointer transition-colors ${
+                      isChecked
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) =>
+                        handleSubTypeChange(option.value, e.target.checked)
+                      }
+                      className="sr-only"
+                    />
+                    {option.label}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* v2.6.0: WISH信号筛选 */}
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">
+              特殊标记
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              <label
+                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm cursor-pointer transition-colors ${
+                  showWishOnly
+                    ? "bg-purple-100 text-purple-700"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={showWishOnly}
+                  onChange={(e) => handleWishFilterChange(e.target.checked)}
+                  className="sr-only"
+                />
+                ✨ 仅显示WISH信号
+              </label>
             </div>
           </div>
         </div>

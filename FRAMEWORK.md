@@ -219,10 +219,10 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
   - 话题选择模块：5 个（TopicSearchInput、TopicList、SearchSuggestions、TopicCard、AdvancedSearchOptions）
   - 分析模块：11 个（AnalysisProgress、CommentList、SentimentChart、KeywordCloud、InsightCard、DeepInsights、EmptyState、InsightFilters、InsightGraph、InsightTrendChart、FeatureAnalysis入口）
   - 产品吸引力模块：3 个（AppealScore、ObjectionMap、入口组件）
-- 页面组件：2 个（page.tsx、layout.tsx）
+- 页面组件：4 个（page.tsx、layout.tsx、invite/page.tsx、admin/invite/page.tsx）
 - 测试组件：2 个（UI组件测试3个、功能组件测试4个）
 
-**TypeScript 工具文件（.ts）**：31 个
+**TypeScript 工具文件（.ts）**：33 个
 - API Routes：9 个（subreddit、search、comments、insights、prioritize、appeal、export、export/excel、export/pdf）
 - 自定义钩子：7 个（useTopicSearch、useSearchHistory、useAnalysis、useDeepInsights、useInsightTrend、useAppealAnalysis）
 - API 客户端和工具：4 个（fetch-helper、reddit、zhipu-ai、qwen-ai、prompts）

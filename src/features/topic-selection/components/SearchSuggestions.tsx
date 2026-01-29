@@ -46,7 +46,7 @@ export function SearchSuggestions({
    * 根据关键词类型生成不同类别的建议
    */
   const generatedSuggestions = useMemo(() => {
-    if (!keyword || keyword.length < 2) {
+    if (!keyword || keyword.length < 5) {
       return [];
     }
 
@@ -117,7 +117,7 @@ export function SearchSuggestions({
     }
 
     // 如果是通用词，添加热门分类建议
-    if (!isTechKeyword && !isHobbyKeyword && keyword.length >= 3) {
+    if (!isTechKeyword && !isHobbyKeyword && keyword.length >= 5) {
       const popularCategories = [
         ...techKeywords.slice(0, 3),
         ...hobbyKeywords.slice(0, 3)

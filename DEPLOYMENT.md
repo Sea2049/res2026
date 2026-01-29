@@ -2,6 +2,8 @@
 
 本指南介绍如何将 Reddit Insight Tool 部署到阿里云 ECS 服务器。
 
+> 💡 **使用 Cloudflare CDN？** 请查看 [Cloudflare + 阿里云部署指南](./CLOUDFLARE_DEPLOYMENT.md)
+
 ## 📋 目录
 
 - [部署架构](#部署架构)
@@ -11,6 +13,7 @@
 - [域名配置](#域名配置)
 - [SSL 证书配置](#ssl-证书配置)
 - [运维管理](#运维管理)
+- [Cloudflare 集成](#cloudflare-集成)
 
 ---
 
@@ -418,10 +421,39 @@ docker-compose build --no-cache
 docker-compose up -d
 ```
 
+## 🌐 Cloudflare 集成
+
+如果你想使用 Cloudflare 作为 CDN 和安全层，请查看详细文档：
+
+### 快速链接
+
+- 📄 **[Cloudflare 部署完整指南](./CLOUDFLARE_DEPLOYMENT.md)**
+- ✅ **[部署检查清单](./CLOUDFLARE_CHECKLIST.md)**
+- ⚙️ **[Nginx 配置文件](./nginx-cloudflare.conf)**
+
+### Cloudflare 优势
+
+使用 Cloudflare 可以获得：
+- ✅ 全球 CDN 加速
+- ✅ DDoS 攻击防护
+- ✅ 免费 SSL 证书
+- ✅ Web 应用防火墙 (WAF)
+- ✅ Bot 检测和防护
+- ✅ 智能路由优化
+
+### 一键部署脚本
+
+```bash
+# 在服务器上运行
+chmod +x scripts/cloudflare-setup.sh
+./scripts/cloudflare-setup.sh
+```
+
 ## 📞 技术支持
 
 - **GitHub Issues**: https://github.com/Sea2049/res2026/issues
 - **项目文档**: 查看 [README.md](README.md) 和 [FRAMEWORK.md](FRAMEWORK.md)
+- **Cloudflare 文档**: [CLOUDFLARE_DEPLOYMENT.md](./CLOUDFLARE_DEPLOYMENT.md)
 
 ---
 

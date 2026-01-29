@@ -868,14 +868,25 @@ export function useAnalysis(): UseAnalysisReturn {
   // 组件卸载时清理资源
   useEffect(() => {
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+      // 清理 AbortController
+      try {
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+        }
+      } catch (error) {
+        console.error('AbortController cleanup 失败:', error);
       }
 
-      // 清理 Worker 资源
-      if (workerManagerRef.current) {
-        workerManagerRef.current.terminate();
-        workerManagerRef.current = null;
+      // 注意：不要在组件卸载时 terminate Worker
+      // Worker 采用全局单例模式，会自动管理生命周期
+      // 只需要取消当前任务即可
+      try {
+        if (workerManagerRef.current) {
+          workerManagerRef.current.cancel();
+          // 不设置为 null，保持 Worker 实例存活
+        }
+      } catch (error) {
+        console.error('Worker cancel 失败:', error);
       }
     };
   }, []);

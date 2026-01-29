@@ -27,6 +27,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# 生成 Prisma Client
+RUN npx prisma generate
+
 # 构建生产应用
 ENV NEXT_TELEMETRY_DISABLED 1
 RUN npm run build
@@ -48,6 +51,18 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# 复制 Prisma 相关文件
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# 复制启动脚本
+COPY --from=builder /app/scripts/docker-start.sh ./docker-start.sh
+RUN chmod +x ./docker-start.sh
+
+# 创建数据目录并设置权限
+RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data /app/prisma
+
 # 切换到非 root 用户
 USER nextjs
 
@@ -58,5 +73,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
 
-# 启动应用
-CMD ["node", "server.js"]
+# 启动应用（使用启动脚本初始化数据库）
+CMD ["./docker-start.sh"]

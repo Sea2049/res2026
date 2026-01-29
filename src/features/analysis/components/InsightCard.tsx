@@ -71,6 +71,58 @@ const SEVERITY_COLORS: Record<Insight["severity"], string> = {
 };
 
 /**
+ * 子分类标签映射
+ * v2.6.0 新增
+ */
+const SUBTYPE_LABELS: Record<string, string> = {
+  bug: "Bug",
+  performance: "性能",
+  ux_issue: "UX问题",
+  pricing: "定价",
+  documentation: "文档",
+  integration: "集成",
+  wish: "愿望",
+  general: "通用",
+};
+
+/**
+ * 子分类图标映射
+ * v2.6.0 新增
+ */
+const SUBTYPE_ICONS: Record<string, string> = {
+  bug: "🐛",
+  performance: "⚡",
+  ux_issue: "🎨",
+  pricing: "💰",
+  documentation: "📚",
+  integration: "🔌",
+  wish: "✨",
+  general: "📌",
+};
+
+/**
+ * 优先级等级标签映射
+ * v2.6.0 新增
+ */
+const PRIORITY_LABELS: Record<string, string> = {
+  critical: "紧急",
+  high: "高",
+  medium: "中",
+  low: "低",
+};
+
+/**
+ * 优先级等级颜色映射
+ * v2.6.0 新增
+ */
+const PRIORITY_COLORS: Record<string, string> = {
+  critical: "bg-red-100 text-red-700 border-red-300",
+  high: "bg-orange-100 text-orange-700 border-orange-300",
+  medium: "bg-yellow-100 text-yellow-700 border-yellow-300",
+  low: "bg-green-100 text-green-700 border-green-300",
+};
+
+/**
  * InsightCard 组件 Props 接口
  */
 interface InsightCardProps {
@@ -306,9 +358,17 @@ export const InsightCard = memo(function InsightCard({
           <div className="flex items-center gap-2">
             <span className={`text-xl ${iconColor}`}>{icon}</span>
             <div>
-              <h4 className="font-semibold">
-                {INSIGHT_TYPE_LABELS[insight.type]}
-              </h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-semibold">
+                  {INSIGHT_TYPE_LABELS[insight.type]}
+                </h4>
+                {/* v2.6.0: WISH标记 */}
+                {insight.isWish && (
+                  <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-medium rounded">
+                    ✨ WISH
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-gray-500 mt-0.5">
                 {INSIGHT_TYPE_DESCRIPTIONS[insight.type]}
               </p>
@@ -387,13 +447,44 @@ export const InsightCard = memo(function InsightCard({
           </div>
         )}
 
-        {insight.keyword && (
-          <div className="mt-3">
+        {/* v2.6.0: 标签区域 */}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {insight.keyword && (
             <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
               关键词: {insight.keyword}
             </span>
-          </div>
-        )}
+          )}
+          
+          {/* 子分类标签 */}
+          {insight.subType && SUBTYPE_LABELS[insight.subType] && (
+            <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded flex items-center gap-1">
+              <span>{SUBTYPE_ICONS[insight.subType]}</span>
+              <span>{SUBTYPE_LABELS[insight.subType]}</span>
+            </span>
+          )}
+          
+          {/* 紧急度标签（仅WISH信号） */}
+          {insight.urgency !== undefined && insight.isWish && (
+            <span className="inline-block px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded">
+              紧急度: {insight.urgency.toFixed(1)}/10
+            </span>
+          )}
+          
+          {/* 身份信号 */}
+          {insight.identitySignals && insight.identitySignals.length > 0 && (
+            <span className="inline-block px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded" title={insight.identitySignals.join(", ")}>
+              👤 目标用户: {insight.identitySignals[0]}
+              {insight.identitySignals.length > 1 && ` +${insight.identitySignals.length - 1}`}
+            </span>
+          )}
+          
+          {/* 反对意见 */}
+          {insight.objections && insight.objections.length > 0 && (
+            <span className="inline-block px-2 py-1 bg-red-100 text-red-700 text-xs rounded">
+              ⚠️ {insight.objections.length}个反对意见
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

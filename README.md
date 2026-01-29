@@ -139,11 +139,13 @@ res2026/
 │   │   ├── errors.ts           # 错误处理模块
 │   │   ├── types.ts            # 类型定义
 │   │   └── utils.ts            # 工具函数
-│   └── integration/            # 集成测试
+│   ├── middleware.ts            # Next.js 中间件（邀请码验证）
 ├── electron/                   # Electron 桌面应用
 │   ├── main.ts                 # 主进程
 │   ├── preload.ts              # 预加载脚本
 │   └── types.d.ts              # 类型定义
+├── prisma/                    # 数据库配置和迁移
+│   └── schema.prisma           # 数据库模型定义
 ├── Dockerfile                  # Docker 构建文件
 ├── docker-compose.yml          # 容器编排配置
 ├── package.json                # 项目依赖
@@ -198,6 +200,10 @@ res2026/
 
 Web Worker 模块位于 src/lib/workers 目录下，提供并行计算能力。worker-manager.ts 负责 Worker 线程的创建、任务分发和结果回收。nlp.worker.ts 执行具体的 NLP 计算任务，包括分词、情感分析、关键词提取和洞察检测。这种架构将 CPU 密集型操作从主线程分离，避免阻塞 UI 渲染，显著提升用户体验。
 
+### 中间件与数据库
+
+中间件模块（middleware.ts）负责请求拦截和访问控制，当前实现对首页的邀请码验证。数据库模块使用 Prisma ORM 管理数据持久化，数据库配置文件位于 prisma 目录下。Prisma 客户端封装（src/lib/prisma.ts）提供单例访问模式，支持开发环境热重载。
+
 ## 测试
 
 项目使用 Jest 和 React Testing Library 构建单元测试体系。测试文件分布在各功能模块的 __tests__ 目录下，与被测试的文件放在一起便于维护。执行以下命令运行测试。测试覆盖率报告会在终端输出，覆盖率阈值配置在 jest.config.js 中，核心逻辑的覆盖率要求达到 80% 以上。
@@ -236,6 +242,25 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
 | 文档文件 | 5 | FRAMEWORK、CODE_DIRECTORY、README、DEPLOYMENT、TESTING |
 
 ## 版本历史
+
+### v2.6.1（2026-01-29）
+
+本版本新增邀请码管理系统，提供用户访问控制和管理员后台功能，增强应用的安全性和访问管理能力。
+
+**核心功能**：
+- **邀请码验证系统**：用户访问首页前需要输入有效邀请码
+- **管理员后台**：支持创建、查看、启用/禁用、删除邀请码
+- **中间件拦截**：通过 Next.js 中间件对首页访问进行验证
+- **数据库集成**：使用 Prisma ORM 和 SQLite 数据库持久化邀请码数据
+- **Cookie 认证**：验证成功后设置 HttpOnly Cookie，支持自定义过期时间
+
+**技术亮点**：
+- 集成 Prisma ORM，支持数据库迁移和类型安全
+- 新增2个 API 端点（/api/invite/verify、/api/invite/admin）
+- 邀请码支持配置最大使用次数、过期时间和备注
+- 管理员 API 通过 ADMIN_PASSWORD 环境变量验证
+- 新增2个页面组件（/invite、/admin/invite）
+- 总文件数达到89个
 
 ### v2.6.0（2026-01-28）
 

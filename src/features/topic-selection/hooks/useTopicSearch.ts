@@ -192,7 +192,7 @@ export function useTopicSearch(): UseTopicSearchReturn {
           setIsLoading(false);
         }
       }
-    }, 500);
+    }, 1500);
 
     // 赋值给 ref
     debouncedSearchRef.current = debouncedSearch;
@@ -207,7 +207,7 @@ export function useTopicSearch(): UseTopicSearchReturn {
    * 当关键词长度达到阈值时自动触发搜索
    */
   useEffect(() => {
-    if (keyword.length >= 2 && debouncedSearchRef.current) {
+    if (keyword.length >= 5 && debouncedSearchRef.current) {
       debouncedSearchRef.current(keyword, searchOptions);
     }
   }, [keyword, searchOptions]);

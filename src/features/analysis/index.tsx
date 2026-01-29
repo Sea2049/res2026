@@ -65,47 +65,76 @@ export function AnalysisDashboard({
     await startAnalysis(selectedTopics);
   };
 
-  const handleExportJson = () => {
+  // 通用服务端导出函数
+  const serverExport = async (content: string, filename: string, format: string) => {
+    try {
+      const response = await fetch('/api/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, filename, format }),
+      });
+      if (!response.ok) throw new Error('导出失败');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('导出失败:', error);
+      alert('导出失败，请重试');
+    }
+  };
+
+  const handleExportJson = async () => {
     const data = exportResult("json");
     if (data) {
-      const blob = new Blob([data], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `reddit-insight-analysis-${Date.now()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const filename = `reddit-insight-analysis-${Date.now()}.json`;
+      await serverExport(data, filename, 'json');
     }
   };
 
-  const handleExportCsv = () => {
+  const handleExportCsv = async () => {
     const data = exportResult("csv");
     if (data) {
-      const blob = new Blob([data], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `reddit-insight-keywords-${Date.now()}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const filename = `reddit-insight-keywords-${Date.now()}.csv`;
+      await serverExport(data, filename, 'txt'); // CSV 用 txt 格式处理
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const blob = exportToExcel(allSearchResults);
     if (blob) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `reddit-insight-analysis-${Date.now()}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Excel 是二进制格式，需要特殊处理
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(',')[1];
+        const filename = `reddit-insight-analysis-${Date.now()}.xlsx`;
+        try {
+          const response = await fetch('/api/export/excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ base64, filename }),
+          });
+          if (!response.ok) throw new Error('导出失败');
+          const resultBlob = await response.blob();
+          const url = window.URL.createObjectURL(resultBlob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        } catch (error) {
+          console.error('Excel导出失败:', error);
+          alert('Excel导出失败，请重试');
+        }
+      };
+      reader.readAsDataURL(blob);
     }
   };
 

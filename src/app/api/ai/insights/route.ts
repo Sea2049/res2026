@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { zhipuAI } from "@/lib/ai/zhipu-ai";
+import { qwenAI } from "@/lib/ai/qwen-ai";
 import { generateInsightPrompt } from "@/lib/ai/prompts";
 import type { AnalysisResult, SearchResult } from "@/lib/types";
 
@@ -20,7 +20,7 @@ interface GenerateInsightsRequest {
 /**
  * 深度洞见API路由
  * POST /api/ai/insights
- * 接收分析结果数据，调用GLM-4生成深度洞见
+ * 接收分析结果数据，调用通义千问(QWEN)生成深度洞见
  */
 export async function POST(request: NextRequest) {
   try {
@@ -35,10 +35,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.ZHIPU_API_KEY;
+    const apiKey = process.env.QWEN_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: "智谱AI API密钥未配置" },
+        { error: "通义千问API密钥未配置" },
         { status: 500 }
       );
     }
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       exportData
     });
 
-    const aiResponse = await zhipuAI.chatCompletion({
+    const aiResponse = await qwenAI.chatCompletion({
       apiKey,
       messages: [
         {
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
           content: prompt
         }
       ],
-      model: "glm-4.7",
+      model: "qwen-plus",
       temperature: 0.7,
       maxTokens: 8000
     });

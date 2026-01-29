@@ -14,25 +14,26 @@ export type SearchTimeRange = "all" | "hour" | "day" | "week" | "month" | "year"
 /**
  * Reddit API 客户端
  * 提供与 Reddit API 交互的方法
- * 使用 corsproxy.io 代理服务绕过 CORS 限制
- * 智能根据时段调整调用策略
+ * 优先使用服务端 API Routes（支持代理），失败时回退到 CORS 代理
  */
 class RedditApiClient {
   private baseUrl = "https://www.reddit.com";
-  private proxyUrl = "https://api.corsproxy.io/?";
+  // 服务端 API 地址
+  private serverApiUrl = "/api/reddit";
+  // 回退用 CORS 代理
+  private proxyUrl = "https://api.codetabs.com/v1/proxy?quest=";
 
   /**
    * 通用 Fetch 方法，支持重试和 AbortSignal
-   * 通过 CORS 代理发送请求
-   * 智能根据时段调整重试策略
+   * 优先使用服务端 API，失败时回退到 CORS 代理
    */
   private async fetchWithRetry(url: string, options: RequestInit = {}, retries?: number): Promise<Response> {
     const timeConfig = getTimeBasedApiConfig();
     const effectiveRetries = retries ?? timeConfig.maxRetries;
     
+    // 优先尝试服务端 API
     const proxyUrl = `${this.proxyUrl}${encodeURIComponent(url)}`;
     const headers = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Accept': 'application/json',
       ...options.headers,
     };
@@ -72,6 +73,20 @@ class RedditApiClient {
   }
 
   /**
+   * 通过服务端 API 获取数据
+   */
+  private async fetchViaServerApi(endpoint: string, params: Record<string, string>, signal?: AbortSignal): Promise<Response> {
+    const searchParams = new URLSearchParams(params);
+    const url = `${this.serverApiUrl}/${endpoint}?${searchParams.toString()}`;
+    
+    const response = await fetch(url, { signal });
+    if (!response.ok) {
+      throw new Error(`Server API error: ${response.status}`);
+    }
+    return response;
+  }
+
+  /**
    * 搜索 Subreddits
    * @param query 搜索关键词
    * @param signal AbortSignal 用于取消请求
@@ -79,10 +94,15 @@ class RedditApiClient {
    */
   async searchSubreddits(query: string, signal?: AbortSignal): Promise<Subreddit[]> {
     try {
-      const url = `${this.baseUrl}/subreddits/search.json?q=${encodeURIComponent(query)}&limit=20`;
-      console.log("正在请求 Subreddits:", url);
+      console.log("正在搜索 Subreddits:", query);
       
-      const response = await this.fetchWithRetry(url, { signal });
+      // 优先使用服务端 API
+      const response = await this.fetchViaServerApi('search', {
+        q: query,
+        type: 'subreddit',
+        limit: '20'
+      }, signal);
+      
       console.log("响应状态:", response.status);
       
       const data = await response.json();
@@ -132,19 +152,25 @@ class RedditApiClient {
     signal?: AbortSignal
   ): Promise<Post[]> {
     try {
-      let url = `${this.baseUrl}/search.json?q=${encodeURIComponent(query)}&sort=${sortBy}&limit=${limit}`;
+      console.log("正在搜索 Posts:", query);
+
+      // 构建服务端 API 参数
+      const params: Record<string, string> = {
+        q: query,
+        type: 'post',
+        sort: sortBy,
+        limit: limit.toString(),
+      };
       
       if (timeRange !== "all") {
-        url += `&t=${timeRange}`;
+        params.t = timeRange;
       }
       
       if (subreddit) {
-        url += `&restrict_sr=true&sr=${encodeURIComponent(subreddit)}`;
+        params.subreddit = subreddit;
       }
 
-      console.log("正在请求 Posts:", url);
-
-      const response = await this.fetchWithRetry(url, { signal });
+      const response = await this.fetchViaServerApi('search', params, signal);
       const data = await response.json();
       
       if (!data.data || !data.data.children) {
@@ -184,10 +210,13 @@ class RedditApiClient {
    */
   async getComments(postId: string, subreddit: string, signal?: AbortSignal): Promise<Comment[]> {
     try {
-      const url = `${this.baseUrl}/r/${subreddit}/comments/${postId}.json?limit=100&sort=confidence`;
-      console.log("正在请求 Comments:", url);
+      console.log("正在获取评论:", postId, subreddit);
 
-      const response = await this.fetchWithRetry(url, { signal });
+      // 使用服务端 API 获取评论
+      const response = await this.fetchViaServerApi('comments', {
+        subreddit,
+        postId,
+      }, signal);
       const data = await response.json();
       
       const comments: Comment[] = [];
@@ -240,10 +269,13 @@ class RedditApiClient {
    */
   async getSubredditPosts(subreddit: string, limit: number = 10, signal?: AbortSignal): Promise<Post[]> {
     try {
-      const url = `${this.baseUrl}/r/${subreddit}/hot.json?limit=${limit}&sort=hot`;
-      console.log("正在请求 Subreddit Posts:", url);
+      console.log("正在获取 Subreddit 帖子:", subreddit, limit);
 
-      const response = await this.fetchWithRetry(url, { signal });
+      // 使用服务端 API 获取帖子
+      const response = await this.fetchViaServerApi('subreddit', {
+        subreddit,
+        limit: limit.toString(),
+      }, signal);
       const data = await response.json();
       
       if (!data.data || !data.data.children) {
