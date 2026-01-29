@@ -1,0 +1,48 @@
+---
+description: 确保构建产物不被提交到 Git
+globs: 
+alwaysApply: true
+---
+
+# Git 构建产物管理规则
+
+## 核心原则
+
+构建产物（`dist/`, `.next/`, `*.asar`, `*.exe`）**永远不应该被提交到 Git 仓库**。
+
+## 检查清单
+
+在执行任何 Git 操作前，确认以下目录/文件已在 `.gitignore` 中：
+
+```
+# Build outputs (必须忽略)
+.next
+out
+dist
+dist-build
+dist-new
+build
+*.asar
+*.exe
+
+# Dependencies
+node_modules
+
+# Environment files
+.env
+.env.local
+.env.*.local
+```
+
+## 操作指南
+
+1. **提交前检查**：运行 `git status`，如果看到 `.next/`、`dist/` 或 `*.asar` 文件，**立即停止**并检查 `.gitignore`
+
+2. **发现已追踪的构建产物**：使用以下命令移除：
+   ```bash
+   git rm -r --cached .next dist dist-build dist-new
+   ```
+
+3. **大文件限制**：GitHub 限制单文件 100MB，Electron 构建产物通常超过此限制
+
+4. **分发构建产物**：使用 GitHub Releases 而非直接提交
