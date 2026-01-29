@@ -42,6 +42,9 @@ WORKDIR /app
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
+# 安装 OpenSSL（Prisma 需要）
+RUN apk add --no-cache openssl openssl-dev
+
 # 创建非 root 用户（安全最佳实践）
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
