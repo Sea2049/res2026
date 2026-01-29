@@ -243,6 +243,22 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
 
 ## 版本历史
 
+### v2.6.3（2026-01-29）
+
+本版本完成了生产环境部署优化，修复了多个 Docker/Alpine 兼容性问题，确保应用在 sea2049.com 稳定运行。
+
+**部署优化**：
+- **Prisma 兼容性修复**：添加 `linux-musl-openssl-3.0.x` 到 binaryTargets，解决 Alpine Linux 环境下的 Query Engine 缺失问题
+- **依赖管理优化**：将 `undici` 从 devDependencies 移至 dependencies，修复生产构建时的模块导入错误
+- **Docker 镜像优化**：在 runner 阶段安装 OpenSSL，复制完整的 Prisma CLI 并设置正确权限
+- **启动脚本改进**：使用本地安装的 Prisma CLI 替代 npx，避免下载不兼容版本
+- **环境变量修复**：调整 docker-compose.yml 优先级，确保 .env.production 中的配置正确加载
+
+**技术细节**：
+- Prisma 版本锁定为 5.22.0，避免 v7 破坏性变更
+- 修复 package.json JSON 语法错误（缺失逗号）
+- 优化 Dockerfile 权限设置，确保 nextjs 用户可访问 Prisma 引擎目录
+
 ### v2.6.1（2026-01-29）
 
 本版本新增邀请码管理系统，提供用户访问控制和管理员后台功能，增强应用的安全性和访问管理能力。
