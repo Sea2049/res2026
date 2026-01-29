@@ -61,8 +61,8 @@ COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/scripts/docker-start.sh ./docker-start.sh
 RUN chmod +x ./docker-start.sh
 
-# 创建数据目录并设置权限
-RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data /app/prisma
+# 创建数据目录并设置权限（包括 Prisma 引擎目录）
+RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data /app/prisma /app/node_modules/.prisma /app/node_modules/@prisma /app/node_modules/prisma
 
 # 切换到非 root 用户
 USER nextjs
