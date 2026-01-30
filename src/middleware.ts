@@ -28,13 +28,13 @@ async function hmacSha256(secret: string, message: string): Promise<string> {
 
   const key = await crypto.subtle.importKey(
     'raw',
-    keyData,
+    keyData.buffer as ArrayBuffer,
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign']
   )
 
-  const signature = await crypto.subtle.sign('HMAC', key, messageData)
+  const signature = await crypto.subtle.sign('HMAC', key, messageData.buffer as ArrayBuffer)
   return arrayBufferToHex(signature)
 }
 
