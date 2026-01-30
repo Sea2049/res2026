@@ -9,6 +9,13 @@ const isProduction = process.env.NODE_ENV === 'production';
 const LOCAL_PROXY_URL = isProduction ? null : (process.env.HTTP_PROXY || null);
 
 /**
+ * 从环境变量获取 CORS 代理配置
+ */
+const CORS_PROXY_ALLORIGINS = process.env.CORS_PROXY_ALLORIGINS || 'https://api.allorigins.win/raw';
+const CORS_PROXY_IO = process.env.CORS_PROXY_IO || 'https://api.corsproxy.io';
+const CORS_PROXY_CODETABS = process.env.CORS_PROXY_CODETABS || 'https://api.codetabs.com/v1/proxy';
+
+/**
  * 通用 Fetch 辅助函数，实现多策略回退机制
  * 用于解决本地开发环境无法直接访问 Reddit API 的问题
  */
@@ -39,7 +46,7 @@ export async function fetchWithFallbacks(targetUrl: string): Promise<Response> {
     },
     {
       name: 'AllOrigins',
-      getUrl: (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&timestamp=${Date.now()}`,
+      getUrl: (url: string) => `${CORS_PROXY_ALLORIGINS}?url=${encodeURIComponent(url)}&timestamp=${Date.now()}`,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       },
@@ -48,7 +55,7 @@ export async function fetchWithFallbacks(targetUrl: string): Promise<Response> {
     },
     {
       name: 'CorsProxy',
-      getUrl: (url: string) => `https://api.corsproxy.io/?url=${encodeURIComponent(url)}`,
+      getUrl: (url: string) => `${CORS_PROXY_IO}/?url=${encodeURIComponent(url)}`,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       },
@@ -57,7 +64,7 @@ export async function fetchWithFallbacks(targetUrl: string): Promise<Response> {
     },
     {
       name: 'CodeTabs',
-      getUrl: (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+      getUrl: (url: string) => `${CORS_PROXY_CODETABS}?quest=${encodeURIComponent(url)}`,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       },

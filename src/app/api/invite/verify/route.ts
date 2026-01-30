@@ -1,20 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { validateNonEmptyString } from '@/lib/validators'
+import { generateVerificationToken } from '@/lib/auth-token'
 
 export async function POST(request: NextRequest) {
   try {
-    const { code } = await request.json()
+    const body = await request.json()
+    const { code } = body
 
-    if (!code || typeof code !== 'string') {
+    // 输入验证
+    if (!validateNonEmptyString(code, 20)) {
       return NextResponse.json(
-        { success: false, error: '请输入邀请码' },
+        { success: false, error: '请输入有效的邀请码' },
+        { status: 400 }
+      )
+    }
+
+    // 邀请码格式验证（8位大写字母数字）
+    const normalizedCode = code.trim().toUpperCase()
+    const codeRegex = /^[A-Z0-9]{8}$/
+    if (!codeRegex.test(normalizedCode)) {
+      return NextResponse.json(
+        { success: false, error: '邀请码格式无效' },
         { status: 400 }
       )
     }
 
     // 查找邀请码
     const inviteCode = await prisma.inviteCode.findUnique({
-      where: { code: code.trim() },
+      where: { code: normalizedCode },
     })
 
     // 邀请码不存在
@@ -58,11 +72,12 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // 设置验证 Cookie
+    // 生成签名 Token 并设置 Cookie
     const cookieMaxAge = parseInt(process.env.INVITE_COOKIE_MAX_AGE || '604800', 10) // 默认 7 天
+    const verificationToken = generateVerificationToken()
     const response = NextResponse.json({ success: true })
     
-    response.cookies.set('invite_verified', 'true', {
+    response.cookies.set('invite_verified', verificationToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

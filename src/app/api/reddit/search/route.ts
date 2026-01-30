@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithFallbacks } from '@/lib/api/fetch-helper';
+import {
+  validateSubreddit,
+  validateLimit,
+  validateSortType,
+  validateNonEmptyString,
+  VALID_SEARCH_SORT_TYPES,
+  VALID_TIME_RANGES,
+} from '@/lib/validators';
 
 // 简单内存缓存接口
 interface CacheEntry {
@@ -11,44 +19,44 @@ interface CacheEntry {
 const memoryCache = new Map<string, CacheEntry>();
 const CACHE_TTL = 60 * 1000; // 60秒缓存
 
-// 验证常量
-const VALID_SORT_TYPES = ['relevance', 'hot', 'top', 'new', 'comments'];
-const VALID_TIME_RANGES = ['hour', 'day', 'week', 'month', 'year', 'all'];
-
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get('q');
   const type = searchParams.get('type') || 'subreddit';
   
-  // 1. 输入验证
-  if (!query) {
-    return NextResponse.json({ error: '缺少搜索关键词' }, { status: 400 });
+  // 1. 输入验证 - 搜索关键词
+  if (!validateNonEmptyString(query, 200)) {
+    return NextResponse.json({ error: '缺少搜索关键词或关键词过长（最大200字符）' }, { status: 400 });
   }
 
   // 验证 limit
   const limitParam = searchParams.get('limit');
-  let limit = 20;
-  if (limitParam) {
-    const parsedLimit = parseInt(limitParam, 10);
-    if (isNaN(parsedLimit) || parsedLimit < 1 || parsedLimit > 100) {
-      return NextResponse.json({ error: 'Limit 参数必须在 1 到 100 之间' }, { status: 400 });
-    }
-    limit = parsedLimit;
+  const limit = validateLimit(limitParam, 1, 100, 20);
+  if (limit === null) {
+    return NextResponse.json({ error: 'Limit 参数必须在 1 到 100 之间' }, { status: 400 });
   }
 
   // 验证 sort
   const sort = searchParams.get('sort') || 'relevance';
-  if (type === 'post' && !VALID_SORT_TYPES.includes(sort)) {
+  if (type === 'post' && !validateSortType(sort, VALID_SEARCH_SORT_TYPES)) {
     return NextResponse.json({ 
-      error: `无效的排序参数。可选值: ${VALID_SORT_TYPES.join(', ')}` 
+      error: `无效的排序参数。可选值: ${VALID_SEARCH_SORT_TYPES.join(', ')}` 
     }, { status: 400 });
   }
 
   // 验证 time range
   const timeRange = searchParams.get('t') || 'all';
-  if (type === 'post' && !VALID_TIME_RANGES.includes(timeRange)) {
+  if (type === 'post' && !validateSortType(timeRange, VALID_TIME_RANGES)) {
     return NextResponse.json({ 
       error: `无效的时间范围参数。可选值: ${VALID_TIME_RANGES.join(', ')}` 
+    }, { status: 400 });
+  }
+
+  // 验证 subreddit（如果提供）
+  const subredditParam = searchParams.get('subreddit');
+  if (subredditParam && !validateSubreddit(subredditParam)) {
+    return NextResponse.json({ 
+      error: 'Subreddit 名称格式无效（只允许字母、数字、下划线，最长50字符）' 
     }, { status: 400 });
   }
 
@@ -81,8 +89,8 @@ export async function GET(request: NextRequest) {
         redditUrl += `&t=${timeRange}`;
       }
       
-      if (subreddit) {
-        redditUrl += `&restrict_sr=true&sr=${encodeURIComponent(subreddit)}`;
+      if (subredditParam) {
+        redditUrl += `&restrict_sr=true&sr=${encodeURIComponent(subredditParam)}`;
       }
     }
 

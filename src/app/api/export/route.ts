@@ -1,4 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { 
+  validateFilename, 
+  validateExportFormat,
+  validateNonEmptyString,
+  VALID_EXPORT_FORMATS 
+} from "@/lib/validators";
 
 /**
  * 导出文件 API
@@ -9,9 +15,26 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { content, filename, format } = body;
 
-    if (!content || !filename) {
+    // 验证 content
+    if (!validateNonEmptyString(content, 10 * 1024 * 1024)) { // 最大 10MB
       return NextResponse.json(
-        { error: "缺少必要参数" },
+        { error: "缺少内容或内容过大（最大10MB）" },
+        { status: 400 }
+      );
+    }
+
+    // 验证 filename
+    if (!validateFilename(filename)) {
+      return NextResponse.json(
+        { error: "文件名无效（不允许包含特殊字符或路径遍历符号）" },
+        { status: 400 }
+      );
+    }
+
+    // 验证 format
+    if (format && !validateExportFormat(format)) {
+      return NextResponse.json(
+        { error: `导出格式无效。可选值: ${VALID_EXPORT_FORMATS.join(', ')}` },
         { status: 400 }
       );
     }

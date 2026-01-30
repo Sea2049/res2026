@@ -211,9 +211,9 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
 
 ### 11.1 代码文件统计
 
-截至当前版本（v2.6.0），项目包含以下代码文件：
+截至当前版本（v2.7.0），项目包含以下代码文件：
 
-**TypeScript 组件文件（.tsx）**：38 个
+**TypeScript 组件文件（.tsx）**：40 个
 - UI 组件：13 个（button、input、card、badge、spinner、alert、tabs、separator、select、dialog、dropdown-menu、tooltip、progress）
 - 功能模块组件：21 个
   - 话题选择模块：5 个（TopicSearchInput、TopicList、SearchSuggestions、TopicCard、AdvancedSearchOptions）
@@ -222,15 +222,18 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
 - 页面组件：4 个（page.tsx、layout.tsx、invite/page.tsx、admin/invite/page.tsx）
 - 测试组件：2 个（UI组件测试3个、功能组件测试4个）
 
-**TypeScript 工具文件（.ts）**：33 个
-- API Routes：9 个（subreddit、search、comments、insights、prioritize、appeal、export、export/excel、export/pdf）
+**TypeScript 工具文件（.ts）**：35 个
+- API Routes：11 个（subreddit、search、comments、insights、prioritize、appeal、export、export/excel、export/pdf、invite/verify、invite/admin）
 - 自定义钩子：7 个（useTopicSearch、useSearchHistory、useAnalysis、useDeepInsights、useInsightTrend、useAppealAnalysis）
 - API 客户端和工具：4 个（fetch-helper、reddit、zhipu-ai、qwen-ai、prompts）
 - NLP 处理：1 个（nlp.ts）
 - 工具类和模式定义：3 个（sentiment-patterns、priority-calculator、utils）
+- 安全工具：2 个（validators.ts、auth-token.ts）
 - 错误处理：1 个（errors.ts）
 - 类型定义：1 个（types.ts）
+- 数据库：1 个（prisma.ts）
 - Worker 线程：2 个（worker-manager、nlp.worker）
+- 中间件：1 个（middleware.ts）
 - Electron 主进程：3 个（main.ts、preload.ts、types.d.ts）
 
 **测试文件（.test.tsx/.test.ts）**：15 个
@@ -249,7 +252,33 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
 
 ## 十二、变更日志
 
-### v2.6.0（当前版本 - 2026-01-28）
+### v2.7.0（当前版本 - 2026-01-30）
+
+本版本完成了 API 安全性的全面增强，新增输入验证工具库和 Token 签名机制，将敏感配置移至环境变量。主要变更包括：
+
+**输入验证工具库**：
+- 新增 validators.ts 统一验证工具库，提供 Reddit 参数、邀请码、文件名等验证函数
+- 所有 API 路由集成输入验证，防止参数注入和路径遍历攻击
+- 支持 Subreddit 名称、Post ID、CUID、文件名等多种格式验证
+
+**Token 签名机制**：
+- 新增 auth-token.ts Token 签名工具库，使用 HMAC-SHA256 生成安全 Token
+- 邀请码验证 Cookie 从简单布尔值升级为签名 Token，防止伪造
+- 支持 Token 过期检查和时序攻击防护（timingSafeEqual）
+- 中间件升级为验证签名 Token
+
+**环境变量化配置**：
+- CORS 代理 URL 配置移至环境变量（支持自定义代理服务）
+- 新增 INVITE_TOKEN_SECRET 环境变量用于 Token 签名
+- 更新 .env.local.example 和 .env.production 配置文档
+
+**文件统计**：
+- 新增 src/lib/validators.ts（验证工具库）
+- 新增 src/lib/auth-token.ts（Token 签名工具库）
+- TypeScript 工具文件：33个 → 35个
+- 总文件数：89个 → 91个
+
+### v2.6.0（2026-01-28）
 
 本版本完成了基于Reddit分析技能的功能增强，显著提升了洞察分析的深度和准确性。新增产品吸引力评估、优先级计算、数据导出等高级功能。主要变更包括：
 

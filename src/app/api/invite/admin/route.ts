@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { nanoid } from 'nanoid'
+import { 
+  validateCUID, 
+  validatePositiveInteger, 
+  validateBoolean,
+  validateNonEmptyString 
+} from '@/lib/validators'
 
 // 验证管理员密码
 function verifyAdminPassword(request: NextRequest): boolean {
@@ -57,6 +63,36 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { maxUses = 1, expiresInDays, note } = body
 
+    // 验证 maxUses
+    if (maxUses !== undefined) {
+      const parsedMaxUses = typeof maxUses === 'string' ? parseInt(maxUses, 10) : maxUses
+      if (!validatePositiveInteger(parsedMaxUses, 1, 10000)) {
+        return NextResponse.json(
+          { success: false, error: 'maxUses 必须是 1 到 10000 之间的正整数' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // 验证 expiresInDays
+    if (expiresInDays !== undefined && expiresInDays !== null) {
+      const parsedDays = typeof expiresInDays === 'string' ? parseInt(expiresInDays, 10) : expiresInDays
+      if (!validatePositiveInteger(parsedDays, 1, 365)) {
+        return NextResponse.json(
+          { success: false, error: 'expiresInDays 必须是 1 到 365 之间的正整数' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // 验证 note
+    if (note !== undefined && note !== null && !validateNonEmptyString(note, 500)) {
+      return NextResponse.json(
+        { success: false, error: '备注长度不能超过 500 字符' },
+        { status: 400 }
+      )
+    }
+
     // 生成随机邀请码（8位大写字母数字）
     const code = nanoid(8).toUpperCase()
 
@@ -106,6 +142,14 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
+    // 验证 ID 格式（CUID）
+    if (!validateCUID(id)) {
+      return NextResponse.json(
+        { success: false, error: 'ID 格式无效' },
+        { status: 400 }
+      )
+    }
+
     await prisma.inviteCode.delete({
       where: { id },
     })
@@ -137,9 +181,17 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    if (typeof enabled !== 'boolean') {
+    // 验证 ID 格式（CUID）
+    if (!validateCUID(id)) {
       return NextResponse.json(
-        { success: false, error: '缺少 enabled 参数' },
+        { success: false, error: 'ID 格式无效' },
+        { status: 400 }
+      )
+    }
+
+    if (!validateBoolean(enabled)) {
+      return NextResponse.json(
+        { success: false, error: 'enabled 参数必须是布尔值' },
         { status: 400 }
       )
     }

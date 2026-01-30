@@ -2,6 +2,64 @@
 
 本文档记录项目的所有重要变更，按版本号倒序排列。
 
+## [2.7.0] - 2026-01-30
+
+### 新增
+
+**API 安全性增强**
+- 新增统一输入验证工具库（src/lib/validators.ts），提供 Reddit 参数、邀请码、文件名等验证函数
+- 新增 Token 签名工具库（src/lib/auth-token.ts），使用 HMAC-SHA256 生成安全的验证 Token
+- 邀请码验证 Cookie 从简单布尔值升级为签名 Token，防止伪造
+- 中间件增强：验证签名 Token 而非简单布尔值，支持 Token 过期检查
+
+**输入验证**
+- Reddit API 路由（search、comments、subreddit）添加 subreddit 名称和 postId 格式验证
+- 邀请码 API 路由添加 ID 格式（CUID）、maxUses 范围、expiresInDays 范围验证
+- 导出 API 添加文件名安全检查（防止路径遍历）和导出格式白名单验证
+
+**环境变量化配置**
+- CORS 代理 URL 配置移至环境变量（NEXT_PUBLIC_CORS_PROXY_URL、CORS_PROXY_ALLORIGINS 等）
+- 新增 INVITE_TOKEN_SECRET 环境变量，用于 Token 签名密钥配置
+- 更新 .env.local.example 和 .env.production 添加新配置项文档
+
+**新增验证函数**
+- validateSubreddit：Subreddit 名称格式验证（字母、数字、下划线，最长50字符）
+- validatePostId：Reddit Post ID 格式验证（字母数字，最长10字符）
+- validateLimit：数值范围验证，支持默认值
+- validateFilename：文件名安全检查，防止路径遍历攻击
+- validateExportFormat：导出格式白名单验证
+- validateCUID：Prisma CUID 格式验证
+- generateVerificationToken：生成 HMAC-SHA256 签名 Token
+- verifyToken：验证签名 Token，支持过期检查和时序攻击防护
+
+**文件统计**
+- 新增 src/lib/validators.ts（验证工具库）
+- 新增 src/lib/auth-token.ts（Token 签名工具库）
+- TypeScript 工具文件：33个 → 35个
+- 总文件数：89个 → 91个
+
+### 修改
+
+- src/app/api/reddit/search/route.ts - 集成 validators 验证函数
+- src/app/api/reddit/comments/route.ts - 添加 subreddit 和 postId 格式验证
+- src/app/api/reddit/subreddit/route.ts - 添加 subreddit 和 limit 验证
+- src/app/api/invite/verify/route.ts - 使用签名 Token 替代布尔值 Cookie
+- src/app/api/invite/admin/route.ts - 添加 ID 和参数验证
+- src/app/api/export/route.ts - 添加文件名和格式验证
+- src/middleware.ts - 升级为验证签名 Token
+- src/lib/api/reddit.ts - 代理 URL 从环境变量读取
+- src/lib/api/fetch-helper.ts - CORS 代理 URL 从环境变量读取
+- .env.local.example - 添加新环境变量文档
+- .env.production - 添加生产环境配置项
+
+### 安全改进
+
+- 防止 Cookie 伪造：使用 HMAC-SHA256 签名 Token
+- 防止路径遍历：文件名验证拒绝 ../、/、\ 等字符
+- 防止参数注入：所有 API 参数经过格式验证
+- 时序攻击防护：Token 验证使用 timingSafeEqual（服务端）
+- 配置安全：敏感配置（代理 URL、Token 密钥）移至环境变量
+
 ## [2.6.1] - 2026-01-29
 
 ### 新增

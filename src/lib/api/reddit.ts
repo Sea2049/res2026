@@ -20,8 +20,8 @@ class RedditApiClient {
   private baseUrl = "https://www.reddit.com";
   // 服务端 API 地址
   private serverApiUrl = "/api/reddit";
-  // 回退用 CORS 代理
-  private proxyUrl = "https://api.codetabs.com/v1/proxy?quest=";
+  // 回退用 CORS 代理（从环境变量读取或使用默认值）
+  private proxyUrl = process.env.NEXT_PUBLIC_CORS_PROXY_URL || "https://api.codetabs.com/v1/proxy?quest=";
 
   /**
    * 通用 Fetch 方法，支持重试和 AbortSignal

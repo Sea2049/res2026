@@ -235,13 +235,30 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
 
 | 类型 | 数量 | 说明 |
 |------|------|------|
-| TypeScript 组件（.tsx） | 38 | UI 组件、功能模块组件和测试组件 |
-| TypeScript 工具（.ts） | 31 | 钩子、API Routes、API 客户端、NLP 处理、Worker、错误处理 |
+| TypeScript 组件（.tsx） | 40 | UI 组件、功能模块组件和测试组件 |
+| TypeScript 工具（.ts） | 35 | 钩子、API Routes、API 客户端、NLP 处理、Worker、安全工具、错误处理 |
 | 测试文件 | 15 | 单元测试和集成测试覆盖核心功能 |
 | 配置文件 | 19 | 项目构建和测试配置 |
 | 文档文件 | 5 | FRAMEWORK、CODE_DIRECTORY、README、DEPLOYMENT、TESTING |
 
 ## 版本历史
+
+### v2.7.0（2026-01-30）
+
+本版本完成了 API 安全性的全面增强，新增输入验证工具库和 Token 签名机制。
+
+**核心功能**：
+- **输入验证工具库**：新增 validators.ts，提供 Reddit 参数、邀请码、文件名等验证函数
+- **Token 签名机制**：新增 auth-token.ts，使用 HMAC-SHA256 生成安全验证 Token
+- **Cookie 安全升级**：邀请码验证 Cookie 从简单布尔值升级为签名 Token，防止伪造
+- **中间件增强**：验证签名 Token 而非简单布尔值，支持 Token 过期检查
+- **环境变量化**：CORS 代理 URL 和 Token 密钥配置移至环境变量
+
+**安全改进**：
+- 所有 API 路由集成输入验证，防止参数注入
+- 文件名验证防止路径遍历攻击
+- Token 验证使用时序安全比较，防止时序攻击
+- 总文件数达到 91 个
 
 ### v2.6.3（2026-01-29）
 

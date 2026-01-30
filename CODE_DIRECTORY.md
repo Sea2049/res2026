@@ -270,6 +270,9 @@ lib 目录包含项目的工具函数、类型定义、外部服务封装、API 
 | src/lib/utils.ts | TS | 通用工具函数集合，包括日期格式化、字符串处理等 |
 | src/lib/nlp.ts | TS | 自然语言处理模块(v2.3.0优化版)，包含分词、情感分析和关键词提取，新增LRU缓存、MinHeap堆算法、批量TF-IDF计算等性能优化 |
 | src/lib/errors.ts | TS | 错误处理模块，定义统一的错误类型和处理机制 |
+| src/lib/validators.ts | TS | 统一输入验证工具库(v2.7.0新增)，提供 Reddit 参数、邀请码、文件名等格式验证函数，防止参数注入和路径遍历攻击 |
+| src/lib/auth-token.ts | TS | Token 签名工具库(v2.7.0新增)，使用 HMAC-SHA256 生成安全的验证 Token，支持过期检查和时序攻击防护 |
+| src/lib/prisma.ts | TS | Prisma 客户端封装，提供单例访问模式，支持开发环境热重载 |
 
 ### 6.4 Worker 线程
 
@@ -306,8 +309,8 @@ integration 目录包含跨模块的集成测试，验证多个功能模块协�
 
 | 文件类型 | 数量 | 占比 |
 |----------|------|------|
-| TypeScript 组件（.tsx） | 38 | 50.7% |
-| TypeScript 工具（.ts） | 31 | 41.3% |
+| TypeScript 组件（.tsx） | 40 | 48.8% |
+| TypeScript 工具（.ts） | 35 | 42.7% |
 | 测试文件（.test.ts/.test.tsx） | 15 | - |
 | 配置文件 | 19 | - |
 | 文档文件 | 5 | - |
@@ -325,9 +328,9 @@ integration 目录包含跨模块的集成测试，验证多个功能模块协�
 | src/features/product-appeal | 3 | 1 | 0 | 0 | 0 | 4 |
 | src/lib/api | 0 | 2 | 2 | 0 | 0 | 4 |
 | src/lib/ai | 0 | 3 | 0 | 0 | 0 | 3 |
-| src/lib | 0 | 4 | 1 | 0 | 2 | 7 |
+| src/lib | 0 | 7 | 1 | 0 | 2 | 10 |
 | src/integration | 0 | 0 | 1 | 0 | 0 | 1 |
-| **总计** | **38** | **31** | **15** | **9** | **2** | **84** |
+| **总计** | **40** | **35** | **15** | **11** | **2** | **91** |
 
 ### 8.3 文件清单
 
@@ -420,8 +423,11 @@ integration 目录包含跨模块的集成测试，验证多个功能模块协�
 | 78 | src/lib/nlp.ts |
 | 79 | src/lib/types.ts |
 | 80 | src/lib/utils.ts |
-| 81 | src/lib/workers/nlp.worker.ts |
-| 82 | src/lib/workers/worker-manager.ts |
+| 81 | src/lib/validators.ts |
+| 82 | src/lib/auth-token.ts |
+| 83 | src/lib/prisma.ts |
+| 84 | src/lib/workers/nlp.worker.ts |
+| 85 | src/lib/workers/worker-manager.ts |
 
 ## 九、测试覆盖情况
 
@@ -454,6 +460,7 @@ integration 目录包含跨模块的集成测试，验证多个功能模块协�
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.7.0 | 2026-01-30 | **API安全性增强**：新增统一输入验证工具库（validators.ts）；新增 Token 签名工具库（auth-token.ts）；所有 API 路由集成输入验证；邀请码 Cookie 升级为签名 Token；中间件升级为验证签名 Token；CORS 代理 URL 配置移至环境变量；新增 INVITE_TOKEN_SECRET 环境变量；TypeScript工具文件从33个增加到35个，总文件数从89个增加到91个 |
 | v2.6.1 | 2026-01-29 | **邀请码管理系统**：新增邀请码验证页面（/invite）；新增管理员邀请码管理后台（/admin/invite）；新增中间件拦截（middleware.ts）；集成 Prisma ORM 和 SQLite 数据库；新增2个 API 端点（/api/invite/verify、/api/invite/admin）；支持邀请码配置（最大使用次数、过期时间、备注）；TypeScript组件从38个增加到40个，工具文件从31个增加到33个，API Routes从9个增加到11个，总文件数从84个增加到89个 |
 | v2.6.0 | 2026-01-28 | **技能集成版**：集成3个Reddit分析技能的核心功能；新增WISH信号检测系统（7类模式）；新增智能分类系统（7种子分类）；新增优先级计算引擎（API端点 /api/analysis/prioritize）；新增产品吸引力评估模块（5个组件+API）；扩展Insight类型支持10+新字段；新增单元测试（sentiment-patterns、priority-calculator）；文件总数从 79 个增加到 84 个 |
 | v2.5.0 | 2026-01-27 | **洞察增强版**：新增洞察筛选组件(InsightFilters)、洞察关系图组件(InsightGraph)、洞察趋势图表组件(InsightTrendChart)；新增洞察趋势钩子(useInsightTrend)；新增 3 个 UI 组件单元测试(Button/Card/Input)；新增用户流程集成测试；新增 AI 深度洞见 API 端点；文件总数从 68 个增加到 79 个 |
