@@ -472,6 +472,7 @@ integration 目录包含跨模块的集成测试，验证多个功能模块协�
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.71.0 | 2026-01-30 | **Bug修复**：修复创建邀请码时备注字段为空导致 400 错误的问题；优化备注字段验证逻辑 |
 | v2.66.0 | 2026-01-30 | **API文档与测试增强**：新增 OpenAPI 3.0 规范和 Swagger UI（/api-docs）；新增滑动窗口限流器（rate-limiter.ts）；新增 LRU 缓存（lru-cache.ts）；新增 7 个测试文件覆盖 lib 模块和 API 路由；Web Worker 支持多任务类型和分片处理；替换所有 any 类型为具体类型；TypeScript组件41个、工具40个、测试22个，总文件数101个 |
 | v2.7.0 | 2026-01-30 | **API安全性增强**：新增统一输入验证工具库（validators.ts）；新增 Token 签名工具库（auth-token.ts）；所有 API 路由集成输入验证；邀请码 Cookie 升级为签名 Token；中间件升级为验证签名 Token；CORS 代理 URL 配置移至环境变量；新增 INVITE_TOKEN_SECRET 环境变量；TypeScript工具文件从33个增加到35个，总文件数从89个增加到91个 |
 | v2.6.1 | 2026-01-29 | **邀请码管理系统**：新增邀请码验证页面（/invite）；新增管理员邀请码管理后台（/admin/invite）；新增中间件拦截（middleware.ts）；集成 Prisma ORM 和 SQLite 数据库；新增2个 API 端点（/api/invite/verify、/api/invite/admin）；支持邀请码配置（最大使用次数、过期时间、备注）；TypeScript组件从38个增加到40个，工具文件从31个增加到33个，API Routes从9个增加到11个，总文件数从84个增加到89个 |
