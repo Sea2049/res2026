@@ -224,12 +224,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 验证 note
-    if (note !== undefined && note !== null && !validateNonEmptyString(note, 500)) {
-      return NextResponse.json(
-        { success: false, error: '备注长度不能超过 500 字符' },
-        { status: 400 }
-      )
+    // 验证 note（允许为空，但如果有值则验证长度）
+    if (note !== undefined && note !== null && note !== '') {
+      if (typeof note !== 'string' || note.length > 500) {
+        return NextResponse.json(
+          { success: false, error: '备注长度不能超过 500 字符' },
+          { status: 400 }
+        )
+      }
     }
 
     // 生成随机邀请码（8位大写字母数字）
