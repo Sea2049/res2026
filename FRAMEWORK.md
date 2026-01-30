@@ -40,6 +40,31 @@ fetch-helper 工具模块提供统一的请求封装和错误处理逻辑。每�
 
 为提升自然语言处理性能，项目采用 Web Worker 实现并行计算。Worker 线程位于 src/lib/workers 目录下，包含 worker-manager.ts 和 nlp.worker.ts 两个文件。worker-manager 负责 Worker 线程的创建、任务分发和结果回收，nlp.worker 执行具体的 NLP 计算任务。这种架构将 CPU 密集型操作从主线程分离，避免阻塞 UI 渲染，提升用户体验。
 
+**Worker 增强功能（v2.66.0）**：
+- **多任务类型支持**：`analyze`（完整分析）、`sentiment_only`（仅情感分析）、`keywords_only`（仅关键词提取）、`batch_analyze`（批量分析）
+- **分片并行处理**：对于大数据量（500+ 评论），自动分片处理后合并结果
+- **快速分析方法**：`analyzeSentimentOnly()` 和 `extractKeywordsOnly()` 提供轻量级分析选项
+- **智能分片配置**：可配置分片大小（默认 200 条）和启用阈值（默认 500 条）
+
+### 3.5 API 文档架构
+
+项目集成 OpenAPI 3.0 规范，提供完整的 API 文档和可视化界面。
+
+**Swagger 集成（v2.66.0）**：
+- 使用 `next-swagger-doc` 从 JSDoc 注释自动生成 OpenAPI 规范
+- `/api-docs` 页面提供 Swagger UI 可视化 API 文档
+- `/api/docs` 端点返回 OpenAPI JSON 规范
+- 所有 11 个 API 路由包含完整的 JSDoc 注释（参数、响应、错误码）
+
+### 3.6 请求限流架构
+
+为防止 API 滥用，项目实现了基于滑动窗口的请求限流机制。
+
+**限流策略（v2.66.0）**：
+- 滑动窗口算法，按 IP 地址追踪请求
+- 预配置 6 种限流策略：Reddit API（30/分钟）、AI 分析（10/分钟）、导出（20/分钟）、邀请码验证（5/分钟）、管理接口（30/分钟）、分析功能（20/分钟）
+- 429 响应包含 `Retry-After` 头和剩余配额信息
+
 ## 四、核心功能模块
 
 ### 4.1 话题选择模块（topic-selection）
@@ -211,24 +236,26 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
 
 ### 11.1 代码文件统计
 
-截至当前版本（v2.7.0），项目包含以下代码文件：
+截至当前版本（v2.66.0），项目包含以下代码文件：
 
-**TypeScript 组件文件（.tsx）**：40 个
+**TypeScript 组件文件（.tsx）**：41 个
 - UI 组件：13 个（button、input、card、badge、spinner、alert、tabs、separator、select、dialog、dropdown-menu、tooltip、progress）
 - 功能模块组件：21 个
   - 话题选择模块：5 个（TopicSearchInput、TopicList、SearchSuggestions、TopicCard、AdvancedSearchOptions）
   - 分析模块：11 个（AnalysisProgress、CommentList、SentimentChart、KeywordCloud、InsightCard、DeepInsights、EmptyState、InsightFilters、InsightGraph、InsightTrendChart、FeatureAnalysis入口）
   - 产品吸引力模块：3 个（AppealScore、ObjectionMap、入口组件）
-- 页面组件：4 个（page.tsx、layout.tsx、invite/page.tsx、admin/invite/page.tsx）
+- 页面组件：5 个（page.tsx、layout.tsx、invite/page.tsx、admin/invite/page.tsx、api-docs/page.tsx）
 - 测试组件：2 个（UI组件测试3个、功能组件测试4个）
 
-**TypeScript 工具文件（.ts）**：35 个
-- API Routes：11 个（subreddit、search、comments、insights、prioritize、appeal、export、export/excel、export/pdf、invite/verify、invite/admin）
+**TypeScript 工具文件（.ts）**：40 个
+- API Routes：12 个（subreddit、search、comments、insights、prioritize、appeal、export、export/excel、export/pdf、invite/verify、invite/admin、docs）
 - 自定义钩子：7 个（useTopicSearch、useSearchHistory、useAnalysis、useDeepInsights、useInsightTrend、useAppealAnalysis）
 - API 客户端和工具：4 个（fetch-helper、reddit、zhipu-ai、qwen-ai、prompts）
 - NLP 处理：1 个（nlp.ts）
 - 工具类和模式定义：3 个（sentiment-patterns、priority-calculator、utils）
 - 安全工具：2 个（validators.ts、auth-token.ts）
+- 限流和缓存：2 个（rate-limiter.ts、lru-cache.ts）
+- Swagger 配置：1 个（swagger.ts）
 - 错误处理：1 个（errors.ts）
 - 类型定义：1 个（types.ts）
 - 数据库：1 个（prisma.ts）
@@ -236,13 +263,15 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
 - 中间件：1 个（middleware.ts）
 - Electron 主进程：3 个（main.ts、preload.ts、types.d.ts）
 
-**测试文件（.test.tsx/.test.ts）**：15 个
+**测试文件（.test.tsx/.test.ts）**：22 个
 - UI 组件测试：3 个（Button、Card、Input）
 - 话题选择模块测试：4 个（useTopicSearch、useSearchHistory、TopicSearchInput、TopicCard）
 - 分析模块测试：4 个（useAnalysis、AnalysisProgress、sentiment-patterns、priority-calculator）
 - API 工具测试：2 个（fetch-helper、reddit）
 - NLP 模块测试：1 个（nlp.test.ts）
 - 集成测试：1 个（user-flow.test.ts）
+- lib 模块测试：4 个（rate-limiter、lru-cache、auth-token、validators）
+- API 路由测试：3 个（reddit-routes、invite-routes、export-routes）
 
 ### 11.2 配置文件统计
 
@@ -252,7 +281,39 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
 
 ## 十二、变更日志
 
-### v2.7.0（当前版本 - 2026-01-30）
+### v2.66.0（当前版本 - 2026-01-30）
+
+本版本完成了 API 文档、测试覆盖、限流系统和 Worker 增强等多项改进。主要变更包括：
+
+**API 文档与 Swagger UI**：
+- 集成 `next-swagger-doc` 自动生成 OpenAPI 3.0 规范
+- 新增 `/api-docs` 页面，提供 Swagger UI 可视化 API 文档
+- 为全部 11 个 API 路由添加 JSDoc 注释
+
+**请求限流系统**：
+- 新增滑动窗口限流器（`rate-limiter.ts`），按 IP 地址追踪
+- 预配置 6 种限流策略：Reddit API（30/分钟）、AI 分析（10/分钟）等
+- 所有 API 路由集成限流检查
+
+**LRU 缓存优化**：
+- 新增通用 LRU 缓存（`lru-cache.ts`），支持固定大小、TTL、统计
+- Reddit 搜索 API 使用 LRU 缓存替代简单 Map
+
+**单元测试增强**：
+- 新增 7 个测试文件，覆盖 lib 模块和 API 路由
+- 测试套件从 15 个增加到 22 个
+
+**Web Worker 增强**：
+- 支持多任务类型：`analyze`、`sentiment_only`、`keywords_only`、`batch_analyze`
+- 新增分片并行处理，大数据量自动分片后合并结果
+
+**文件统计**：
+- TypeScript 组件文件：40个 → 41个
+- TypeScript 工具文件：35个 → 40个
+- 测试文件：15个 → 22个
+- 总文件数：91个 → 101个
+
+### v2.7.0（2026-01-30）
 
 本版本完成了 API 安全性的全面增强，新增输入验证工具库和 Token 签名机制，将敏感配置移至环境变量。主要变更包括：
 

@@ -4,9 +4,22 @@
  * 
  * 注意：Worker 采用全局单例模式，不会在组件卸载时自动清理
  * 这样可以避免 Windows 系统下 libuv 的 UV_HANDLE_CLOSING 断言失败
+ * 
+ * v2.8.0 增强：
+ * - 支持多任务类型（analyze, sentiment_only, keywords_only, batch_analyze）
+ * - 支持大数据量分片并行处理
  */
 
-import type { Comment, AnalysisConfig, AnalysisResult } from '../types';
+import type { Comment, AnalysisConfig, AnalysisResult, KeywordCount, SentimentResult } from '../types';
+
+/**
+ * Worker 任务类型
+ */
+export type WorkerTaskType = 
+  | 'analyze'           // 完整分析
+  | 'sentiment_only'    // 仅情感分析
+  | 'keywords_only'     // 仅关键词提取
+  | 'batch_analyze';    // 批量分析（分片）
 
 /**
  * Worker 任务状态
@@ -26,6 +39,27 @@ interface WorkerTask<T> {
   reject: (error: Error) => void;
   timeout?: NodeJS.Timeout;
 }
+
+/**
+ * 分片配置
+ */
+interface ChunkConfig {
+  /** 每个分片的评论数量 */
+  chunkSize: number;
+  /** 是否启用分片（评论数超过阈值时自动启用） */
+  enableChunking: boolean;
+  /** 启用分片的评论数阈值 */
+  chunkThreshold: number;
+}
+
+/**
+ * 默认分片配置
+ */
+const DEFAULT_CHUNK_CONFIG: ChunkConfig = {
+  chunkSize: 200,
+  enableChunking: true,
+  chunkThreshold: 500,
+};
 
 /**
  * NLP Worker 管理器
@@ -194,6 +228,22 @@ export class NLPWorkerManager {
     config: Partial<AnalysisConfig>,
     timeout?: number
   ): Promise<T> {
+    return this.executeTask<T>('analyze', comments, config, timeout);
+  }
+
+  /**
+   * 执行指定类型的任务
+   * @param taskType 任务类型
+   * @param comments 评论数组
+   * @param config 分析配置
+   * @param timeout 超时时间
+   */
+  public async executeTask<T>(
+    taskType: WorkerTaskType,
+    comments: Comment[],
+    config: Partial<AnalysisConfig>,
+    timeout?: number
+  ): Promise<T> {
     // 取消空闲清理（因为即将使用 Worker）
     this.cancelIdleCleanup();
     
@@ -236,12 +286,180 @@ export class NLPWorkerManager {
       // 发送消息到 Worker
       if (this.worker) {
         this.worker.postMessage({
-          type: 'analyze',
+          type: taskType,
           comments,
           config,
         });
       }
     });
+  }
+
+  /**
+   * 仅执行情感分析
+   * @param comments 评论数组
+   * @param timeout 超时时间
+   */
+  public async analyzeSentimentOnly(
+    comments: Comment[],
+    timeout?: number
+  ): Promise<{ positive: number; negative: number; neutral: number }> {
+    return this.executeTask('sentiment_only', comments, {}, timeout);
+  }
+
+  /**
+   * 仅提取关键词
+   * @param comments 评论数组
+   * @param config 关键词配置
+   * @param timeout 超时时间
+   */
+  public async extractKeywordsOnly(
+    comments: Comment[],
+    config: Pick<AnalysisConfig, 'minKeywordLength' | 'topKeywordsCount'>,
+    timeout?: number
+  ): Promise<Array<{ word: string; count: number }>> {
+    return this.executeTask('keywords_only', comments, config, timeout);
+  }
+
+  /**
+   * 分片并行分析（用于大数据量）
+   * 将数据分成多个分片，依次处理后合并结果
+   * @param comments 评论数组
+   * @param config 分析配置
+   * @param chunkConfig 分片配置
+   * @param timeout 超时时间
+   */
+  public async executeWithChunking(
+    comments: Comment[],
+    config: Partial<AnalysisConfig>,
+    chunkConfig: Partial<ChunkConfig> = {},
+    timeout?: number
+  ): Promise<AnalysisResult> {
+    const finalChunkConfig = { ...DEFAULT_CHUNK_CONFIG, ...chunkConfig };
+    
+    // 如果评论数量低于阈值，直接执行普通分析
+    if (!finalChunkConfig.enableChunking || comments.length < finalChunkConfig.chunkThreshold) {
+      return this.execute<AnalysisResult>(comments, config, timeout);
+    }
+
+    console.log(`启用分片处理: ${comments.length} 条评论，分片大小: ${finalChunkConfig.chunkSize}`);
+
+    // 分片
+    const chunks = this.splitIntoChunks(comments, finalChunkConfig.chunkSize);
+    const chunkResults: AnalysisResult[] = [];
+
+    // 依次处理每个分片
+    for (let i = 0; i < chunks.length; i++) {
+      console.log(`处理分片 ${i + 1}/${chunks.length}...`);
+      const chunkResult = await this.execute<AnalysisResult>(chunks[i], config, timeout);
+      chunkResults.push(chunkResult);
+    }
+
+    // 合并结果
+    return this.mergeChunkResults(chunkResults);
+  }
+
+  /**
+   * 将数组分割成多个分片
+   */
+  private splitIntoChunks<T>(array: T[], chunkSize: number): T[][] {
+    const chunks: T[][] = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+      chunks.push(array.slice(i, i + chunkSize));
+    }
+    return chunks;
+  }
+
+  /**
+   * 合并多个分片的分析结果
+   */
+  private mergeChunkResults(results: AnalysisResult[]): AnalysisResult {
+    if (results.length === 0) {
+      throw new Error('No chunk results to merge');
+    }
+
+    if (results.length === 1) {
+      return results[0];
+    }
+
+    // 合并关键词（按词聚合计数，重新排序）
+    const keywordMap = new Map<string, KeywordCount>();
+    for (const result of results) {
+      for (const kw of result.keywords) {
+        const existing = keywordMap.get(kw.word);
+        if (existing) {
+          existing.count += kw.count;
+          if (kw.tfidf) {
+            existing.tfidf = (existing.tfidf || 0) + kw.tfidf;
+          }
+        } else {
+          keywordMap.set(kw.word, { ...kw });
+        }
+      }
+    }
+    const mergedKeywords = Array.from(keywordMap.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 30);
+
+    // 合并情感统计
+    const mergedSentiment: SentimentResult = {
+      positive: 0,
+      negative: 0,
+      neutral: 0,
+      positivePercentage: 0,
+      negativePercentage: 0,
+      neutralPercentage: 0,
+    };
+    for (const result of results) {
+      mergedSentiment.positive += result.sentiment.positive;
+      mergedSentiment.negative += result.sentiment.negative;
+      mergedSentiment.neutral += result.sentiment.neutral;
+    }
+    const total = mergedSentiment.positive + mergedSentiment.negative + mergedSentiment.neutral;
+    if (total > 0) {
+      mergedSentiment.positivePercentage = Math.round((mergedSentiment.positive / total) * 100);
+      mergedSentiment.negativePercentage = Math.round((mergedSentiment.negative / total) * 100);
+      mergedSentiment.neutralPercentage = Math.round((mergedSentiment.neutral / total) * 100);
+    }
+
+    // 合并洞察（去重并按置信度排序）
+    const insightMap = new Map<string, typeof results[0]['insights'][0]>();
+    for (const result of results) {
+      for (const insight of result.insights) {
+        const key = `${insight.type}:${insight.title}`;
+        const existing = insightMap.get(key);
+        if (!existing || insight.confidence > existing.confidence) {
+          insightMap.set(key, { 
+            ...insight,
+            relatedComments: [
+              ...(existing?.relatedComments || []),
+              ...insight.relatedComments
+            ]
+          });
+        }
+      }
+    }
+    const mergedInsights = Array.from(insightMap.values())
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, 50);
+
+    // 合并评论（保持去重）
+    const commentSet = new Set<string>();
+    const mergedComments = [];
+    for (const result of results) {
+      for (const comment of result.comments) {
+        if (!commentSet.has(comment.id)) {
+          commentSet.add(comment.id);
+          mergedComments.push(comment);
+        }
+      }
+    }
+
+    return {
+      keywords: mergedKeywords,
+      sentiment: mergedSentiment,
+      insights: mergedInsights,
+      comments: mergedComments,
+    };
   }
 
   /**

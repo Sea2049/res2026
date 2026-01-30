@@ -235,13 +235,29 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
 
 | 类型 | 数量 | 说明 |
 |------|------|------|
-| TypeScript 组件（.tsx） | 40 | UI 组件、功能模块组件和测试组件 |
-| TypeScript 工具（.ts） | 35 | 钩子、API Routes、API 客户端、NLP 处理、Worker、安全工具、错误处理 |
-| 测试文件 | 15 | 单元测试和集成测试覆盖核心功能 |
+| TypeScript 组件（.tsx） | 41 | UI 组件、功能模块组件、Swagger UI 页面 |
+| TypeScript 工具（.ts） | 40 | 钩子、API Routes、API 客户端、NLP 处理、Worker、安全工具、限流、缓存 |
+| 测试文件 | 22 | 单元测试（lib、API 路由）和集成测试 |
 | 配置文件 | 19 | 项目构建和测试配置 |
 | 文档文件 | 5 | FRAMEWORK、CODE_DIRECTORY、README、DEPLOYMENT、TESTING |
 
 ## 版本历史
+
+### v2.66.0（2026-01-30）
+
+本版本完成了 API 文档、测试覆盖、限流系统和 Worker 增强等多项改进。
+
+**核心功能**：
+- **API 文档**：集成 OpenAPI 3.0 规范，新增 `/api-docs` Swagger UI 可视化文档
+- **请求限流**：新增滑动窗口限流器，预配置 6 种限流策略（Reddit/AI/导出/邀请码/管理/分析）
+- **LRU 缓存**：新增通用 LRU 缓存，支持固定大小、TTL、命中率统计
+- **类型安全**：替换所有 `any` 类型为具体类型定义
+- **Worker 增强**：支持多任务类型（analyze/sentiment_only/keywords_only/batch_analyze）和分片并行处理
+
+**测试增强**：
+- 新增 7 个测试文件，覆盖 lib 模块和 API 路由
+- 测试套件从 15 个增加到 22 个
+- 总文件数达到 101 个
 
 ### v2.7.0（2026-01-30）
 

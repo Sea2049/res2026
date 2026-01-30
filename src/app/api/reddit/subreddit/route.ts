@@ -1,3 +1,49 @@
+/**
+ * @swagger
+ * /api/reddit/subreddit:
+ *   get:
+ *     summary: 获取 Subreddit 热门帖子
+ *     description: 获取指定 Subreddit 的热门帖子列表
+ *     tags: [Reddit]
+ *     parameters:
+ *       - name: subreddit
+ *         in: query
+ *         required: true
+ *         description: Subreddit 名称
+ *         schema:
+ *           type: string
+ *           pattern: ^[a-zA-Z0-9_]{1,50}$
+ *       - name: limit
+ *         in: query
+ *         description: 返回帖子数量
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: 帖子列表
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     children:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/RedditPost'
+ *       400:
+ *         description: 参数验证失败
+ *       429:
+ *         description: 请求过于频繁（30次/分钟）
+ *       500:
+ *         description: 服务器错误
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithFallbacks } from '@/lib/api/fetch-helper';
 import { validateSubreddit, validateLimit } from '@/lib/validators';

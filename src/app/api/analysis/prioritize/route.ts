@@ -1,7 +1,80 @@
 /**
- * 优先级计算API端点
- * v2.6.0 新增
- * POST /api/analysis/prioritize
+ * @swagger
+ * /api/analysis/prioritize:
+ *   post:
+ *     summary: 计算洞察优先级
+ *     description: |
+ *       基于 RICE 框架计算洞察优先级：
+ *       - Impact: 影响力 = 评论数 × 情感强度
+ *       - Frequency: 频率（置信度）
+ *       - Urgency: 紧急度
+ *       - Effort: 实施难度
+ *       
+ *       优先级公式: (Impact × Frequency × Urgency) / Effort
+ *     tags: [Analysis]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - insights
+ *             properties:
+ *               insights:
+ *                 type: array
+ *                 description: 洞察列表
+ *                 items:
+ *                   type: object
+ *               effortMap:
+ *                 type: object
+ *                 description: 每个洞察的实施难度映射
+ *                 additionalProperties:
+ *                   type: number
+ *               options:
+ *                 type: object
+ *                 properties:
+ *                   sort:
+ *                     type: boolean
+ *                     description: 是否按优先级排序
+ *                   group:
+ *                     type: boolean
+ *                     description: 是否按优先级等级分组
+ *                   summary:
+ *                     type: boolean
+ *                     description: 是否生成摘要
+ *     responses:
+ *       200:
+ *         description: 优先级计算结果
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 insights:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       priority:
+ *                         $ref: '#/components/schemas/PriorityResult'
+ *                 count:
+ *                   type: integer
+ *                 grouped:
+ *                   type: object
+ *                 summary:
+ *                   type: object
+ *       400:
+ *         description: 参数验证失败
+ *       429:
+ *         description: 请求过于频繁（20次/分钟）
+ *   get:
+ *     summary: 获取 API 文档
+ *     description: 返回优先级计算 API 的公式说明和使用示例
+ *     tags: [Analysis]
+ *     responses:
+ *       200:
+ *         description: API 文档
  */
 
 import { NextRequest, NextResponse } from "next/server";

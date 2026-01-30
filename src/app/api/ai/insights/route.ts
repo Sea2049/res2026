@@ -1,3 +1,65 @@
+/**
+ * @swagger
+ * /api/ai/insights:
+ *   post:
+ *     summary: 生成 AI 深度洞察
+ *     description: 基于分析结果调用通义千问（QWEN）生成深度洞察报告
+ *     tags: [AI]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - topics
+ *               - analysisResult
+ *             properties:
+ *               topics:
+ *                 type: array
+ *                 description: 分析的主题列表（Subreddit 或 Post）
+ *                 items:
+ *                   oneOf:
+ *                     - $ref: '#/components/schemas/Subreddit'
+ *                     - $ref: '#/components/schemas/RedditPost'
+ *               analysisResult:
+ *                 type: object
+ *                 description: NLP 分析结果
+ *                 properties:
+ *                   keywords:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                   sentiment:
+ *                     type: object
+ *                   insights:
+ *                     type: array
+ *                   comments:
+ *                     type: array
+ *               exportData:
+ *                 type: object
+ *                 description: 可选的导出数据
+ *     responses:
+ *       200:
+ *         description: AI 生成的洞察报告
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: string
+ *                   description: Markdown 格式的洞察报告
+ *       400:
+ *         description: 缺少必要参数
+ *       429:
+ *         description: 请求过于频繁（10次/分钟）
+ *       500:
+ *         description: AI 服务错误或 API 密钥未配置
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { qwenAI } from "@/lib/ai/qwen-ai";
 import { generateInsightPrompt } from "@/lib/ai/prompts";

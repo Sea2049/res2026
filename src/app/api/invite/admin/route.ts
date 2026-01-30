@@ -1,3 +1,128 @@
+/**
+ * @swagger
+ * /api/invite/admin:
+ *   get:
+ *     summary: 获取邀请码列表
+ *     description: 获取所有邀请码，按创建时间降序排列
+ *     tags: [Invite]
+ *     security:
+ *       - AdminPassword: []
+ *     responses:
+ *       200:
+ *         description: 邀请码列表
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/InviteCode'
+ *       401:
+ *         description: 管理员密码错误
+ *       429:
+ *         description: 请求过于频繁（30次/分钟）
+ *   post:
+ *     summary: 生成新邀请码
+ *     description: 生成一个新的8位邀请码
+ *     tags: [Invite]
+ *     security:
+ *       - AdminPassword: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               maxUses:
+ *                 type: integer
+ *                 description: 最大使用次数
+ *                 default: 1
+ *                 minimum: 1
+ *               expiresInDays:
+ *                 type: integer
+ *                 description: 过期天数（可选）
+ *               note:
+ *                 type: string
+ *                 description: 备注（最大200字符）
+ *     responses:
+ *       200:
+ *         description: 邀请码创建成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/InviteCode'
+ *       401:
+ *         description: 管理员密码错误
+ *       429:
+ *         description: 请求过于频繁
+ *   delete:
+ *     summary: 删除邀请码
+ *     description: 删除指定的邀请码
+ *     tags: [Invite]
+ *     security:
+ *       - AdminPassword: []
+ *     parameters:
+ *       - name: id
+ *         in: query
+ *         required: true
+ *         description: 邀请码 ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 删除成功
+ *       400:
+ *         description: 缺少 ID 参数或格式无效
+ *       401:
+ *         description: 管理员密码错误
+ *       404:
+ *         description: 邀请码不存在
+ *       429:
+ *         description: 请求过于频繁
+ *   patch:
+ *     summary: 启用/禁用邀请码
+ *     description: 切换邀请码的启用状态
+ *     tags: [Invite]
+ *     security:
+ *       - AdminPassword: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - id
+ *               - enabled
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 description: 邀请码 ID
+ *               enabled:
+ *                 type: boolean
+ *                 description: 是否启用
+ *     responses:
+ *       200:
+ *         description: 更新成功
+ *       400:
+ *         description: 参数无效
+ *       401:
+ *         description: 管理员密码错误
+ *       404:
+ *         description: 邀请码不存在
+ *       429:
+ *         description: 请求过于频繁
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { nanoid } from 'nanoid'

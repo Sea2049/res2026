@@ -1,3 +1,50 @@
+/**
+ * @swagger
+ * /api/reddit/comments:
+ *   get:
+ *     summary: 获取帖子评论
+ *     description: 获取指定 Reddit 帖子的评论列表，按置信度排序，最多返回100条
+ *     tags: [Reddit]
+ *     parameters:
+ *       - name: subreddit
+ *         in: query
+ *         required: true
+ *         description: Subreddit 名称
+ *         schema:
+ *           type: string
+ *           pattern: ^[a-zA-Z0-9_]{1,50}$
+ *       - name: postId
+ *         in: query
+ *         required: true
+ *         description: 帖子 ID
+ *         schema:
+ *           type: string
+ *           pattern: ^[a-zA-Z0-9]{1,10}$
+ *     responses:
+ *       200:
+ *         description: 评论列表
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/RedditComment'
+ *       400:
+ *         description: 参数验证失败
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       429:
+ *         description: 请求过于频繁（30次/分钟）
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RateLimitError'
+ *       500:
+ *         description: 服务器错误
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithFallbacks } from '@/lib/api/fetch-helper';
 import { validateSubreddit, validatePostId } from '@/lib/validators';

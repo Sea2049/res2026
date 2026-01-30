@@ -1,3 +1,57 @@
+/**
+ * @swagger
+ * /api/invite/verify:
+ *   post:
+ *     summary: 验证邀请码
+ *     description: |
+ *       验证邀请码有效性，成功后设置认证 Cookie。
+ *       
+ *       验证规则：
+ *       - 邀请码格式：8位大写字母数字
+ *       - 邀请码必须存在且已启用
+ *       - 邀请码未过期
+ *       - 使用次数未达上限
+ *     tags: [Invite]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - code
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 description: 8位邀请码
+ *                 pattern: ^[A-Z0-9]{8}$
+ *                 example: ABCD1234
+ *     responses:
+ *       200:
+ *         description: 验证成功，Cookie 已设置
+ *         headers:
+ *           Set-Cookie:
+ *             description: invite_verified cookie（7天有效）
+ *             schema:
+ *               type: string
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *       400:
+ *         description: 邀请码格式无效
+ *       401:
+ *         description: 邀请码无效、已禁用、已过期或使用次数已满
+ *       429:
+ *         description: 请求过于频繁（5次/分钟，防暴力破解）
+ *       500:
+ *         description: 服务器错误
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { validateNonEmptyString } from '@/lib/validators'

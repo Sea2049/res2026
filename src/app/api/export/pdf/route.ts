@@ -1,10 +1,43 @@
+/**
+ * @swagger
+ * /api/export/pdf:
+ *   post:
+ *     summary: 导出 PDF 文件
+ *     description: 接收 Base64 编码的 PDF 文件并返回带正确 Content-Type 的响应
+ *     tags: [Export]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - base64
+ *             properties:
+ *               base64:
+ *                 type: string
+ *                 description: Base64 编码的 PDF 文件内容
+ *               filename:
+ *                 type: string
+ *                 description: 导出文件名（可选，默认自动生成）
+ *     responses:
+ *       200:
+ *         description: PDF 文件下载
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       400:
+ *         description: 缺少 PDF 数据
+ *       429:
+ *         description: 请求过于频繁（20次/分钟）
+ *       500:
+ *         description: 导出失败
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { exportRateLimiter, checkRateLimit } from "@/lib/rate-limiter";
-
-/**
- * PDF 导出 API
- * 接收前端生成的 PDF（base64）并返回带正确文件名的响应
- */
 export async function POST(request: NextRequest) {
   // 限流检查
   const rateLimitResponse = checkRateLimit(exportRateLimiter, request);

@@ -1,6 +1,6 @@
 {
   "name": "res2026",
-  "version": "2.7.0",
+  "version": "2.66.0",
   "description": "Reddit Insight Tool - 发现热门主题，洞察用户痛点，智能优先级分析，邀请码管理",
   "scripts": {
     "dev": "next dev -p 3001",
@@ -34,9 +34,11 @@
     "lucide-react": "^0.562.0",
     "nanoid": "^5.1.6",
     "next": "^14.2.0",
+    "next-swagger-doc": "^0.4.1",
     "prisma": "5.22.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
+    "swagger-ui-react": "^5.31.0",
     "tailwind-merge": "^2.3.0",
     "undici": "^7.19.1",
     "xlsx": "^0.18.5"
@@ -49,6 +51,7 @@
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "@types/swagger-ui-react": "^5.18.0",
     "autoprefixer": "^10.4.19",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",

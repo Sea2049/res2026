@@ -2,6 +2,77 @@
 
 本文档记录项目的所有重要变更，按版本号倒序排列。
 
+## [2.66.0] - 2026-01-30
+
+### 新增
+
+**API 文档与 Swagger UI**
+- 新增 OpenAPI 3.0 规范支持，使用 `next-swagger-doc` 自动生成 API 文档
+- 新增 `/api-docs` 页面，集成 Swagger UI 提供可视化 API 文档
+- 新增 `/api/docs` 端点，返回 OpenAPI JSON 规范
+- 为全部 11 个 API 路由添加 JSDoc 注释，包含参数、响应、错误码说明
+- 新增 `src/lib/swagger.ts` Swagger 配置文件
+
+**请求限流系统**
+- 新增 `src/lib/rate-limiter.ts` 滑动窗口限流器
+- 预配置 6 种限流策略（按 IP 地址）：
+  - Reddit API：30次/分钟
+  - AI 分析：10次/分钟
+  - 导出功能：20次/分钟
+  - 邀请码验证：5次/分钟（防暴力破解）
+  - 管理接口：30次/分钟
+  - 分析功能：20次/分钟
+- 所有 11 个 API 路由集成限流检查
+
+**LRU 缓存优化**
+- 新增 `src/lib/lru-cache.ts` 通用 LRU 缓存实现
+- 支持固定大小、TTL 过期、命中率统计
+- Reddit 搜索 API 使用 LRU 缓存替代简单 Map（500 条目，60秒 TTL）
+- NLP 词干缓存使用 SimpleLRUCache 替代内联实现
+
+**类型安全增强**
+- 新增 Reddit API 原始响应类型定义（`RedditListingResponse`、`RedditChild`、`RedditPostData` 等）
+- 替换所有 `any` 类型为具体类型定义
+- `fetch-helper.ts` 错误处理类型优化
+- `prompts.ts` 参数类型明确化
+- `worker-manager.ts` 任务类型优化
+
+**单元测试增强**
+- 新增 `src/lib/__tests__/rate-limiter.test.ts` 限流器测试
+- 新增 `src/lib/__tests__/lru-cache.test.ts` 缓存测试
+- 新增 `src/lib/__tests__/auth-token.test.ts` Token 签名测试
+- 新增 `src/lib/__tests__/validators.test.ts` 验证器测试
+- 新增 `src/app/api/__tests__/reddit-routes.test.ts` Reddit API 路由测试
+- 新增 `src/app/api/__tests__/invite-routes.test.ts` 邀请码 API 测试
+- 新增 `src/app/api/__tests__/export-routes.test.ts` 导出 API 测试
+- 测试套件从 15 个增加到 22 个
+
+**Web Worker 增强**
+- 支持多任务类型：`analyze`（完整分析）、`sentiment_only`（仅情感）、`keywords_only`（仅关键词）、`batch_analyze`（批量分析）
+- 新增分片并行处理：大数据量（500+ 评论）自动分片处理
+- 新增 `analyzeSentimentOnly()`、`extractKeywordsOnly()` 快速分析方法
+- 新增 `executeWithChunking()` 分片执行方法，自动合并结果
+
+**文件统计**
+- 新增 `src/lib/swagger.ts`（Swagger 配置）
+- 新增 `src/app/api-docs/page.tsx`（Swagger UI 页面）
+- 新增 `src/app/api/docs/route.ts`（OpenAPI 端点）
+- 新增 `src/lib/rate-limiter.ts`（限流器）
+- 新增 `src/lib/lru-cache.ts`（LRU 缓存）
+- 新增 7 个测试文件
+- TypeScript 工具文件：35个 → 40个
+- 测试文件：15个 → 22个
+- 总文件数：91个 → 101个
+
+### 修改
+
+- 所有 11 个 API 路由添加限流检查和 JSDoc 注释
+- `src/lib/nlp.ts` 使用 SimpleLRUCache 替代内联缓存
+- `src/app/api/reddit/search/route.ts` 使用 LRUCache 替代 Map
+- `src/lib/workers/nlp.worker.ts` 支持多任务类型
+- `src/lib/workers/worker-manager.ts` 新增分片处理逻辑
+- `src/lib/types.ts` 新增 Reddit API 响应类型
+
 ## [2.7.0] - 2026-01-30
 
 ### 新增

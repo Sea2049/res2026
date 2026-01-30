@@ -1,7 +1,51 @@
 /**
- * 产品吸引力评估API端点
- * v2.6.0 新增 - 基于 product-appeal-analyzer skill
- * POST /api/analysis/appeal
+ * @swagger
+ * /api/analysis/appeal:
+ *   post:
+ *     summary: 计算产品吸引力评分
+ *     description: |
+ *       基于 Desirability Triangle 模型评估产品吸引力：
+ *       - 身份契合度 (Identity Fit)
+ *       - 问题紧急度 (Problem Urgency)
+ *       - 信任信号 (Trust Signals)
+ *     tags: [Analysis]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - comments
+ *             properties:
+ *               comments:
+ *                 type: array
+ *                 description: 待分析的评论列表
+ *                 items:
+ *                   $ref: '#/components/schemas/RedditComment'
+ *     responses:
+ *       200:
+ *         description: 吸引力评分结果
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 appealScore:
+ *                   $ref: '#/components/schemas/AppealScore'
+ *       400:
+ *         description: 参数验证失败
+ *       429:
+ *         description: 请求过于频繁（20次/分钟）
+ *       500:
+ *         description: 分析失败
+ *   get:
+ *     summary: 获取 API 文档
+ *     description: 返回产品吸引力评估 API 的使用说明和示例
+ *     tags: [Analysis]
+ *     responses:
+ *       200:
+ *         description: API 文档
  */
 
 import { NextRequest, NextResponse } from "next/server";

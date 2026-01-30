@@ -77,6 +77,7 @@ app 目录遵循 Next.js 14+ App Router 规范，包含页面的路由定义、�
 |----------|------|------|
 | src/app/page.tsx | TSX | 应用首页组件，整合话题选择和分析功能的主页面 |
 | src/app/layout.tsx | TSX | 根布局组件，定义全局结构、字体和样式提供者 |
+| src/app/api-docs/page.tsx | TSX | Swagger UI 页面(v2.66.0新增)，提供可视化 API 文档 |
 
 ### 3.2 API Routes
 
@@ -95,6 +96,7 @@ API Routes 实现服务端代理，统一处理与 Reddit API 的通信，保护
 | src/app/api/export/pdf/route.ts | TS | PDF导出端点，生成美观的分析报告文档 |
 | src/app/api/invite/verify/route.ts | TS | 邀请码验证端点，处理用户邀请码验证和Cookie设置 |
 | src/app/api/invite/admin/route.ts | TS | 邀请码管理端点，提供邀请码的 CRUD 操作（需管理员密码验证） |
+| src/app/api/docs/route.ts | TS | OpenAPI 文档端点(v2.66.0新增)，返回 OpenAPI JSON 规范 |
 
 ## 四、组件库目录（components）
 
@@ -273,6 +275,9 @@ lib 目录包含项目的工具函数、类型定义、外部服务封装、API 
 | src/lib/validators.ts | TS | 统一输入验证工具库(v2.7.0新增)，提供 Reddit 参数、邀请码、文件名等格式验证函数，防止参数注入和路径遍历攻击 |
 | src/lib/auth-token.ts | TS | Token 签名工具库(v2.7.0新增)，使用 HMAC-SHA256 生成安全的验证 Token，支持过期检查和时序攻击防护 |
 | src/lib/prisma.ts | TS | Prisma 客户端封装，提供单例访问模式，支持开发环境热重载 |
+| src/lib/rate-limiter.ts | TS | 请求限流器(v2.66.0新增)，滑动窗口算法按 IP 追踪请求，预配置 6 种限流策略 |
+| src/lib/lru-cache.ts | TS | LRU 缓存(v2.66.0新增)，支持固定大小、TTL 过期、命中率统计 |
+| src/lib/swagger.ts | TS | Swagger 配置(v2.66.0新增)，OpenAPI 3.0 规范定义和 schema 配置 |
 
 ### 6.4 Worker 线程
 
@@ -286,8 +291,15 @@ lib 目录包含项目的工具函数、类型定义、外部服务封装、API 
 | 文件路径 | 类型 | 说明 |
 |----------|------|------|
 | src/lib/__tests__/nlp.test.ts | TS | NLP 模块的单元测试，覆盖核心处理函数（7个测试用例） |
+| src/lib/__tests__/rate-limiter.test.ts | TS | 限流器单元测试(v2.66.0新增)，覆盖滑动窗口、IP 提取、429 响应 |
+| src/lib/__tests__/lru-cache.test.ts | TS | LRU 缓存单元测试(v2.66.0新增)，覆盖淘汰策略、TTL、统计功能 |
+| src/lib/__tests__/auth-token.test.ts | TS | Token 签名单元测试(v2.66.0新增)，覆盖生成、验证、过期检测 |
+| src/lib/__tests__/validators.test.ts | TS | 验证器单元测试(v2.66.0新增)，覆盖所有验证函数边界条件 |
 | src/lib/api/__tests__/fetch-helper.test.ts | TS | Fetch 辅助工具的单元测试，覆盖多策略回退机制（8个测试用例） |
 | src/lib/api/__tests__/reddit.test.ts | TS | Reddit API 客户端的单元测试，覆盖所有 API 方法（9个测试用例） |
+| src/app/api/__tests__/reddit-routes.test.ts | TS | Reddit API 路由测试(v2.66.0新增)，覆盖参数验证、限流、响应格式 |
+| src/app/api/__tests__/invite-routes.test.ts | TS | 邀请码 API 路由测试(v2.66.0新增)，覆盖验证、管理员 CRUD |
+| src/app/api/__tests__/export-routes.test.ts | TS | 导出 API 路由测试(v2.66.0新增)，覆盖格式验证、文件生成 |
 
 ### 6.6 类型定义
 
@@ -309,9 +321,9 @@ integration 目录包含跨模块的集成测试，验证多个功能模块协�
 
 | 文件类型 | 数量 | 占比 |
 |----------|------|------|
-| TypeScript 组件（.tsx） | 40 | 48.8% |
-| TypeScript 工具（.ts） | 35 | 42.7% |
-| 测试文件（.test.ts/.test.tsx） | 15 | - |
+| TypeScript 组件（.tsx） | 41 | 40.6% |
+| TypeScript 工具（.ts） | 40 | 39.6% |
+| 测试文件（.test.ts/.test.tsx） | 22 | 21.8% |
 | 配置文件 | 19 | - |
 | 文档文件 | 5 | - |
 
@@ -320,7 +332,7 @@ integration 目录包含跨模块的集成测试，验证多个功能模块协�
 | 目录 | 组件 | 工具 | 测试 | API | Worker | 小计 |
 |------|------|------|------|-----|--------|------|
 | electron | 0 | 3 | 0 | 0 | 0 | 3 |
-| src/app | 2 | 0 | 0 | 9 | 0 | 11 |
+| src/app | 3 | 0 | 3 | 12 | 0 | 18 |
 | src/components/ui | 13 | 0 | 3 | 0 | 0 | 16 |
 | src/components | 0 | 1 | 0 | 0 | 0 | 1 |
 | src/features/topic-selection | 5 | 2 | 4 | 0 | 0 | 11 |
@@ -328,9 +340,9 @@ integration 目录包含跨模块的集成测试，验证多个功能模块协�
 | src/features/product-appeal | 3 | 1 | 0 | 0 | 0 | 4 |
 | src/lib/api | 0 | 2 | 2 | 0 | 0 | 4 |
 | src/lib/ai | 0 | 3 | 0 | 0 | 0 | 3 |
-| src/lib | 0 | 7 | 1 | 0 | 2 | 10 |
+| src/lib | 0 | 10 | 5 | 0 | 2 | 17 |
 | src/integration | 0 | 0 | 1 | 0 | 0 | 1 |
-| **总计** | **40** | **35** | **15** | **11** | **2** | **91** |
+| **总计** | **41** | **40** | **22** | **12** | **2** | **101** |
 
 ### 8.3 文件清单
 
@@ -460,6 +472,7 @@ integration 目录包含跨模块的集成测试，验证多个功能模块协�
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.66.0 | 2026-01-30 | **API文档与测试增强**：新增 OpenAPI 3.0 规范和 Swagger UI（/api-docs）；新增滑动窗口限流器（rate-limiter.ts）；新增 LRU 缓存（lru-cache.ts）；新增 7 个测试文件覆盖 lib 模块和 API 路由；Web Worker 支持多任务类型和分片处理；替换所有 any 类型为具体类型；TypeScript组件41个、工具40个、测试22个，总文件数101个 |
 | v2.7.0 | 2026-01-30 | **API安全性增强**：新增统一输入验证工具库（validators.ts）；新增 Token 签名工具库（auth-token.ts）；所有 API 路由集成输入验证；邀请码 Cookie 升级为签名 Token；中间件升级为验证签名 Token；CORS 代理 URL 配置移至环境变量；新增 INVITE_TOKEN_SECRET 环境变量；TypeScript工具文件从33个增加到35个，总文件数从89个增加到91个 |
 | v2.6.1 | 2026-01-29 | **邀请码管理系统**：新增邀请码验证页面（/invite）；新增管理员邀请码管理后台（/admin/invite）；新增中间件拦截（middleware.ts）；集成 Prisma ORM 和 SQLite 数据库；新增2个 API 端点（/api/invite/verify、/api/invite/admin）；支持邀请码配置（最大使用次数、过期时间、备注）；TypeScript组件从38个增加到40个，工具文件从31个增加到33个，API Routes从9个增加到11个，总文件数从84个增加到89个 |
 | v2.6.0 | 2026-01-28 | **技能集成版**：集成3个Reddit分析技能的核心功能；新增WISH信号检测系统（7类模式）；新增智能分类系统（7种子分类）；新增优先级计算引擎（API端点 /api/analysis/prioritize）；新增产品吸引力评估模块（5个组件+API）；扩展Insight类型支持10+新字段；新增单元测试（sentiment-patterns、priority-calculator）；文件总数从 79 个增加到 84 个 |

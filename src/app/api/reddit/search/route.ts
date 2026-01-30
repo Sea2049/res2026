@@ -1,3 +1,80 @@
+/**
+ * @swagger
+ * /api/reddit/search:
+ *   get:
+ *     summary: 搜索 Reddit 内容
+ *     description: 搜索 Subreddit 或帖子，支持排序和时间范围筛选。使用 LRU 缓存（500条，60秒TTL）。
+ *     tags: [Reddit]
+ *     parameters:
+ *       - name: q
+ *         in: query
+ *         required: true
+ *         description: 搜索关键词（最大200字符）
+ *         schema:
+ *           type: string
+ *           maxLength: 200
+ *       - name: type
+ *         in: query
+ *         description: 搜索类型
+ *         schema:
+ *           type: string
+ *           enum: [subreddit, post]
+ *           default: subreddit
+ *       - name: limit
+ *         in: query
+ *         description: 返回结果数量限制
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *       - name: sort
+ *         in: query
+ *         description: 排序方式（仅 type=post 时有效）
+ *         schema:
+ *           type: string
+ *           enum: [relevance, hot, new, top]
+ *           default: relevance
+ *       - name: t
+ *         in: query
+ *         description: 时间范围（仅 type=post 时有效）
+ *         schema:
+ *           type: string
+ *           enum: [all, hour, day, week, month, year]
+ *           default: all
+ *       - name: subreddit
+ *         in: query
+ *         description: 限定搜索的 Subreddit（仅 type=post 时有效）
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 搜索结果
+ *         headers:
+ *           X-Cache:
+ *             description: 缓存状态（HIT/MISS）
+ *             schema:
+ *               type: string
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RedditListingResponse'
+ *       400:
+ *         description: 参数验证失败
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       429:
+ *         description: 请求过于频繁（30次/分钟）
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RateLimitError'
+ *       500:
+ *         description: 服务器错误
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithFallbacks } from '@/lib/api/fetch-helper';
 import {
