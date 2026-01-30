@@ -8,18 +8,20 @@ import {
   VALID_SEARCH_SORT_TYPES,
   VALID_TIME_RANGES,
 } from '@/lib/validators';
+import { redditRateLimiter, checkRateLimit } from '@/lib/rate-limiter';
+import { LRUCache } from '@/lib/lru-cache';
+import type { RedditListingResponse } from '@/lib/types';
 
-// 简单内存缓存接口
-interface CacheEntry {
-  data: any;
-  timestamp: number;
-}
-
-// 全局缓存对象 (注意：在 Serverless 环境下可能不持久，但在长期运行的容器中有效)
-const memoryCache = new Map<string, CacheEntry>();
-const CACHE_TTL = 60 * 1000; // 60秒缓存
+// 使用 LRU 缓存替代简单 Map（最大 500 条，60秒 TTL）
+const searchCache = new LRUCache<string, RedditListingResponse>(500, 60 * 1000);
 
 export async function GET(request: NextRequest) {
+  // 限流检查
+  const rateLimitResponse = checkRateLimit(redditRateLimiter, request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get('q');
   const type = searchParams.get('type') || 'subreddit';
@@ -63,11 +65,10 @@ export async function GET(request: NextRequest) {
   // 生成缓存 Key
   const cacheKey = `search:${type}:${query}:${sort}:${timeRange}:${limit}:${searchParams.get('subreddit') || ''}`;
 
-  // 2. 检查内存缓存
-  const cached = memoryCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    // console.log(`[Cache] Hit memory cache for ${cacheKey}`);
-    return NextResponse.json(cached.data, {
+  // 2. 检查 LRU 缓存
+  const cached = searchCache.get(cacheKey);
+  if (cached) {
+    return NextResponse.json(cached, {
       headers: {
         'X-Cache': 'HIT',
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
@@ -110,22 +111,8 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // 3. 写入内存缓存
-      memoryCache.set(cacheKey, {
-        data: finalData,
-        timestamp: Date.now()
-      });
-
-      // 清理过期缓存 (简单的概率清理，避免每次请求都遍历)
-      if (memoryCache.size > 100 && Math.random() < 0.1) {
-        const now = Date.now();
-        const cacheEntries = Array.from(memoryCache.entries());
-        for (const [key, val] of cacheEntries) {
-          if (now - val.timestamp > CACHE_TTL) {
-            memoryCache.delete(key);
-          }
-        }
-      }
+      // 3. 写入 LRU 缓存（自动管理大小和过期）
+      searchCache.set(cacheKey, finalData);
 
       return NextResponse.json(finalData, {
         headers: {
@@ -133,11 +120,13 @@ export async function GET(request: NextRequest) {
           'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('API 请求失败:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorStatus = (error as Error & { status?: number })?.status || 500;
       return NextResponse.json(
-        { error: `API 请求失败: ${error.message}` },
-        { status: error.status || 500 }
+        { error: `API 请求失败: ${errorMessage}` },
+        { status: errorStatus }
       );
     }
   } catch (error) {

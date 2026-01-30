@@ -16,6 +16,7 @@ import {
   detectObjectionTypes,
   calculateWishUrgency,
 } from "../features/analysis/utils/sentiment-patterns";
+import { SimpleLRUCache } from "./lru-cache";
 
 const ENGLISH_STOP_WORDS = new Set([
   // 基础停用词 (原核心词汇)
@@ -85,42 +86,6 @@ const ENGLISH_STOP_WORDS = new Set([
   "actually", "basically", "literally", "honestly", "simply",
   "totally", "completely", "exactly", "surely", "apparently", "obviously", "clearly",
 ]);
-
-/**
- * LRU缓存类
- * 用于缓存词干提取结果,提升性能
- */
-class LRUCache<K, V> {
-  private cache: Map<K, V>;
-  private maxSize: number;
-
-  constructor(maxSize: number = 1000) {
-    this.cache = new Map();
-    this.maxSize = maxSize;
-  }
-
-  get(key: K): V | undefined {
-    if (!this.cache.has(key)) return undefined;
-    const value = this.cache.get(key)!;
-    this.cache.delete(key);
-    this.cache.set(key, value);
-    return value;
-  }
-
-  set(key: K, value: V): void {
-    if (this.cache.has(key)) {
-      this.cache.delete(key);
-    } else if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
-    }
-    this.cache.set(key, value);
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-}
 
 /**
  * 最小堆类(用于Top-K算法)
@@ -214,7 +179,7 @@ class MinHeap<T> {
  * 优化点:添加LRU缓存,避免重复计算
  */
 export const stemmer = (function() {
-  const stemCache = new LRUCache<string, string>(2000);
+  const stemCache = new SimpleLRUCache<string, string>(2000);
   
   const irregularMap: Record<string, string> = {
     "ate": "eat", "be": "be", "became": "become", "begun": "begin",

@@ -1,4 +1,13 @@
-import type { Subreddit, Post, Comment } from "../types";
+import type { 
+  Subreddit, 
+  Post, 
+  Comment,
+  RedditChild,
+  RedditSubredditData,
+  RedditPostData,
+  RedditCommentData,
+  RedditListingResponse
+} from "../types";
 import { getTimeBasedApiConfig } from "../utils";
 
 /**
@@ -112,15 +121,18 @@ class RedditApiClient {
         return [];
       }
       
-      const results = data.data.children.map((item: any) => ({
-        id: item.data.id,
-        name: item.data.name,
-        display_name: item.data.display_name,
-        title: item.data.title,
-        description: item.data.public_description || '',
-        subscriber_count: item.data.subscribers || 0,
-        url: item.data.url,
-      }));
+      const results = data.data.children.map((item: RedditChild) => {
+        const subredditData = item.data as RedditSubredditData;
+        return {
+          id: subredditData.id,
+          name: subredditData.name,
+          display_name: subredditData.display_name,
+          title: subredditData.title,
+          description: subredditData.public_description || '',
+          subscriber_count: subredditData.subscribers || 0,
+          url: subredditData.url,
+        };
+      });
       
       console.log(`找到 ${results.length} 个 Subreddits`);
       return results;
@@ -178,17 +190,20 @@ class RedditApiClient {
         return [];
       }
       
-      const results = data.data.children.map((item: any) => ({
-        id: item.data.id,
-        title: item.data.title,
-        selftext: item.data.selftext,
-        author: item.data.author,
-        subreddit: item.data.subreddit,
-        score: item.data.score,
-        num_comments: item.data.num_comments,
-        created_utc: item.data.created_utc,
-        url: item.data.url,
-      }));
+      const results = data.data.children.map((item: RedditChild) => {
+        const postData = item.data as RedditPostData;
+        return {
+          id: postData.id,
+          title: postData.title,
+          selftext: postData.selftext,
+          author: postData.author,
+          subreddit: postData.subreddit,
+          score: postData.score,
+          num_comments: postData.num_comments,
+          created_utc: postData.created_utc,
+          url: postData.url,
+        };
+      });
       
       console.log(`找到 ${results.length} 个 Posts`);
       return results;
@@ -221,10 +236,10 @@ class RedditApiClient {
       
       const comments: Comment[] = [];
 
-      const extractComments = (listing: any[]) => {
+      const extractComments = (listing: RedditChild[]) => {
         for (const item of listing) {
           if (item.kind === "t1" && item.data) {
-            const commentData = item.data;
+            const commentData = item.data as RedditCommentData;
             if (commentData.body && commentData.author) {
               comments.push({
                 id: commentData.id,
@@ -238,8 +253,8 @@ class RedditApiClient {
                 permalink: commentData.permalink,
               });
             }
-            if (commentData.replies && commentData.replies.data) {
-              extractComments(commentData.replies.data.children);
+            if (commentData.replies && typeof commentData.replies !== 'string' && commentData.replies.data) {
+              extractComments(commentData.replies.data.children as RedditChild[]);
             }
           }
         }
@@ -282,17 +297,20 @@ class RedditApiClient {
         return [];
       }
       
-      return data.data.children.map((item: any) => ({
-        id: item.data.id,
-        title: item.data.title,
-        selftext: item.data.selftext,
-        author: item.data.author,
-        subreddit: item.data.subreddit,
-        score: item.data.score,
-        num_comments: item.data.num_comments,
-        created_utc: item.data.created_utc,
-        url: item.data.url,
-      }));
+      return data.data.children.map((item: RedditChild) => {
+        const postData = item.data as RedditPostData;
+        return {
+          id: postData.id,
+          title: postData.title,
+          selftext: postData.selftext,
+          author: postData.author,
+          subreddit: postData.subreddit,
+          score: postData.score,
+          num_comments: postData.num_comments,
+          created_utc: postData.created_utc,
+          url: postData.url,
+        };
+      });
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         throw error;

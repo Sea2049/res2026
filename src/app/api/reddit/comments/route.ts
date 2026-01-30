@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithFallbacks } from '@/lib/api/fetch-helper';
 import { validateSubreddit, validatePostId } from '@/lib/validators';
+import { redditRateLimiter, checkRateLimit } from '@/lib/rate-limiter';
 
 export async function GET(request: NextRequest) {
+  // 限流检查
+  const rateLimitResponse = checkRateLimit(redditRateLimiter, request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const searchParams = request.nextUrl.searchParams;
   const subreddit = searchParams.get('subreddit');
   const postId = searchParams.get('postId');
@@ -44,11 +51,13 @@ export async function GET(request: NextRequest) {
       }
 
       return NextResponse.json(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('获取评论失败:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorStatus = (error as Error & { status?: number })?.status || 500;
       return NextResponse.json(
-        { error: `API 请求失败: ${error.message}` },
-        { status: error.status || 500 }
+        { error: `API 请求失败: ${errorMessage}` },
+        { status: errorStatus }
       );
     }
   } catch (error) {

@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { validateNonEmptyString } from '@/lib/validators'
 import { generateVerificationToken } from '@/lib/auth-token'
+import { inviteVerifyRateLimiter, checkRateLimit } from '@/lib/rate-limiter'
 
 export async function POST(request: NextRequest) {
+  // 限流检查（防止暴力破解）
+  const rateLimitResponse = checkRateLimit(inviteVerifyRateLimiter, request)
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   try {
     const body = await request.json()
     const { code } = body

@@ -103,7 +103,7 @@ export class AppError extends Error {
   /**
    * 额外的上下文信息
    */
-  public readonly context?: Record<string, any>;
+  public readonly context?: Record<string, unknown>;
 
   constructor(options: {
     type: ErrorType;
@@ -113,7 +113,7 @@ export class AppError extends Error {
     severity?: ErrorSeverity;
     recoveryActions?: RecoveryAction[];
     originalError?: Error;
-    context?: Record<string, any>;
+    context?: Record<string, unknown>;
   }) {
     super(options.message);
     this.name = 'AppError';
@@ -133,7 +133,7 @@ export class AppError extends Error {
   /**
    * 转换为 JSON 格式
    */
-  toJSON(): Record<string, any> {
+  toJSON(): Record<string, unknown> {
     return {
       name: this.name,
       type: this.type,

@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { exportRateLimiter, checkRateLimit } from "@/lib/rate-limiter";
 
 /**
  * PDF 导出 API
  * 接收前端生成的 PDF（base64）并返回带正确文件名的响应
  */
 export async function POST(request: NextRequest) {
+  // 限流检查
+  const rateLimitResponse = checkRateLimit(exportRateLimiter, request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const body = await request.json();
     const { base64, filename } = body;

@@ -12,7 +12,8 @@ import {
   sortByPriority,
   groupByPriorityLevel,
 } from "@/features/analysis/utils/priority-calculator";
-import type { Insight } from "@/lib/types";
+import type { Insight, PriorityResult } from "@/lib/types";
+import { analysisRateLimiter, checkRateLimit } from "@/lib/rate-limiter";
 
 /**
  * POST - 计算洞察优先级
@@ -29,6 +30,12 @@ import type { Insight } from "@/lib/types";
  * }
  */
 export async function POST(request: NextRequest) {
+  // 限流检查
+  const rateLimitResponse = checkRateLimit(analysisRateLimiter, request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const body = await request.json();
     const { insights, effortMap, options } = body;
@@ -55,7 +62,12 @@ export async function POST(request: NextRequest) {
     );
 
     // 根据选项处理结果
-    let result: any = {
+    let result: {
+      insights: Array<Insight & { priority: PriorityResult }>;
+      count: number;
+      grouped?: Record<string, Array<Insight & { priority: PriorityResult }>>;
+      summary?: ReturnType<typeof generatePrioritySummary>;
+    } = {
       insights: insightsWithPriority,
       count: insightsWithPriority.length,
     };

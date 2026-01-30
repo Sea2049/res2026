@@ -5,12 +5,19 @@ import {
   validateNonEmptyString,
   VALID_EXPORT_FORMATS 
 } from "@/lib/validators";
+import { exportRateLimiter, checkRateLimit } from "@/lib/rate-limiter";
 
 /**
  * 导出文件 API
  * 通过服务端返回文件，确保文件名和格式正确
  */
 export async function POST(request: NextRequest) {
+  // 限流检查
+  const rateLimitResponse = checkRateLimit(exportRateLimiter, request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const body = await request.json();
     const { content, filename, format } = body;

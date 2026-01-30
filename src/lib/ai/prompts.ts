@@ -1,4 +1,11 @@
-import type { AnalysisResult, SearchResult } from "@/lib/types";
+import type { 
+  AnalysisResult, 
+  SearchResult, 
+  KeywordCount, 
+  SentimentResult, 
+  Insight, 
+  SentimentComment 
+} from "@/lib/types";
 
 /**
  * 洞察Prompt生成参数接口
@@ -7,10 +14,10 @@ interface InsightPromptParams {
   topics: SearchResult[];
   analysisResult: AnalysisResult;
   exportData?: {
-    keywords: any[];
-    sentiments: any;
-    insights: any[];
-    comments: any[];
+    keywords: KeywordCount[];
+    sentiments: SentimentResult;
+    insights: Insight[];
+    comments: SentimentComment[];
   };
 }
 
@@ -38,7 +45,7 @@ function formatTopics(topics: SearchResult[]): string {
  * @param keywords 关键词列表
  * @returns 格式化的关键词字符串
  */
-function formatKeywords(keywords: any[]): string {
+function formatKeywords(keywords: KeywordCount[]): string {
   if (!keywords || keywords.length === 0) return "无关键词数据";
 
   const topKeywords = keywords.slice(0, 25);
@@ -59,7 +66,7 @@ function formatKeywords(keywords: any[]): string {
  * @param sentiment 情感分析结果
  * @returns 格式化的情感数据字符串
  */
-function formatSentiment(sentiment: any): string {
+function formatSentiment(sentiment: SentimentResult | null): string {
   if (!sentiment) return "无情感数据";
 
   return `情感分布:\n- 正面:${sentiment.positive}条(${sentiment.positivePercentage}%)\n- 负面:${sentiment.negative}条(${sentiment.negativePercentage}%)\n- 中性:${sentiment.neutral}条(${sentiment.neutralPercentage}%)`;
@@ -70,7 +77,7 @@ function formatSentiment(sentiment: any): string {
  * @param insights 洞察列表
  * @returns 格式化的洞察字符串
  */
-function formatInsights(insights: any[]): string {
+function formatInsights(insights: Insight[]): string {
   if (!insights || insights.length === 0) return "无洞察数据";
 
   const typeLabels: Record<string, string> = {
@@ -93,7 +100,7 @@ function formatInsights(insights: any[]): string {
  * @param comments 评论列表
  * @returns 格式化的评论样本字符串
  */
-function formatCommentSamples(comments: any[]): string {
+function formatCommentSamples(comments: SentimentComment[]): string {
   if (!comments || comments.length === 0) return "无评论数据";
 
   const samples = comments.slice(0, 20);

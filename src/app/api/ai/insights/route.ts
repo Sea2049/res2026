@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { qwenAI } from "@/lib/ai/qwen-ai";
 import { generateInsightPrompt } from "@/lib/ai/prompts";
-import type { AnalysisResult, SearchResult } from "@/lib/types";
+import type { 
+  AnalysisResult, 
+  SearchResult, 
+  KeywordCount, 
+  SentimentResult, 
+  Insight, 
+  SentimentComment 
+} from "@/lib/types";
+import { aiRateLimiter, checkRateLimit } from "@/lib/rate-limiter";
 
 /**
  * 请求体验证接口
@@ -10,10 +18,10 @@ interface GenerateInsightsRequest {
   topics: SearchResult[];
   analysisResult: AnalysisResult;
   exportData?: {
-    keywords: any[];
-    sentiments: any;
-    insights: any[];
-    comments: any[];
+    keywords: KeywordCount[];
+    sentiments: SentimentResult;
+    insights: Insight[];
+    comments: SentimentComment[];
   };
 }
 
@@ -23,6 +31,12 @@ interface GenerateInsightsRequest {
  * 接收分析结果数据，调用通义千问(QWEN)生成深度洞见
  */
 export async function POST(request: NextRequest) {
+  // 限流检查
+  const rateLimitResponse = checkRateLimit(aiRateLimiter, request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const body: GenerateInsightsRequest = await request.json();
 

@@ -7,6 +7,12 @@ import {
   validateBoolean,
   validateNonEmptyString 
 } from '@/lib/validators'
+import { adminRateLimiter, checkRateLimit } from '@/lib/rate-limiter'
+
+// 限流检查包装函数
+function withRateLimit(request: NextRequest): Response | null {
+  return checkRateLimit(adminRateLimiter, request)
+}
 
 // 验证管理员密码
 function verifyAdminPassword(request: NextRequest): boolean {
@@ -31,6 +37,10 @@ function unauthorizedResponse() {
 
 // GET: 获取邀请码列表
 export async function GET(request: NextRequest) {
+  // 限流检查
+  const rateLimitResponse = withRateLimit(request)
+  if (rateLimitResponse) return rateLimitResponse
+
   if (!verifyAdminPassword(request)) {
     return unauthorizedResponse()
   }
@@ -55,6 +65,10 @@ export async function GET(request: NextRequest) {
 
 // POST: 生成新邀请码
 export async function POST(request: NextRequest) {
+  // 限流检查
+  const rateLimitResponse = withRateLimit(request)
+  if (rateLimitResponse) return rateLimitResponse
+
   if (!verifyAdminPassword(request)) {
     return unauthorizedResponse()
   }
@@ -127,6 +141,10 @@ export async function POST(request: NextRequest) {
 
 // DELETE: 删除邀请码
 export async function DELETE(request: NextRequest) {
+  // 限流检查
+  const rateLimitResponse = withRateLimit(request)
+  if (rateLimitResponse) return rateLimitResponse
+
   if (!verifyAdminPassword(request)) {
     return unauthorizedResponse()
   }
@@ -166,6 +184,10 @@ export async function DELETE(request: NextRequest) {
 
 // PATCH: 启用/禁用邀请码
 export async function PATCH(request: NextRequest) {
+  // 限流检查
+  const rateLimitResponse = withRateLimit(request)
+  if (rateLimitResponse) return rateLimitResponse
+
   if (!verifyAdminPassword(request)) {
     return unauthorizedResponse()
   }

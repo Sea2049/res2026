@@ -11,11 +11,18 @@ import {
   detectIdentitySignals,
   detectObjectionTypes,
 } from "@/features/analysis/utils/sentiment-patterns";
+import { analysisRateLimiter, checkRateLimit } from "@/lib/rate-limiter";
 
 /**
  * POST - 计算产品吸引力评分
  */
 export async function POST(request: NextRequest) {
+  // 限流检查
+  const rateLimitResponse = checkRateLimit(analysisRateLimiter, request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const body = await request.json();
     const { comments } = body;

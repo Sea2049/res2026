@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { exportRateLimiter, checkRateLimit } from "@/lib/rate-limiter";
 
 /**
  * Excel 导出 API
  * 接收 base64 编码的 Excel 文件并返回
  */
 export async function POST(request: NextRequest) {
+  // 限流检查
+  const rateLimitResponse = checkRateLimit(exportRateLimiter, request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const body = await request.json();
     const { base64, filename } = body;

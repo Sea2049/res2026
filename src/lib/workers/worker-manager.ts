@@ -6,6 +6,8 @@
  * 这样可以避免 Windows 系统下 libuv 的 UV_HANDLE_CLOSING 断言失败
  */
 
+import type { Comment, AnalysisConfig, AnalysisResult } from '../types';
+
 /**
  * Worker 任务状态
  */
@@ -31,7 +33,7 @@ interface WorkerTask<T> {
 export class NLPWorkerManager {
   private worker: Worker | null = null;
   private status: WorkerStatus = WorkerStatus.IDLE;
-  private currentTask: WorkerTask<any> | null = null;
+  private currentTask: WorkerTask<AnalysisResult> | null = null;
   private taskTimeout: number = 30000; // 30秒超时
   private retryCount: number = 0;
   private maxRetries: number = 2;
@@ -187,9 +189,9 @@ export class NLPWorkerManager {
    * @param timeout 超时时间（毫秒），默认 30 秒
    * @returns 分析结果
    */
-  public async execute<T = any>(
-    comments: any[],
-    config: any,
+  public async execute<T = AnalysisResult>(
+    comments: Comment[],
+    config: Partial<AnalysisConfig>,
     timeout?: number
   ): Promise<T> {
     // 取消空闲清理（因为即将使用 Worker）

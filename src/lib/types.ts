@@ -485,3 +485,154 @@ export interface PriorityResult {
    */
   recommendedAction: string;
 }
+
+// ==================== Reddit API 原始响应类型 ====================
+// v2.7.0 新增 - 用于替换 any 类型
+
+/**
+ * Reddit API 列表响应
+ */
+export interface RedditListingResponse {
+  kind: 'Listing';
+  data: {
+    after: string | null;
+    before: string | null;
+    dist: number | null;
+    modhash: string;
+    geo_filter: string;
+    children: RedditChild[];
+  };
+}
+
+/**
+ * Reddit 列表项
+ */
+export interface RedditChild {
+  kind: 't1' | 't2' | 't3' | 't4' | 't5' | 't6';
+  data: RedditPostData | RedditCommentData | RedditSubredditData;
+}
+
+/**
+ * Reddit 帖子数据
+ */
+export interface RedditPostData {
+  id: string;
+  name: string;
+  title: string;
+  selftext: string;
+  author: string;
+  score: number;
+  upvote_ratio: number;
+  num_comments: number;
+  created: number;
+  created_utc: number;
+  subreddit: string;
+  subreddit_id: string;
+  subreddit_name_prefixed: string;
+  permalink: string;
+  url: string;
+  is_self: boolean;
+  over_18: boolean;
+  spoiler: boolean;
+  locked: boolean;
+  stickied: boolean;
+  archived: boolean;
+  distinguished: string | null;
+  link_flair_text: string | null;
+  link_flair_css_class: string | null;
+  author_flair_text: string | null;
+  thumbnail: string;
+  domain: string;
+}
+
+/**
+ * Reddit 评论数据
+ */
+export interface RedditCommentData {
+  id: string;
+  name: string;
+  author: string;
+  body: string;
+  body_html: string;
+  score: number;
+  ups: number;
+  downs: number;
+  created: number;
+  created_utc: number;
+  parent_id: string;
+  link_id: string;
+  subreddit: string;
+  subreddit_id: string;
+  permalink: string;
+  depth: number;
+  is_submitter: boolean;
+  stickied: boolean;
+  distinguished: string | null;
+  edited: boolean | number;
+  replies: RedditListingResponse | string;
+}
+
+/**
+ * Reddit Subreddit 数据
+ */
+export interface RedditSubredditData {
+  id: string;
+  name: string;
+  display_name: string;
+  display_name_prefixed: string;
+  title: string;
+  description: string;
+  description_html: string;
+  public_description: string;
+  subscribers: number;
+  accounts_active: number | null;
+  created: number;
+  created_utc: number;
+  url: string;
+  icon_img: string;
+  banner_img: string;
+  header_img: string | null;
+  over18: boolean;
+  lang: string;
+  subreddit_type: 'public' | 'private' | 'restricted' | 'gold_restricted' | 'archived';
+}
+
+/**
+ * Reddit 搜索响应
+ */
+export interface RedditSearchResponse extends RedditListingResponse {
+  data: RedditListingResponse['data'] & {
+    children: Array<{
+      kind: 't3' | 't5';
+      data: RedditPostData | RedditSubredditData;
+    }>;
+  };
+}
+
+/**
+ * Reddit 评论响应（帖子详情页返回的格式）
+ */
+export type RedditCommentsResponse = [
+  RedditListingResponse,  // 帖子信息
+  RedditListingResponse   // 评论列表
+];
+
+/**
+ * Reddit API 错误响应
+ */
+export interface RedditErrorResponse {
+  error: number;
+  message: string;
+  reason?: string;
+}
+
+/**
+ * Worker 任务配置
+ */
+export interface WorkerTaskConfig {
+  maxComments?: number;
+  minKeywordLength?: number;
+  topKeywordsCount?: number;
+  sentimentThreshold?: number;
+  enableInsightDetection?: boolean;
+}

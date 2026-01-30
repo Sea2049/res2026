@@ -73,7 +73,7 @@ export async function fetchWithFallbacks(targetUrl: string): Promise<Response> {
     }
   ];
 
-  let lastError: any;
+  let lastError: unknown;
   let lastStatus: number | undefined;
 
   for (const strategy of strategies) {
@@ -86,7 +86,11 @@ export async function fetchWithFallbacks(targetUrl: string): Promise<Response> {
       const url = strategy.getUrl(targetUrl);
       
       // 根据策略决定是否使用代理
-      const fetchOptions: any = {
+      const fetchOptions: {
+        headers: Record<string, string>;
+        signal: AbortSignal;
+        dispatcher?: ProxyAgent;
+      } = {
         headers: strategy.headers,
         signal: controller.signal,
       };
@@ -130,7 +134,9 @@ export async function fetchWithFallbacks(targetUrl: string): Promise<Response> {
   }
 
   // 如果所有策略都失败，抛出最后一个错误
-  const error = lastError || new Error('All fetch strategies failed');
-  (error as any).status = lastStatus || 500;
+  const error = lastError instanceof Error 
+    ? lastError 
+    : new Error('All fetch strategies failed');
+  (error as Error & { status?: number }).status = lastStatus || 500;
   throw error;
 }
