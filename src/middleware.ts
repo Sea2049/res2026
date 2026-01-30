@@ -1,12 +1,47 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { createHmac } from 'crypto'
 
 /**
- * 在 Edge Runtime 中验证签名 Token
- * 注意：Edge Runtime 支持 crypto 模块的基本功能
+ * 将字符串转换为 Uint8Array
  */
-function verifyTokenInEdge(token: string | undefined): boolean {
+function stringToUint8Array(str: string): Uint8Array {
+  const encoder = new TextEncoder()
+  return encoder.encode(str)
+}
+
+/**
+ * 将 ArrayBuffer 转换为十六进制字符串
+ */
+function arrayBufferToHex(buffer: ArrayBuffer): string {
+  const byteArray = new Uint8Array(buffer)
+  return Array.from(byteArray)
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+/**
+ * 使用 Web Crypto API 生成 HMAC-SHA256 签名
+ */
+async function hmacSha256(secret: string, message: string): Promise<string> {
+  const keyData = stringToUint8Array(secret)
+  const messageData = stringToUint8Array(message)
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+
+  const signature = await crypto.subtle.sign('HMAC', key, messageData)
+  return arrayBufferToHex(signature)
+}
+
+/**
+ * 在 Edge Runtime 中验证签名 Token（使用 Web Crypto API）
+ */
+async function verifyTokenInEdge(token: string | undefined): Promise<boolean> {
   if (!token || typeof token !== 'string') {
     return false
   }
@@ -33,17 +68,15 @@ function verifyTokenInEdge(token: string | undefined): boolean {
     return false
   }
 
-  // 验证签名
+  // 使用 Web Crypto API 验证签名
   const secret = process.env.INVITE_TOKEN_SECRET || 'reddit-insight-tool-default-secret-key-2026'
-  const expectedSignature = createHmac('sha256', secret)
-    .update(timestampStr)
-    .digest('hex')
+  const expectedSignature = await hmacSha256(secret, timestampStr)
 
-  // 简单比较（Edge Runtime 中 timingSafeEqual 可能不可用）
+  // 简单比较
   return providedSignature === expectedSignature
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // 仅对首页进行验证
@@ -55,7 +88,7 @@ export function middleware(request: NextRequest) {
   const tokenValue = request.cookies.get('invite_verified')?.value
 
   // 验证签名 Token
-  const isVerified = verifyTokenInEdge(tokenValue)
+  const isVerified = await verifyTokenInEdge(tokenValue)
 
   if (!isVerified) {
     // 重定向到邀请码输入页面
