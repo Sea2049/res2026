@@ -13,6 +13,10 @@ build
 *.asar
 *.exe
 
+# Electron build outputs
+electron-out
+electron-resources
+
 # Testing
 coverage
 

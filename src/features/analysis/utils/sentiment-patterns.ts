@@ -24,13 +24,13 @@ export const WISH_PATTERNS = {
   shouldStatements: [
     /\bthey\s+should\s+/i,
     /\bshould\s+(add|include|have|implement|fix|improve)/i,
-    /\bneeds?\s+to\s+(add|include|have|implement|fix|improve)/i,
+    /\bneeds?\s+to\s+(be\s+)?(add|added|include|included|have|implement|implemented|fix|fixed|improve|improved)/i,
     /\bmust\s+(add|include|have|implement|fix|improve)/i,
   ],
   
   // 缺失/不足表达
   lackingStatements: [
-    /\b(needs?|lacking|missing)\s+(more|better)/i,
+    /\b(needs?|lacking|missing)\s+(more|better|a\s+|the\s+)/i,
     /\b(doesn't|does\s+not|don't|do\s+not)\s+have/i,
     /\bwithout\s+/i,
     /\bno\s+(way\s+to|option\s+to|ability\s+to)/i,

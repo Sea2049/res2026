@@ -119,12 +119,16 @@ export async function POST(request: NextRequest) {
         }
     }
 
-    // 添加 UTF-8 BOM 以确保中文正确显示
-    const BOM = "\uFEFF";
-    const fileContent = BOM + content;
+    // 添加 UTF-8 BOM 以确保中文正确显示（用字节避免部分环境丢失 BOM）
+    const BOM = new Uint8Array([0xef, 0xbb, 0xbf]);
+    const encoder = new TextEncoder();
+    const contentBytes = encoder.encode(content);
+    const fileBytes = new Uint8Array(BOM.length + contentBytes.length);
+    fileBytes.set(BOM, 0);
+    fileBytes.set(contentBytes, BOM.length);
 
     // 创建响应，设置正确的 headers
-    const response = new NextResponse(fileContent, {
+    const response = new NextResponse(fileBytes, {
       status: 200,
       headers: {
         "Content-Type": contentType,

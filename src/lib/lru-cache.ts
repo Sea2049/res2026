@@ -170,7 +170,8 @@ export class LRUCache<K, V> {
     const now = Date.now()
     let removed = 0
 
-    for (const [key, entry] of this.cache.entries()) {
+    const entries = Array.from(this.cache.entries())
+    for (const [key, entry] of entries) {
       if (now - entry.timestamp > this.ttlMs) {
         this.cache.delete(key)
         removed++
@@ -198,7 +199,8 @@ export class LRUCache<K, V> {
    * 遍历缓存条目
    */
   forEach(callback: (value: V, key: K) => void): void {
-    for (const [key, entry] of this.cache.entries()) {
+    const entries = Array.from(this.cache.entries())
+    for (const [key, entry] of entries) {
       callback(entry.value, key)
     }
   }

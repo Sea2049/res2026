@@ -90,7 +90,15 @@ class RedditApiClient {
     
     const response = await fetch(url, { signal });
     if (!response.ok) {
-      throw new Error(`Server API error: ${response.status}`);
+      // 尝试从响应体提取服务端错误详情
+      let detail = '';
+      try {
+        const body = await response.json();
+        detail = body?.error || '';
+      } catch {
+        // 忽略解析失败
+      }
+      throw new Error(detail || `服务端请求失败 (${response.status})`);
     }
     return response;
   }
@@ -141,7 +149,8 @@ class RedditApiClient {
         throw error;
       }
       console.error("搜索 Subreddits 失败:", error);
-      return [];
+      const msg = error instanceof Error ? error.message : "搜索 Subreddits 失败";
+      throw new Error(`搜索社区失败: ${msg}`);
     }
   }
 
@@ -212,7 +221,8 @@ class RedditApiClient {
         throw error;
       }
       console.error("搜索 Posts 失败:", error);
-      return [];
+      const msg = error instanceof Error ? error.message : "搜索 Posts 失败";
+      throw new Error(`搜索帖子失败: ${msg}`);
     }
   }
 

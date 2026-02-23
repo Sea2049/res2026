@@ -52,7 +52,7 @@ describe('Input 组件', () => {
     render(<Input />);
     const input = screen.getByRole('textbox');
     expect(input).toHaveClass('focus:ring-2');
-    expect(input).toHaveClass('focus:ring-blue-500');
+    expect(input).toHaveClass('focus:ring-reddit-orange');
   });
 
   it('应该应用自定义类名', () => {

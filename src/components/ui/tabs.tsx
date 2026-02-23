@@ -133,15 +133,42 @@ export const TabsTrigger = ({ value, className, children, ...props }: TabsTrigge
   const { activeTab, setActiveTab } = useTabsContext();
   const isActive = activeTab === value;
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    const tabList = e.currentTarget.parentElement;
+    if (!tabList) return;
+
+    const tabs = Array.from(tabList.querySelectorAll('[role="tab"]')) as HTMLButtonElement[];
+    const currentIndex = tabs.indexOf(e.currentTarget);
+    let nextIndex: number | null = null;
+
+    if (e.key === "ArrowRight") {
+      nextIndex = (currentIndex + 1) % tabs.length;
+    } else if (e.key === "ArrowLeft") {
+      nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    } else if (e.key === "Home") {
+      nextIndex = 0;
+    } else if (e.key === "End") {
+      nextIndex = tabs.length - 1;
+    }
+
+    if (nextIndex !== null) {
+      e.preventDefault();
+      tabs[nextIndex].focus();
+      tabs[nextIndex].click();
+    }
+  };
+
   return (
     <button
       type="button"
       role="tab"
       aria-selected={isActive}
+      tabIndex={isActive ? 0 : -1}
       onClick={() => setActiveTab(value)}
+      onKeyDown={handleKeyDown}
       className={cn(
         "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all",
-        "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+        "focus:outline-none focus:ring-2 focus:ring-reddit-orange focus:ring-offset-2",
         "disabled:pointer-events-none disabled:opacity-50",
         isActive
           ? "bg-white text-gray-900 shadow-sm"

@@ -48,9 +48,9 @@ const getVariantStyles = (variant: AlertVariant) => {
       iconColor: "text-gray-500",
     },
     info: {
-      container: "bg-blue-50 border-blue-200 text-blue-900",
+      container: "bg-primary-50 border-reddit-border text-reddit-text",
       icon: Info,
-      iconColor: "text-blue-500",
+      iconColor: "text-reddit-orange",
     },
     success: {
       container: "bg-green-50 border-green-200 text-green-900",

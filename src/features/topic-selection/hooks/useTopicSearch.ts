@@ -160,26 +160,44 @@ export function useTopicSearch(): UseTopicSearchReturn {
 
       try {
         let searchResults: SearchResult[] = [];
+        const errors: string[] = [];
 
         if (!options.postOnly) {
-          const subreddits = await redditApi.searchSubreddits(searchKeyword, signal);
-          searchResults = [...searchResults, ...subreddits.slice(0, options.limit)];
+          try {
+            const subreddits = await redditApi.searchSubreddits(searchKeyword, signal);
+            searchResults = [...searchResults, ...subreddits.slice(0, options.limit)];
+          } catch (err) {
+            if (err instanceof Error && err.name === 'AbortError') throw err;
+            const msg = err instanceof Error ? err.message : "搜索社区失败";
+            errors.push(msg);
+            console.error("搜索社区失败:", err);
+          }
         }
 
         if (!options.subredditOnly) {
-          const posts = await redditApi.searchPosts(
-            searchKeyword,
-            undefined,
-            options.sortBy,
-            options.timeRange,
-            options.limit,
-            signal
-          );
-          searchResults = [...searchResults, ...posts.slice(0, options.limit)];
+          try {
+            const posts = await redditApi.searchPosts(
+              searchKeyword,
+              undefined,
+              options.sortBy,
+              options.timeRange,
+              options.limit,
+              signal
+            );
+            searchResults = [...searchResults, ...posts.slice(0, options.limit)];
+          } catch (err) {
+            if (err instanceof Error && err.name === 'AbortError') throw err;
+            const msg = err instanceof Error ? err.message : "搜索帖子失败";
+            errors.push(msg);
+            console.error("搜索帖子失败:", err);
+          }
         }
 
         if (!signal.aborted) {
           setResults(searchResults);
+          if (searchResults.length === 0 && errors.length > 0) {
+            setError(errors[0]);
+          }
         }
       } catch (err) {
         if (!signal.aborted) {
@@ -239,26 +257,44 @@ export function useTopicSearch(): UseTopicSearchReturn {
 
     try {
       let searchResults: SearchResult[] = [];
+      const errors: string[] = [];
 
       if (!searchOptions.postOnly) {
-        const subreddits = await redditApi.searchSubreddits(keyword, signal);
-        searchResults = [...searchResults, ...subreddits.slice(0, searchOptions.limit)];
+        try {
+          const subreddits = await redditApi.searchSubreddits(keyword, signal);
+          searchResults = [...searchResults, ...subreddits.slice(0, searchOptions.limit)];
+        } catch (err) {
+          if (err instanceof Error && err.name === 'AbortError') throw err;
+          const msg = err instanceof Error ? err.message : "搜索社区失败";
+          errors.push(msg);
+          console.error("搜索社区失败:", err);
+        }
       }
 
       if (!searchOptions.subredditOnly) {
-        const posts = await redditApi.searchPosts(
-          keyword,
-          undefined,
-          searchOptions.sortBy,
-          searchOptions.timeRange,
-          searchOptions.limit,
-          signal
-        );
-        searchResults = [...searchResults, ...posts.slice(0, searchOptions.limit)];
+        try {
+          const posts = await redditApi.searchPosts(
+            keyword,
+            undefined,
+            searchOptions.sortBy,
+            searchOptions.timeRange,
+            searchOptions.limit,
+            signal
+          );
+          searchResults = [...searchResults, ...posts.slice(0, searchOptions.limit)];
+        } catch (err) {
+          if (err instanceof Error && err.name === 'AbortError') throw err;
+          const msg = err instanceof Error ? err.message : "搜索帖子失败";
+          errors.push(msg);
+          console.error("搜索帖子失败:", err);
+        }
       }
 
       if (!signal.aborted) {
         setResults(searchResults);
+        if (searchResults.length === 0 && errors.length > 0) {
+          setError(errors[0]);
+        }
       }
     } catch (err) {
       if (!signal.aborted) {

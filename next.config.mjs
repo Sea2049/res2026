@@ -3,9 +3,16 @@
  * 针对生产环境优化性能和安全设置
  */
 
+const skipBuildLint = process.env.NEXT_BUILD_SKIP_LINT === 'true';
+
 const nextConfig = {
   // 开启 React 严格模式（生产环境建议关闭以提升性能）
   reactStrictMode: true,
+  
+  // 仅在显式开启时跳过构建 lint，避免长期静默真实问题
+  eslint: {
+    ignoreDuringBuilds: skipBuildLint,
+  },
   
   // 启用 SWC 编译器加速构建
   swcMinify: true,

@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Reddit API 路由单元测试
  */
 
@@ -162,10 +166,10 @@ describe('/api/reddit/search', () => {
   describe('Error handling', () => {
     it('should handle fetch errors gracefully', async () => {
       mockFetchWithFallbacks.mockRejectedValue(new Error('Network error'));
-
-      const request = new NextRequest('http://localhost/api/reddit/search?q=test');
+      // 使用唯一 query 避免命中 LRU 缓存导致返回 200
+      const request = new NextRequest('http://localhost/api/reddit/search?q=__error_test__');
       const response = await searchGET(request);
-      
+
       expect(response.status).toBe(500);
       const data = await response.json();
       expect(data.error).toContain('API 请求失败');

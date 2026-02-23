@@ -230,7 +230,7 @@ export function InsightFilters({
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-gray-900">洞察筛选</h3>
             {activeFilterCount > 0 && (
-              <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs rounded-full">
+              <span className="px-2 py-0.5 bg-primary-100 text-reddit-orange text-xs rounded-full">
                 {activeFilterCount} 个筛选器
               </span>
             )}
@@ -246,7 +246,7 @@ export function InsightFilters({
             )}
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="text-sm text-blue-600 hover:text-blue-700"
+              className="text-sm text-reddit-orange hover:text-primary-700"
             >
               {isExpanded ? "收起" : "展开"}
             </button>
@@ -254,18 +254,19 @@ export function InsightFilters({
         </div>
 
         {/* 搜索框 */}
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-col sm:flex-row gap-2">
           <input
             type="text"
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             placeholder="输入关键词搜索..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="搜索洞察"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-reddit-orange"
           />
           <button
             onClick={handleSearch}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+            className="px-4 py-2 bg-reddit-orange text-white rounded-lg text-sm hover:bg-primary-700"
           >
             搜索
           </button>
@@ -277,12 +278,12 @@ export function InsightFilters({
             {filter.keywords.map((keyword) => (
               <span
                 key={keyword}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full"
+                className="inline-flex items-center gap-1 px-2 py-1 bg-primary-50 text-primary-700 text-xs rounded-full"
               >
                 {keyword}
                 <button
                   onClick={() => handleKeywordRemove(keyword)}
-                  className="hover:text-blue-900"
+                  className="hover:text-primary-700"
                 >
                   ×
                 </button>
@@ -296,7 +297,7 @@ export function InsightFilters({
       {isExpanded && (
         <div className="p-4 space-y-4">
           {/* 洞察类型筛选 */}
-          <div>
+          <div role="group" aria-label="洞察类型筛选">
             <h4 className="text-sm font-medium text-gray-700 mb-2">
               洞察类型
             </h4>
@@ -308,7 +309,7 @@ export function InsightFilters({
                     key={option.value}
                     className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm cursor-pointer transition-colors ${
                       isChecked
-                        ? "bg-blue-100 text-blue-700"
+                        ? "bg-primary-100 text-primary-700"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
@@ -328,7 +329,7 @@ export function InsightFilters({
           </div>
 
           {/* 置信度预设 */}
-          <div>
+          <div role="group" aria-label="置信度筛选">
             <h4 className="text-sm font-medium text-gray-700 mb-2">
               置信度
             </h4>
@@ -355,7 +356,7 @@ export function InsightFilters({
           </div>
 
           {/* 趋势筛选 */}
-          <div>
+          <div role="group" aria-label="趋势筛选">
             <h4 className="text-sm font-medium text-gray-700 mb-2">趋势</h4>
             <div className="flex flex-wrap gap-2">
               {TREND_OPTIONS.map((option) => {
@@ -365,7 +366,7 @@ export function InsightFilters({
                     key={option.value}
                     className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm cursor-pointer transition-colors ${
                       isChecked
-                        ? "bg-blue-100 text-blue-700"
+                        ? "bg-primary-100 text-primary-700"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
@@ -385,7 +386,7 @@ export function InsightFilters({
           </div>
 
           {/* 严重程度筛选 */}
-          <div>
+          <div role="group" aria-label="严重程度筛选">
             <h4 className="text-sm font-medium text-gray-700 mb-2">
               严重程度
             </h4>
@@ -397,7 +398,7 @@ export function InsightFilters({
                     key={option.value}
                     className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm cursor-pointer transition-colors ${
                       isChecked
-                        ? "bg-blue-100 text-blue-700"
+                        ? "bg-primary-100 text-primary-700"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
@@ -417,7 +418,7 @@ export function InsightFilters({
           </div>
 
           {/* v2.6.0: 子分类筛选 */}
-          <div>
+          <div role="group" aria-label="子分类筛选">
             <h4 className="text-sm font-medium text-gray-700 mb-2">
               子分类
             </h4>
@@ -449,7 +450,7 @@ export function InsightFilters({
           </div>
 
           {/* v2.6.0: WISH信号筛选 */}
-          <div>
+          <div role="group" aria-label="特殊标记筛选">
             <h4 className="text-sm font-medium text-gray-700 mb-2">
               特殊标记
             </h4>

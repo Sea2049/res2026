@@ -79,7 +79,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import {
-  calculatePriority,
   calculateBatchPriority,
   generatePrioritySummary,
   sortByPriority,
@@ -135,7 +134,7 @@ export async function POST(request: NextRequest) {
     );
 
     // 根据选项处理结果
-    let result: {
+    const result: {
       insights: Array<Insight & { priority: PriorityResult }>;
       count: number;
       grouped?: Record<string, Array<Insight & { priority: PriorityResult }>>;
@@ -147,12 +146,12 @@ export async function POST(request: NextRequest) {
 
     // 排序
     if (options?.sort) {
-      result.insights = sortByPriority(insightsWithPriority);
+      result.insights = sortByPriority(insightsWithPriority) as Array<Insight & { priority: PriorityResult }>;
     }
 
     // 分组
     if (options?.group) {
-      result.grouped = groupByPriorityLevel(insightsWithPriority);
+      result.grouped = groupByPriorityLevel(insightsWithPriority) as unknown as Record<string, Array<Insight & { priority: PriorityResult }>>;
     }
 
     // 摘要

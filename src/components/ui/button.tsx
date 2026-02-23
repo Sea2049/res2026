@@ -81,10 +81,12 @@ export const Button = ({
   return (
     <button
       disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      aria-disabled={disabled || loading || undefined}
       className={cn(
         "inline-flex items-center justify-center rounded-lg font-medium",
         "transition-colors duration-200",
-        "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+        "focus:outline-none focus:ring-2 focus:ring-reddit-orange focus:ring-offset-2",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         getVariantClasses(variant),
         getSizeClasses(size),
@@ -93,7 +95,7 @@ export const Button = ({
       )}
       {...props}
     >
-      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
       {children}
     </button>
   );

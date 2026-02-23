@@ -30,9 +30,9 @@ export function ProductAppeal({ comments, onClose }: ProductAppealProps) {
 
   if (loading) {
     return (
-      <Card className="p-8">
+      <Card className="p-8" aria-live="polite" aria-busy="true">
         <div className="flex flex-col items-center justify-center">
-          <Spinner className="w-12 h-12 mb-4" />
+          <Spinner className="w-12 h-12 mb-4" aria-hidden="true" />
           <p className="text-gray-600">正在分析产品吸引力...</p>
           <p className="text-sm text-gray-500 mt-2">
             分析用户反馈中的身份契合度、问题紧急度和信任信号
@@ -48,11 +48,11 @@ export function ProductAppeal({ comments, onClose }: ProductAppealProps) {
         <h3 className="text-red-800 font-medium mb-2">分析失败</h3>
         <p className="text-red-600 text-sm mb-4">{error}</p>
         <div className="flex gap-2">
-          <Button onClick={() => analyzeAppeal(comments)} variant="default">
+          <Button onClick={() => analyzeAppeal(comments)} variant="default" aria-label="重试分析">
             重试
           </Button>
           {onClose && (
-            <Button onClick={onClose} variant="outline">
+            <Button onClick={onClose} variant="outline" aria-label="关闭分析面板">
               关闭
             </Button>
           )}
@@ -72,7 +72,7 @@ export function ProductAppeal({ comments, onClose }: ProductAppealProps) {
   return (
     <div className="space-y-6">
       {/* 标题区域 */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">产品吸引力评估</h2>
           <p className="text-sm text-gray-600 mt-1">
@@ -80,7 +80,7 @@ export function ProductAppeal({ comments, onClose }: ProductAppealProps) {
           </p>
         </div>
         {onClose && (
-          <Button onClick={onClose} variant="outline">
+          <Button onClick={onClose} variant="outline" aria-label="关闭产品吸引力评估">
             关闭
           </Button>
         )}
@@ -112,6 +112,7 @@ export function ProductAppeal({ comments, onClose }: ProductAppealProps) {
             analyzeAppeal(comments);
           }}
           variant="outline"
+          aria-label="重新分析产品吸引力"
         >
           重新分析
         </Button>

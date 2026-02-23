@@ -67,7 +67,8 @@ const DEFAULT_CHUNK_CONFIG: ChunkConfig = {
 export class NLPWorkerManager {
   private worker: Worker | null = null;
   private status: WorkerStatus = WorkerStatus.IDLE;
-  private currentTask: WorkerTask<AnalysisResult> | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private currentTask: WorkerTask<any> | null = null;
   private taskTimeout: number = 30000; // 30秒超时
   private retryCount: number = 0;
   private maxRetries: number = 2;

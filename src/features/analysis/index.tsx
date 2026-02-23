@@ -142,7 +142,7 @@ export function AnalysisDashboard({
     session?.status === "completed" && session.result;
 
   return (
-    <div className={className}>
+    <div className={className} aria-label="分析仪表盘">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
           评论分析
@@ -158,19 +158,19 @@ export function AnalysisDashboard({
       )}
 
       {selectedTopics.length > 0 && !session && (
-        <Card className="mb-6 bg-blue-50 border-blue-200">
-          <CardContent className="flex items-center justify-between p-6">
+        <Card className="mb-6 bg-primary-50 border-reddit-border">
+          <CardContent className="flex flex-col sm:flex-row items-center justify-between p-6 gap-4">
             <div>
-              <p className="font-semibold text-blue-900 text-lg">
+              <p className="font-semibold text-reddit-text text-lg">
                 已选择 {selectedTopics.length} 个主题待分析
               </p>
-              <p className="text-sm text-blue-700 mt-1">
+              <p className="text-sm text-primary-700 mt-1">
                 点击"开始分析"按钮获取评论数据并进行分析
               </p>
             </div>
             <Button
               onClick={handleStartAnalysis}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-reddit-orange hover:bg-primary-700 text-white"
               size="lg"
             >
               <Play className="mr-2 h-4 w-4" />
@@ -253,7 +253,7 @@ export function AnalysisDashboard({
           </div>
 
           <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5 lg:w-[500px]">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 lg:w-[500px]">
               <TabsTrigger value="keywords">关键词</TabsTrigger>
               <TabsTrigger value="sentiment">情感</TabsTrigger>
               <TabsTrigger value="insights">洞察</TabsTrigger>
@@ -420,7 +420,7 @@ function TimePeriodTip() {
       case "peak":
         return "bg-amber-50 border-amber-200 text-amber-800";
       case "transition":
-        return "bg-blue-50 border-blue-200 text-blue-800";
+        return "bg-primary-50 border-reddit-border text-primary-700";
       default:
         return "bg-green-50 border-green-200 text-green-800";
     }
@@ -451,7 +451,8 @@ function TimePeriodTip() {
             </p>
             <button
               onClick={() => setIsDismissed(true)}
-              className="text-xs opacity-60 hover:opacity-100 transition-opacity"
+              aria-label="关闭提示"
+              className="text-xs opacity-60 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-reddit-orange rounded"
             >
               知道了
             </button>

@@ -62,15 +62,14 @@ describe('RedditApiClient', () => {
     it('应该处理 API 错误', async () => {
       (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
 
-      const results = await redditApi.searchSubreddits('test');
-      expect(results).toEqual([]);
+      await expect(redditApi.searchSubreddits('test')).rejects.toThrow(/搜索社区失败|Network error/);
     }, 10000);
 
     it('应该支持请求取消', async () => {
       jest.spyOn(console, 'error').mockImplementation(() => {});
       const abortController = new AbortController();
-      
-      (global.fetch as jest.Mock).mockImplementation(() => 
+
+      (global.fetch as jest.Mock).mockImplementation(() =>
         new Promise((_, reject) => {
           const error = new Error('AbortError');
           error.name = 'AbortError';
@@ -80,8 +79,7 @@ describe('RedditApiClient', () => {
 
       setTimeout(() => abortController.abort(), 50);
 
-      const results = await redditApi.searchSubreddits('test', abortController.signal);
-      expect(results).toEqual([]);
+      await expect(redditApi.searchSubreddits('test', abortController.signal)).rejects.toThrow();
     });
   });
 

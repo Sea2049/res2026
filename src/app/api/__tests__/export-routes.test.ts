@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Export API 路由单元测试
  */
 
@@ -152,11 +156,15 @@ describe('/api/export', () => {
         }),
       });
       const response = await exportPOST(request);
-      
+
       expect(response.status).toBe(200);
-      const text = await response.text();
-      // BOM is \uFEFF
-      expect(text.charCodeAt(0)).toBe(0xFEFF);
+      const buf = await response.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      // UTF-8 BOM: EF BB BF
+      expect(bytes.length).toBeGreaterThanOrEqual(3);
+      expect(bytes[0]).toBe(0xef);
+      expect(bytes[1]).toBe(0xbb);
+      expect(bytes[2]).toBe(0xbf);
     });
   });
 

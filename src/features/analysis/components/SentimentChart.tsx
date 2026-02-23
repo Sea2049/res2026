@@ -38,10 +38,15 @@ export function SentimentChart({ sentiment, className }: SentimentChartProps) {
     <div className={`bg-white p-6 rounded-lg shadow-sm ${className || ""}`}>
       <h3 className="text-lg font-semibold text-gray-900 mb-4">情感分布</h3>
       <div className="space-y-4">
-        <div className="relative h-8 bg-gray-200 rounded-full overflow-hidden flex">
+        <div
+          className="relative h-8 bg-gray-200 rounded-full overflow-hidden flex"
+          role="img"
+          aria-label={`情感分析图表: 正面 ${sentiment.positivePercentage}%, 中性 ${sentiment.neutralPercentage}%, 负面 ${sentiment.negativePercentage}%`}
+        >
           <div
             className="h-full bg-green-500 transition-all duration-500 flex items-center justify-center"
             style={{ width: positiveWidth }}
+            aria-label={`正面 ${sentiment.positivePercentage}%`}
           >
             {sentiment.positivePercentage >= 8 && (
               <span className="text-xs text-white font-medium">
@@ -52,6 +57,7 @@ export function SentimentChart({ sentiment, className }: SentimentChartProps) {
           <div
             className="h-full bg-gray-400 transition-all duration-500 flex items-center justify-center"
             style={{ width: neutralWidth }}
+            aria-label={`中性 ${sentiment.neutralPercentage}%`}
           >
             {sentiment.neutralPercentage >= 8 && (
               <span className="text-xs text-white font-medium">
@@ -62,6 +68,7 @@ export function SentimentChart({ sentiment, className }: SentimentChartProps) {
           <div
             className="h-full bg-red-500 transition-all duration-500 flex items-center justify-center"
             style={{ width: negativeWidth }}
+            aria-label={`负面 ${sentiment.negativePercentage}%`}
           >
             {sentiment.negativePercentage >= 8 && (
               <span className="text-xs text-white font-medium">
@@ -70,7 +77,7 @@ export function SentimentChart({ sentiment, className }: SentimentChartProps) {
             )}
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
           <div className="p-3 bg-green-50 rounded-lg">
             <div className="text-2xl font-bold text-green-600">{sentiment.positive}</div>
             <div className="text-sm text-green-700">正面评论</div>

@@ -275,7 +275,7 @@ export function InsightGraph({
       style={{ height }}
     >
       {/* 图例 */}
-      <div className="absolute top-4 left-4 z-10 bg-white/90 p-2 rounded-lg shadow-sm">
+      <div className="absolute top-4 left-4 z-10 bg-white/90 p-2 rounded-lg shadow-sm hidden sm:block">
         <div className="text-xs font-medium text-gray-700 mb-2">洞察类型</div>
         <div className="space-y-1">
           {Object.entries(TYPE_COLORS).map(([type, color]) => (
@@ -296,7 +296,7 @@ export function InsightGraph({
         <div className="mt-3 text-xs font-medium text-gray-700 mb-2">关系类型</div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-0.5 bg-blue-500"></div>
+            <div className="w-6 h-0.5 bg-reddit-orange"></div>
             <span className="text-xs text-gray-600">相似</span>
           </div>
           <div className="flex items-center gap-2">
@@ -314,13 +314,15 @@ export function InsightGraph({
       <div className="absolute top-4 right-4 z-10 flex gap-2">
         <button
           onClick={() => setZoom((z) => Math.min(z + 0.1, 2))}
-          className="w-8 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center text-gray-600 hover:bg-gray-50"
+          aria-label="放大"
+          className="w-8 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-reddit-orange"
         >
           +
         </button>
         <button
           onClick={() => setZoom((z) => Math.max(z - 0.1, 0.5))}
-          className="w-8 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center text-gray-600 hover:bg-gray-50"
+          aria-label="缩小"
+          className="w-8 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-reddit-orange"
         >
           -
         </button>
@@ -329,7 +331,8 @@ export function InsightGraph({
             setZoom(1);
             setOffset({ x: 0, y: 0 });
           }}
-          className="px-3 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center text-gray-600 text-xs hover:bg-gray-50"
+          aria-label="重置缩放"
+          className="px-3 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center text-gray-600 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-reddit-orange"
         >
           重置
         </button>
@@ -340,6 +343,8 @@ export function InsightGraph({
         className="w-full h-full"
         viewBox={`${-offset.x} ${-offset.y} ${600 / zoom} ${height / zoom}`}
         preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label="洞察关系图"
       >
         {/* 边 */}
         {layout.edges.map((edge, index) => {
@@ -373,6 +378,15 @@ export function InsightGraph({
               key={node.id}
               transform={`translate(${node.x}, ${node.y})`}
               onClick={() => handleNodeClick(node.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleNodeClick(node.id);
+                }
+              }}
+              tabIndex={0}
+              role="button"
+              aria-label={`洞察节点: ${node.insight.title}, 置信度 ${Math.round(node.insight.confidence * 100)}%`}
               className="cursor-pointer"
             >
               {/* 节点光晕 */}

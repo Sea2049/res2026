@@ -76,7 +76,7 @@ export function ObjectionMap({ objections }: ObjectionMapProps) {
             key={objection.type}
             className={`p-4 ${getSeverityStyle(severity)}`}
           >
-            <div className="flex items-start justify-between mb-3">
+            <div className="flex flex-col sm:flex-row items-start justify-between mb-3 gap-2">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{info.icon}</span>
                 <div>
@@ -84,7 +84,7 @@ export function ObjectionMap({ objections }: ObjectionMapProps) {
                   <p className="text-xs text-gray-600">{info.description}</p>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <div className="text-2xl font-bold text-gray-900">
                   {objection.count}
                 </div>
@@ -120,7 +120,14 @@ export function ObjectionMap({ objections }: ObjectionMapProps) {
                   {getSeverityLabel(severity)}
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+              <div
+                className="w-full bg-gray-200 rounded-full h-1.5 mt-1"
+                role="progressbar"
+                aria-valuenow={objection.count}
+                aria-valuemin={0}
+                aria-valuemax={Math.max(...objections.map(o => o.count))}
+                aria-label={`${info.label}严重程度: ${getSeverityLabel(severity)}`}
+              >
                 <div
                   className={`h-1.5 rounded-full ${getSeverityBarColor(severity)}`}
                   style={{
@@ -134,11 +141,11 @@ export function ObjectionMap({ objections }: ObjectionMapProps) {
       })}
 
       {/* 总结卡片 */}
-      <Card className="p-4 bg-blue-50 border-blue-200">
-        <h4 className="text-sm font-medium text-blue-900 mb-2">
+      <Card className="p-4 bg-primary-50 border-reddit-border">
+        <h4 className="text-sm font-medium text-reddit-text mb-2">
           💡 如何应对反对意见
         </h4>
-        <ul className="space-y-1 text-xs text-blue-800">
+        <ul className="space-y-1 text-xs text-primary-700">
           {generateRecommendations(sortedObjections).map((rec, index) => (
             <li key={index}>• {rec}</li>
           ))}

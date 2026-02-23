@@ -221,7 +221,7 @@ export function TopicSearchInput({
   return (
     <div className={cn("relative", className)}>
       <div className="space-y-2">
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             ref={inputRef}
             type="text"
@@ -232,7 +232,7 @@ export function TopicSearchInput({
             placeholder={placeholder}
             className={cn(
               "flex-1 px-4 py-2 border rounded-lg",
-              "focus:outline-none focus:ring-2 focus:ring-blue-500",
+              "focus:outline-none focus:ring-2 focus:ring-reddit-orange",
               "disabled:opacity-50 disabled:cursor-not-allowed",
               error && "border-red-500"
             )}
@@ -283,7 +283,7 @@ export function TopicSearchInput({
                 setHistoryIndex(-1);
                 onClearHistory?.();
               }}
-              className="text-xs text-blue-600 hover:text-blue-800 underline"
+              className="text-xs text-reddit-orange hover:text-primary-700 underline"
               aria-label="清空历史记录"
             >
               清空
@@ -297,7 +297,7 @@ export function TopicSearchInput({
                 className={cn(
                   "px-3 py-2 cursor-pointer flex items-center justify-between group",
                   "hover:bg-gray-100",
-                  getHighlightedHistoryItem(index) && "bg-blue-100"
+                  getHighlightedHistoryItem(index) && "bg-primary-100"
                 )}
                 onClick={() => handleHistoryItemClick(keyword)}
                 onMouseEnter={() => setHistoryIndex(index)}

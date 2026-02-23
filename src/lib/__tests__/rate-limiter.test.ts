@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Rate Limiter 单元测试
  */
 
@@ -10,7 +14,6 @@ import {
   redditRateLimiter,
   aiRateLimiter,
   exportRateLimiter,
-  inviteVerifyRateLimiter,
 } from '../rate-limiter';
 
 describe('RateLimiter', () => {
@@ -232,7 +235,4 @@ describe('Pre-configured limiters', () => {
     expect(exportRateLimiter).toBeInstanceOf(RateLimiter);
   });
 
-  it('inviteVerifyRateLimiter should have strictest limits', () => {
-    expect(inviteVerifyRateLimiter).toBeInstanceOf(RateLimiter);
-  });
 });

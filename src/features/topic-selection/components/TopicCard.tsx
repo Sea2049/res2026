@@ -45,7 +45,7 @@ const getTypeLabel = (isSubreddit: boolean): string => {
  * 获取主题类型标签颜色
  */
 const getTypeLabelColor = (isSubreddit: boolean): string => {
-  return isSubreddit ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800";
+  return isSubreddit ? "bg-green-100 text-green-800" : "bg-primary-100 text-primary-700";
 };
 
 /**
@@ -134,7 +134,7 @@ export const TopicCard = memo(function TopicCard({
         "p-4 border rounded-lg cursor-pointer",
         "hover:shadow-md transition-shadow duration-200",
         "bg-white",
-        isSelected && "ring-2 ring-blue-500 bg-blue-50",
+        isSelected && "ring-2 ring-reddit-orange bg-primary-50",
         className
       )}
       role="button"
@@ -178,7 +178,7 @@ export const TopicCard = memo(function TopicCard({
               e.stopPropagation();
               onToggleSelect?.();
             }}
-            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+            className="w-5 h-5 text-reddit-orange rounded focus:ring-reddit-orange cursor-pointer"
             aria-label={`选择${getTypeLabel(isSubreddit)}`}
           />
           <a
@@ -186,7 +186,7 @@ export const TopicCard = memo(function TopicCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="text-xs text-blue-600 hover:text-blue-800"
+            className="text-xs text-reddit-orange hover:text-primary-700"
             aria-label={`打开${getTypeLabel(isSubreddit)}链接`}
           >
             查看详情

@@ -136,7 +136,8 @@ export function CommentList({
               <button
                 key={sentiment}
                 onClick={() => onSentimentChange?.(sentiment)}
-                className={`px-3 py-1.5 text-sm rounded-full border transition-all duration-200 ${
+                aria-pressed={isActive}
+                className={`px-3 py-1.5 text-sm rounded-full border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-reddit-orange ${
                   isActive
                     ? `${colors[sentiment]} ring-2 ring-offset-1`
                     : `${colors[sentiment]} opacity-60 hover:opacity-100`
@@ -152,10 +153,11 @@ export function CommentList({
           placeholder="搜索评论内容或作者..."
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          aria-label="搜索评论内容或作者"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-reddit-orange focus:border-transparent"
         />
       </div>
-      <div className="max-h-96 overflow-y-auto">
+      <div className="max-h-64 sm:max-h-96 overflow-y-auto" role="list" aria-label="评论列表">
         {filteredComments.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             <p>没有找到匹配的评论</p>
@@ -165,6 +167,7 @@ export function CommentList({
             {filteredComments.map((comment) => (
               <div
                 key={comment.id}
+                role="listitem"
                 className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
                 onClick={() => onCommentClick?.(comment)}
               >
@@ -196,6 +199,7 @@ export function CommentList({
                     )}
                   </div>
                 </div>
+                {/* dangerouslySetInnerHTML: 已通过 escapeHtml 进行 XSS 防护，仅用于换行符转换 */}
                 <p
                   className="text-sm text-gray-700 line-clamp-3"
                   dangerouslySetInnerHTML={{

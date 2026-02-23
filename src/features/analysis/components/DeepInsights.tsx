@@ -341,7 +341,62 @@ export function DeepInsights({
   };
 
   /**
-   * 下载 PDF（使用浏览器打印功能，最可靠的方案）
+   * 构建 PDF 报告的完整 HTML 文档
+   */
+  const buildPdfHtml = (contentHtml: string, filename: string): string => {
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${filename}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm;
+    }
+    body {
+      font-family: 'Microsoft YaHei', 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #333;
+      font-size: 11px;
+      line-height: 1.5;
+      padding: 15px;
+      max-width: 100%;
+    }
+    h1 { font-size: 16px; font-weight: bold; margin: 18px 0 8px 0; color: #1a1a1a; }
+    h2 { font-size: 14px; font-weight: 600; margin: 16px 0 6px 0; color: #1a1a1a; }
+    h3 { font-size: 12px; font-weight: 600; margin: 12px 0 4px 0; color: #1a1a1a; }
+    p { margin: 6px 0; }
+    hr { border: none; border-top: 1px solid #ddd; margin: 12px 0; }
+    .list-item { margin: 4px 0 4px 16px; }
+    .header { text-align: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #333; }
+    .header-title { font-size: 20px; font-weight: bold; margin-bottom: 6px; }
+    .header-time { color: #666; font-size: 10px; }
+    .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #ddd; text-align: center; color: #999; font-size: 9px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 10px; page-break-inside: avoid; }
+    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { background: #f5f5f5; font-weight: 600; }
+    tr:nth-child(even) { background: #fafafa; }
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none; }
+      table { page-break-inside: avoid; }
+      tr { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-title">AI 深度洞见报告</div>
+    <div class="header-time">生成时间: ${new Date().toLocaleString('zh-CN')}</div>
+  </div>
+  <div class="content">${contentHtml}</div>
+  <div class="footer">由 Reddit Insight Tool 生成</div>
+</body>
+</html>`;
+  };
+
+  /**
+   * 下载 PDF：Electron 环境使用原生 printToPDF，浏览器环境使用打印功能
    */
   const handleDownloadPdf = async () => {
     if (!session?.result?.content) return;
@@ -350,83 +405,42 @@ export function DeepInsights({
     try {
       const filename = generateFileName();
       const contentHtml = markdownToHtml(session.result.content);
-      
-      // 创建一个新窗口用于打印
-      const printWindow = window.open('', '_blank', 'width=800,height=600');
-      if (!printWindow) {
-        alert('请允许弹出窗口以导出 PDF');
-        setIsExporting(false);
-        return;
-      }
-      
-      // 写入完整的 HTML 文档
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>${filename}</title>
-          <style>
-            @page {
-              size: A4;
-              margin: 12mm;
-            }
-            body {
-              font-family: 'Microsoft YaHei', 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-              color: #333;
-              font-size: 11px;
-              line-height: 1.5;
-              padding: 15px;
-              max-width: 100%;
-            }
-            h1 { font-size: 16px; font-weight: bold; margin: 18px 0 8px 0; color: #1a1a1a; }
-            h2 { font-size: 14px; font-weight: 600; margin: 16px 0 6px 0; color: #1a1a1a; }
-            h3 { font-size: 12px; font-weight: 600; margin: 12px 0 4px 0; color: #1a1a1a; }
-            p { margin: 6px 0; }
-            hr { border: none; border-top: 1px solid #ddd; margin: 12px 0; }
-            .list-item { margin: 4px 0 4px 16px; }
-            .header { text-align: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #333; }
-            .header-title { font-size: 20px; font-weight: bold; margin-bottom: 6px; }
-            .header-time { color: #666; font-size: 10px; }
-            .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #ddd; text-align: center; color: #999; font-size: 9px; }
-            /* 表格样式 */
-            table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 10px; page-break-inside: avoid; }
-            th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }
-            th { background: #f5f5f5; font-weight: 600; }
-            tr:nth-child(even) { background: #fafafa; }
-            @media print {
-              body { padding: 0; }
-              .no-print { display: none; }
-              table { page-break-inside: avoid; }
-              tr { page-break-inside: avoid; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="header-title">AI 深度洞见报告</div>
-            <div class="header-time">生成时间: ${new Date().toLocaleString('zh-CN')}</div>
-          </div>
-          <div class="content">${contentHtml}</div>
-          <div class="footer">由 Reddit Insight Tool 生成</div>
-          <div class="no-print" style="margin-top: 30px; padding: 20px; background: #f5f5f5; border-radius: 8px; text-align: center;">
+      const fullHtml = buildPdfHtml(contentHtml, filename);
+
+      if (window.electronAPI?.isElectron && window.electronAPI.exportPdf) {
+        const result = await window.electronAPI.exportPdf(fullHtml, filename);
+        if (result.success) {
+          alert(`PDF 已保存到: ${result.path}`);
+        } else if (result.error !== 'cancelled') {
+          alert('PDF导出失败: ' + (result.error || '未知错误'));
+        }
+      } else {
+        const printWindow = window.open('', '_blank', 'width=800,height=600');
+        if (!printWindow) {
+          alert('请允许弹出窗口以导出 PDF');
+          setIsExporting(false);
+          return;
+        }
+
+        const browserHtml = fullHtml.replace(
+          '</body>',
+          `<div class="no-print" style="margin-top: 30px; padding: 20px; background: #f5f5f5; border-radius: 8px; text-align: center;">
             <p style="margin-bottom: 15px; font-size: 14px;">请使用浏览器的打印功能保存为 PDF：</p>
             <p style="color: #666;">按 <strong>Ctrl+P</strong> (Windows) 或 <strong>Cmd+P</strong> (Mac)</p>
             <p style="color: #666; margin-top: 10px;">在打印对话框中选择 <strong>"另存为 PDF"</strong> 或 <strong>"Microsoft Print to PDF"</strong></p>
           </div>
-        </body>
-        </html>
-      `);
-      
-      printWindow.document.close();
-      
-      // 等待内容加载完成后自动打开打印对话框
-      printWindow.onload = () => {
-        setTimeout(() => {
-          printWindow.print();
-        }, 500);
-      };
-      
+</body>`
+        );
+
+        printWindow.document.write(browserHtml);
+        printWindow.document.close();
+
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        };
+      }
     } catch (error) {
       console.error('PDF导出失败:', error);
       alert('PDF导出失败: ' + (error instanceof Error ? error.message : '请重试'));
@@ -468,7 +482,7 @@ export function DeepInsights({
             </div>
           </div>
           <CardDescription>
-            基于通义千问(QWEN-Plus)模型的深度分析，提供用户痛点、需求趋势和行动建议
+            基于通义千问(QWEN3.5-Plus)模型的深度分析，提供用户痛点、需求趋势和行动建议
           </CardDescription>
         </CardHeader>
 
@@ -481,14 +495,16 @@ export function DeepInsights({
           )}
 
           {session && session.status === "loading" && (
-            <div className="space-y-4">
+            <div className="space-y-4" aria-live="polite">
               <div className="flex items-center justify-between text-sm text-gray-600">
                 <span>{session.currentStep}</span>
                 <span>{session.progress}%</span>
               </div>
-              <Progress value={session.progress} className="w-full" />
+              <div role="progressbar" aria-valuenow={session.progress} aria-valuemin={0} aria-valuemax={100} aria-label="深度洞见生成进度">
+                <Progress value={session.progress} className="w-full" />
+              </div>
               <div className="flex justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-yellow-600" />
+                <Loader2 className="h-8 w-8 animate-spin text-yellow-600" aria-hidden="true" />
               </div>
               <div className="text-center text-sm text-gray-500">
                 AI正在分析数据，这可能需要10-30秒...
@@ -498,6 +514,7 @@ export function DeepInsights({
                 variant="outline"
                 size="sm"
                 className="w-full"
+                aria-label="取消生成深度洞见"
               >
                 取消生成
               </Button>
@@ -546,11 +563,13 @@ export function DeepInsights({
                   variant="outline"
                   size="sm"
                   onClick={() => setIsExpanded(!isExpanded)}
+                  aria-expanded={isExpanded}
+                  aria-label={isExpanded ? "收起报告" : "展开报告"}
                 >
                   {isExpanded ? (
-                    <ChevronUp className="h-4 w-4" />
+                    <ChevronUp className="h-4 w-4" aria-hidden="true" />
                   ) : (
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-4 w-4" aria-hidden="true" />
                   )}
                 </Button>
               </div>
@@ -558,12 +577,8 @@ export function DeepInsights({
               {isExpanded && (
                 <div 
                   ref={reportRef}
-                  className="border rounded-lg p-6 bg-white max-h-[800px] overflow-y-auto print:max-h-none print:overflow-visible"
+                  className="border rounded-lg p-6 bg-white max-h-[400px] sm:max-h-[600px] lg:max-h-[800px] overflow-y-auto print:max-h-none print:overflow-visible"
                 >
-                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded print:hidden">
-                    <p className="text-sm font-semibold text-blue-800 mb-2">调试信息</p>
-                    <p className="text-xs text-blue-700">内容长度: {session.result.content?.length || 0} 字符</p>
-                  </div>
                   <SimpleMarkdownRenderer content={session.result.content} />
                 </div>
               )}
@@ -572,7 +587,7 @@ export function DeepInsights({
                 <Button
                   onClick={handleDownloadPdf}
                   disabled={isExporting}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-reddit-orange hover:bg-primary-700 text-white"
                 >
                   {isExporting ? (
                     <>

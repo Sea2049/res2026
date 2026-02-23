@@ -18,14 +18,14 @@ export function AppealScore({ score }: AppealScoreProps) {
   // 根据分数确定颜色
   const getScoreColor = (value: number): string => {
     if (value >= 8) return "text-green-600";
-    if (value >= 6) return "text-blue-600";
+    if (value >= 6) return "text-reddit-orange";
     if (value >= 4) return "text-yellow-600";
     return "text-red-600";
   };
 
   const getScoreBg = (value: number): string => {
     if (value >= 8) return "bg-green-50 border-green-200";
-    if (value >= 6) return "bg-blue-50 border-blue-200";
+    if (value >= 6) return "bg-primary-50 border-reddit-border";
     if (value >= 4) return "bg-yellow-50 border-yellow-200";
     return "bg-red-50 border-red-200";
   };
@@ -46,7 +46,7 @@ export function AppealScore({ score }: AppealScoreProps) {
       </Card>
 
       {/* 三个维度评分 */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <ScoreDimension
           label="身份契合度"
           value={score.identityFit}
@@ -111,14 +111,14 @@ function ScoreDimension({
 }) {
   const getColor = (v: number): string => {
     if (v >= 8) return "text-green-600";
-    if (v >= 6) return "text-blue-600";
+    if (v >= 6) return "text-reddit-orange";
     if (v >= 4) return "text-yellow-600";
     return "text-red-600";
   };
 
   const getBarColor = (v: number): string => {
     if (v >= 8) return "bg-green-500";
-    if (v >= 6) return "bg-blue-500";
+    if (v >= 6) return "bg-reddit-orange";
     if (v >= 4) return "bg-yellow-500";
     return "bg-red-500";
   };
@@ -132,7 +132,14 @@ function ScoreDimension({
       <div className={`text-2xl font-bold ${getColor(value)} mb-2`}>
         {value.toFixed(1)}
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
+      <div
+        className="w-full bg-gray-200 rounded-full h-2"
+        role="progressbar"
+        aria-valuenow={value}
+        aria-valuemin={0}
+        aria-valuemax={10}
+        aria-label={`${label}: ${value.toFixed(1)}/10`}
+      >
         <div
           className={`h-2 rounded-full transition-all ${getBarColor(value)}`}
           style={{ width: `${(value / 10) * 100}%` }}

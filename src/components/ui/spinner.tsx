@@ -47,8 +47,8 @@ const getSizeStyles = (size: SpinnerSize): { width: string; height: string; bord
  */
 const getColorClasses = (color: SpinnerColor): string => {
   const colors = {
-    default: "border-gray-300 border-t-blue-600",
-    primary: "border-blue-200 border-t-blue-600",
+    default: "border-gray-300 border-t-reddit-orange",
+    primary: "border-primary-200 border-t-reddit-orange",
     white: "border-white/30 border-t-white",
     gray: "border-gray-200 border-t-gray-600",
   };

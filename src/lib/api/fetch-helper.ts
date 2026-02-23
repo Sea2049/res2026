@@ -2,11 +2,15 @@ import { ProxyAgent, fetch as undiciFetch } from 'undici';
 
 /**
  * 本地代理配置 (Clash)
- * 生产环境不使用本地代理，只有开发环境需要
- * 如果不使用代理，设为 null 或 undefined
+ * 如果配置了 HTTP_PROXY 环境变量，在任何环境都会尝试使用
  */
-const isProduction = process.env.NODE_ENV === 'production';
-const LOCAL_PROXY_URL = isProduction ? null : (process.env.HTTP_PROXY || null);
+const LOCAL_PROXY_URL = process.env.HTTP_PROXY || null;
+
+/**
+ * Cloudflare Worker 代理 URL（推荐：最可靠的方案）
+ * 部署方式见 scripts/cf-reddit-proxy-worker.js
+ */
+const CF_WORKER_PROXY = process.env.REDDIT_PROXY_URL || '';
 
 /**
  * 从环境变量获取 CORS 代理配置
@@ -17,23 +21,50 @@ const CORS_PROXY_CODETABS = process.env.CORS_PROXY_CODETABS || 'https://api.code
 
 /**
  * 通用 Fetch 辅助函数，实现多策略回退机制
- * 用于解决本地开发环境无法直接访问 Reddit API 的问题
+ * 策略优先级：CF Worker 代理 > 本地代理直连 > 直连 > 公共 CORS 代理
  */
 export async function fetchWithFallbacks(targetUrl: string): Promise<Response> {
-  // 创建代理 Agent（仅在开发环境或配置了代理时使用）
   const proxyAgent = LOCAL_PROXY_URL ? new ProxyAgent(LOCAL_PROXY_URL) : undefined;
   
-  const strategies = [
-    {
+  interface FetchStrategy {
+    name: string;
+    getUrl: (url: string) => string;
+    headers: Record<string, string>;
+    timeout: number;
+    useProxy: boolean;
+  }
+  
+  const strategies: FetchStrategy[] = [];
+
+  // 最高优先级：Cloudflare Worker 代理（如果配置了）
+  if (CF_WORKER_PROXY) {
+    strategies.push({
+      name: 'CloudflareWorker',
+      getUrl: (url: string) => `${CF_WORKER_PROXY}/?url=${encodeURIComponent(url)}`,
+      headers: {
+        'Accept': 'application/json',
+      },
+      timeout: 15000,
+      useProxy: false,
+    });
+  }
+
+  // 本地代理直连（如果配置了 HTTP_PROXY）
+  if (proxyAgent) {
+    strategies.push({
       name: 'DirectWithProxy',
       getUrl: (url: string) => url,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'application/json',
       },
-      timeout: 20000,
-      useProxy: true // 使用本地代理
-    },
+      timeout: 15000,
+      useProxy: true,
+    });
+  }
+
+  // 直连尝试
+  strategies.push(
     {
       name: 'Direct',
       getUrl: (url: string) => url,
@@ -41,8 +72,8 @@ export async function fetchWithFallbacks(targetUrl: string): Promise<Response> {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'application/json',
       },
-      timeout: 15000,
-      useProxy: false
+      timeout: 8000,
+      useProxy: false,
     },
     {
       name: 'AllOrigins',
@@ -50,8 +81,8 @@ export async function fetchWithFallbacks(targetUrl: string): Promise<Response> {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       },
-      timeout: 20000,
-      useProxy: true
+      timeout: 12000,
+      useProxy: false,
     },
     {
       name: 'CorsProxy',
@@ -59,8 +90,8 @@ export async function fetchWithFallbacks(targetUrl: string): Promise<Response> {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       },
-      timeout: 20000,
-      useProxy: true
+      timeout: 12000,
+      useProxy: false,
     },
     {
       name: 'CodeTabs',
@@ -68,10 +99,10 @@ export async function fetchWithFallbacks(targetUrl: string): Promise<Response> {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       },
-      timeout: 20000,
-      useProxy: true
-    }
-  ];
+      timeout: 12000,
+      useProxy: false,
+    },
+  );
 
   let lastError: unknown;
   let lastStatus: number | undefined;
@@ -105,19 +136,15 @@ export async function fetchWithFallbacks(targetUrl: string): Promise<Response> {
       clearTimeout(timeoutId);
 
       if (response.ok) {
-        // 验证响应内容类型 - 确保是 JSON 而不是 HTML 错误页面
-        const contentType = response.headers.get('content-type') || '';
-        if (!contentType.includes('application/json') && !contentType.includes('text/plain')) {
-          // 克隆响应以检查内容
-          const cloned = response.clone();
-          const text = await cloned.text();
-          // 检查是否以 { 或 [ 开头（JSON）
-          const trimmed = text.trim();
-          if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-            console.warn(`[API] Strategy ${strategy.name} returned non-JSON content (Content-Type: ${contentType})`);
-            lastError = new Error(`Strategy ${strategy.name} returned HTML instead of JSON`);
-            continue;
-          }
+        // 始终验证响应体是否为有效 JSON（代理可能返回 200 但内容是 HTML）
+        const cloned = response.clone();
+        const text = await cloned.text();
+        const trimmed = text.trim();
+        if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+          const contentType = response.headers.get('content-type') || '';
+          console.warn(`[API] Strategy ${strategy.name} returned non-JSON content (Content-Type: ${contentType}, body starts with: ${trimmed.substring(0, 30)})`);
+          lastError = new Error(`Strategy ${strategy.name} returned HTML instead of JSON`);
+          continue;
         }
         console.log(`[API] Strategy ${strategy.name} success`);
         return response;

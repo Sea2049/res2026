@@ -7,7 +7,6 @@ import {
   validatePostId,
   validateLimit,
   validateSortType,
-  validateInviteCode,
   validateUUID,
   validateCUID,
   validateFilename,
@@ -107,27 +106,6 @@ describe('validateSortType', () => {
   it('should reject invalid sort types', () => {
     expect(validateSortType('invalid', VALID_SEARCH_SORT_TYPES)).toBe(false);
     expect(validateSortType('random', VALID_SEARCH_SORT_TYPES)).toBe(false);
-  });
-});
-
-describe('validateInviteCode', () => {
-  it('should accept valid invite codes', () => {
-    expect(validateInviteCode('ABCD1234')).toBe(true);
-    expect(validateInviteCode('12345678')).toBe(true);
-    expect(validateInviteCode('AAAAAAAA')).toBe(true);
-  });
-
-  it('should normalize to uppercase', () => {
-    expect(validateInviteCode('abcd1234')).toBe(true);
-    expect(validateInviteCode('AbCd1234')).toBe(true);
-  });
-
-  it('should reject invalid invite codes', () => {
-    expect(validateInviteCode(null)).toBe(false);
-    expect(validateInviteCode('')).toBe(false);
-    expect(validateInviteCode('ABC123')).toBe(false); // Too short
-    expect(validateInviteCode('ABCD12345')).toBe(false); // Too long
-    expect(validateInviteCode('ABCD-123')).toBe(false); // Invalid character
   });
 });
 

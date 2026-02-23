@@ -84,7 +84,7 @@ export function KeywordCloud({
   return (
     <div className={`bg-white p-6 rounded-lg shadow-sm ${className || ""}`}>
       <h3 className="text-lg font-semibold text-gray-900 mb-4">关键词云</h3>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3" aria-label="关键词云">
         {displayKeywords.map((keyword) => {
           const fontSize = calculateFontSize(keyword.count, maxCount);
           const sentimentColor = getSentimentColor(keyword.sentiment);
@@ -92,7 +92,9 @@ export function KeywordCloud({
           return (
             <span
               key={keyword.word}
-              className={`inline-block px-3 py-1.5 rounded-full cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md ${sentimentColor} bg-opacity-10`}
+              role="button"
+              tabIndex={0}
+              className={`inline-block px-3 py-1.5 rounded-full cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-reddit-orange ${sentimentColor} bg-opacity-10`}
               style={{
                 fontSize: `${fontSize}px`,
                 backgroundColor: keyword.sentiment
@@ -100,7 +102,14 @@ export function KeywordCloud({
                   : "#f3f4f6",
               }}
               title={`出现 ${keyword.count} 次${keyword.sentiment ? ` | 情感: ${keyword.sentiment}` : ""}`}
+              aria-label={`关键词: ${keyword.word}, 出现 ${keyword.count} 次${keyword.sentiment ? `, 情感: ${keyword.sentiment}` : ""}`}
               onClick={() => onKeywordClick?.(keyword)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onKeywordClick?.(keyword);
+                }
+              }}
             >
               {keyword.word}
             </span>

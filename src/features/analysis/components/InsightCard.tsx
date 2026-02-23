@@ -178,7 +178,7 @@ function renderCommentItem(comment: SentimentComment, index: number): JSX.Elemen
       <p className="text-gray-700 line-clamp-3">{comment.body}</p>
       <div className="mt-2 flex items-center justify-between text-gray-400 text-[10px]">
         <span className="flex items-center gap-1">
-          <span className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-[9px] font-medium">
+          <span className="w-5 h-5 bg-primary-100 rounded-full flex items-center justify-center text-reddit-orange text-[9px] font-medium">
             {comment.author.charAt(0).toUpperCase()}
           </span>
           <span>u/{comment.author}</span>
@@ -193,7 +193,7 @@ function renderCommentItem(comment: SentimentComment, index: number): JSX.Elemen
               href={commentUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-500 hover:text-blue-700 hover:underline flex items-center gap-0.5"
+              className="text-reddit-orange hover:text-primary-700 hover:underline flex items-center gap-0.5"
               onClick={(e) => e.stopPropagation()}
             >
               <span>查看原帖</span>
@@ -430,11 +430,13 @@ export const InsightCard = memo(function InsightCard({
             {/* 显示更多评论按钮 */}
             {hasMoreComments && (
               <button
-                className="w-full mt-2 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-medium rounded transition-colors flex items-center justify-center gap-1"
+                className="w-full mt-2 py-2 px-3 bg-primary-50 hover:bg-primary-100 text-reddit-orange text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 focus:outline-none focus:ring-2 focus:ring-reddit-orange"
                 onClick={(e) => handleToggleRemainingComments(e, setShowRemainingComments, showRemainingComments)}
+                aria-expanded={showRemainingComments}
+                aria-label={showRemainingComments ? `收起剩余 ${remainingCount} 条评论` : `查看剩余 ${remainingCount} 条评论`}
               >
                 <span>{showRemainingComments ? `收起剩余 ${remainingCount} 条评论` : `查看剩余 ${remainingCount} 条评论`}</span>
-                <span className="text-lg">{showRemainingComments ? "▲" : "▼"}</span>
+                <span className="text-lg" aria-hidden="true">{showRemainingComments ? "▲" : "▼"}</span>
               </button>
             )}
           </div>
@@ -450,7 +452,7 @@ export const InsightCard = memo(function InsightCard({
         {/* v2.6.0: 标签区域 */}
         <div className="mt-3 flex flex-wrap gap-2">
           {insight.keyword && (
-            <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
+            <span className="inline-block px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded">
               关键词: {insight.keyword}
             </span>
           )}

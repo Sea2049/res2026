@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
           content: prompt
         }
       ],
-      model: "qwen-plus",
+      model: "qwen3.5-plus",
       temperature: 0.7,
       maxTokens: 8000
     });

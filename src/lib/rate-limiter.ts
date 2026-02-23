@@ -166,20 +166,6 @@ export const exportRateLimiter = new RateLimiter({
   name: 'export-api',
 })
 
-/** 邀请码验证限流器：5次/分钟（防止暴力破解） */
-export const inviteVerifyRateLimiter = new RateLimiter({
-  windowMs: 60 * 1000,
-  maxRequests: 5,
-  name: 'invite-verify',
-})
-
-/** 管理接口限流器：30次/分钟 */
-export const adminRateLimiter = new RateLimiter({
-  windowMs: 60 * 1000,
-  maxRequests: 30,
-  name: 'admin-api',
-})
-
 /** 分析功能限流器：20次/分钟 */
 export const analysisRateLimiter = new RateLimiter({
   windowMs: 60 * 1000,

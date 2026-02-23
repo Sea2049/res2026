@@ -27,7 +27,6 @@ export const getApiDocs = async () => {
 - **Analysis API** - 产品吸引力评估、优先级计算
 - **AI API** - 深度洞察生成（基于通义千问）
 - **Export API** - 导出分析报告（Markdown/Excel/PDF）
-- **Invite API** - 邀请码验证和管理
 
 ### 限流说明
 
@@ -35,14 +34,11 @@ export const getApiDocs = async () => {
 - Reddit API: 30次/分钟
 - AI API: 10次/分钟
 - Export API: 20次/分钟
-- Invite Verify: 5次/分钟
-- Admin API: 30次/分钟
 
 超出限制将返回 429 Too Many Requests。
         `,
         contact: {
           name: 'Reddit Insight Tool',
-          url: 'https://sea2049.com',
         },
         license: {
           name: 'MIT',
@@ -51,12 +47,8 @@ export const getApiDocs = async () => {
       },
       servers: [
         {
-          url: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
-          description: '当前服务器',
-        },
-        {
-          url: 'https://sea2049.com',
-          description: '生产环境',
+          url: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+          description: '本地服务器',
         },
       ],
       tags: [
@@ -76,20 +68,8 @@ export const getApiDocs = async () => {
           name: 'Export',
           description: '报告导出接口',
         },
-        {
-          name: 'Invite',
-          description: '邀请码管理接口',
-        },
       ],
       components: {
-        securitySchemes: {
-          AdminPassword: {
-            type: 'apiKey',
-            in: 'header',
-            name: 'x-admin-password',
-            description: '管理员密码（仅管理接口需要）',
-          },
-        },
         schemas: {
           Error: {
             type: 'object',
@@ -183,19 +163,6 @@ export const getApiDocs = async () => {
                 description: '优先级等级',
               },
               recommendedAction: { type: 'string', description: '建议行动' },
-            },
-          },
-          InviteCode: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              code: { type: 'string' },
-              enabled: { type: 'boolean' },
-              maxUses: { type: 'integer' },
-              usedCount: { type: 'integer' },
-              expiresAt: { type: 'string', format: 'date-time', nullable: true },
-              note: { type: 'string', nullable: true },
-              createdAt: { type: 'string', format: 'date-time' },
             },
           },
         },

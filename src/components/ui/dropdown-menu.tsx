@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { MoreVertical } from "lucide-react";
-import { createContext, useContext, useState, HTMLAttributes, ReactNode, useRef, useEffect } from "react";
+import { createContext, useContext, useState, HTMLAttributes, ReactNode, useRef, useEffect, useCallback } from "react";
 
 /**
  * DropdownMenu 上下文类型
@@ -116,7 +116,7 @@ export function DropdownMenuTrigger({ className, children, ...props }: HTMLAttri
       className={cn(
         "inline-flex items-center justify-center p-2 rounded-md",
         "text-gray-700 hover:bg-gray-100",
-        "focus:outline-none focus:ring-2 focus:ring-blue-500",
+        "focus:outline-none focus:ring-2 focus:ring-reddit-orange",
         "transition-colors duration-200",
         className
       )}
@@ -133,7 +133,42 @@ export function DropdownMenuTrigger({ className, children, ...props }: HTMLAttri
  * 下拉菜单内容组件
  */
 export function DropdownMenuContent({ children, className, ...props }: DropdownMenuContentProps) {
-  const { open } = useDropdownMenuContext();
+  const { open, setOpen } = useDropdownMenuContext();
+  const menuRef = useRef<HTMLUListElement>(null);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLUListElement>) => {
+    const items = menuRef.current?.querySelectorAll('[role="menuitem"]:not(:disabled)');
+    if (!items || items.length === 0) return;
+
+    const focusedElement = document.activeElement;
+    const itemsArray = Array.from(items) as HTMLElement[];
+    const currentIndex = itemsArray.indexOf(focusedElement as HTMLElement);
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const nextIndex = currentIndex < itemsArray.length - 1 ? currentIndex + 1 : 0;
+      itemsArray[nextIndex].focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prevIndex = currentIndex > 0 ? currentIndex - 1 : itemsArray.length - 1;
+      itemsArray[prevIndex].focus();
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      if (focusedElement && focusedElement instanceof HTMLElement) {
+        focusedElement.click();
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setOpen(false);
+    }
+  }, [setOpen]);
+
+  useEffect(() => {
+    if (open && menuRef.current) {
+      const firstItem = menuRef.current.querySelector('[role="menuitem"]') as HTMLElement;
+      firstItem?.focus();
+    }
+  }, [open]);
 
   if (!open) {
     return null;
@@ -141,6 +176,7 @@ export function DropdownMenuContent({ children, className, ...props }: DropdownM
 
   return (
     <ul
+      ref={menuRef}
       className={cn(
         "absolute right-0 z-10 min-w-[8rem] py-1",
         "bg-white border border-gray-200 rounded-lg shadow-lg",
@@ -148,6 +184,7 @@ export function DropdownMenuContent({ children, className, ...props }: DropdownM
         className
       )}
       role="menu"
+      onKeyDown={handleKeyDown}
       {...props}
     >
       {children}

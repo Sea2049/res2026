@@ -8,7 +8,7 @@ Reddit Insight Tool 是一个基于 Reddit API 的社区话题筛选与分析工
 
 本项目采用当前业界主流的前端技术栈构建，确保了开发效率和运行性能的平衡。后端框架选用 Next.js 14+，充分利用其 App Router 架构实现服务端渲染、静态生成和 API Routes 能力，提升首屏加载速度、SEO 效果和后端 API 服务能力。开发语言为 TypeScript，通过静态类型检查在编译阶段发现潜在错误，提高代码质量和可维护性。样式方案采用 Tailwind CSS，结合原子化设计理念实现快速样式开发，同时配合 Shadcn/UI 组件库提供一致的设计语言和丰富的交互组件。
 
-测试方面使用 Jest 和 React Testing Library 构建单元测试体系，确保核心业务逻辑的可靠性。容器化部署基于 Docker，采用多阶段构建优化镜像大小，最终产出约 100MB 的精简镜像。Reddit API 交互通过 Next.js API Routes 进行服务端代理，实现请求转发、认证管理和跨域处理，同时隐藏 API 密钥避免客户端暴露。NLP 处理模块集成了中文和英文的自然语言处理能力，支持情感分析、关键词提取和洞察检测等高级功能，并采用 Web Worker 实现并行计算以提升性能。
+测试方面使用 Jest 和 React Testing Library 构建单元测试体系，确保核心业务逻辑的可靠性。桌面应用采用 Electron 框架打包为 Windows 可执行文件。Reddit API 交互通过 Next.js API Routes 进行服务端代理，实现请求转发、认证管理和跨域处理，同时隐藏 API 密钥避免客户端暴露。NLP 处理模块集成了中文和英文的自然语言处理能力，支持情感分析、关键词提取和洞察检测等高级功能，并采用 Web Worker 实现并行计算以提升性能。
 
 ## 三、架构设计
 
@@ -62,7 +62,7 @@ fetch-helper 工具模块提供统一的请求封装和错误处理逻辑。每�
 
 **限流策略（v2.66.0）**：
 - 滑动窗口算法，按 IP 地址追踪请求
-- 预配置 6 种限流策略：Reddit API（30/分钟）、AI 分析（10/分钟）、导出（20/分钟）、邀请码验证（5/分钟）、管理接口（30/分钟）、分析功能（20/分钟）
+- 预配置限流策略：Reddit API（30/分钟）、AI 分析（10/分钟）、导出（20/分钟）、分析功能（20/分钟）
 - 429 响应包含 `Retry-After` 头和剩余配额信息
 
 ## 四、核心功能模块
@@ -198,21 +198,7 @@ electron-builder 配置用于生成 Windows 可执行文件，采用 dir 目标�
 生产环境打包：npm run electron:build（构建 Next.js + 编译 Electron + 打包）
 直接运行桌面应用：npm run electron（需先运行 npm run dev 启动 Next.js 服务器）
 
-## 九、Docker 部署方案
-
-### 9.1 镜像构建
-
-项目采用 Docker 多阶段构建策略优化镜像大小。第一阶段使用 node:20-alpine 作为构建基础，安装依赖并编译 Next.js 应用；第二阶段仅复制编译产物到一个精简的运行时镜像。这种方案将最终镜像大小控制在约 100MB，相比直接使用 node 基础镜像减少了约 70% 的体积。
-
-构建过程中启用了 Next.js 的 standalone 模式，该模式仅打包运行时必需的文件，排除了源代码和开发依赖。Dockerfile 中创建了专门的 non-root 用户（nextjs，UID 1001），容器运行时以该用户身份执行，遵循最小权限原则提升安全性。健康检查配置监控应用端口，确保服务可用性。
-
-### 9.2 容器编排
-
-docker-compose.yml 定义了完整的容器运行环境，包括服务配置、环境变量挂载和健康检查。生产环境配置中，应用容器通过环境变量注入配置参数，敏感信息通过 secrets 机制管理。服务依赖关系明确指定，确保数据库等依赖服务先于应用启动。
-
-部署脚本提供了阿里云 ECS 环境的一键部署能力，包括镜像构建、推送和容器启动等步骤。部署过程中自动配置 Nginx 反向代理和 SSL 证书（需用户提前申请），确保生产环境的安全访问。日志统一输出到标准输出，方便使用 docker logs 查看和管理。
-
-## 十、开发规范
+## 九、开发规范
 
 ### 10.1 命名规范
 
@@ -244,23 +230,21 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
   - 话题选择模块：5 个（TopicSearchInput、TopicList、SearchSuggestions、TopicCard、AdvancedSearchOptions）
   - 分析模块：11 个（AnalysisProgress、CommentList、SentimentChart、KeywordCloud、InsightCard、DeepInsights、EmptyState、InsightFilters、InsightGraph、InsightTrendChart、FeatureAnalysis入口）
   - 产品吸引力模块：3 个（AppealScore、ObjectionMap、入口组件）
-- 页面组件：5 个（page.tsx、layout.tsx、invite/page.tsx、admin/invite/page.tsx、api-docs/page.tsx）
+- 页面组件：3 个（page.tsx、layout.tsx、api-docs/page.tsx）
 - 测试组件：2 个（UI组件测试3个、功能组件测试4个）
 
 **TypeScript 工具文件（.ts）**：40 个
-- API Routes：12 个（subreddit、search、comments、insights、prioritize、appeal、export、export/excel、export/pdf、invite/verify、invite/admin、docs）
+- API Routes：10 个（subreddit、search、comments、insights、prioritize、appeal、export、export/excel、export/pdf、docs）
 - 自定义钩子：7 个（useTopicSearch、useSearchHistory、useAnalysis、useDeepInsights、useInsightTrend、useAppealAnalysis）
 - API 客户端和工具：4 个（fetch-helper、reddit、zhipu-ai、qwen-ai、prompts）
 - NLP 处理：1 个（nlp.ts）
 - 工具类和模式定义：3 个（sentiment-patterns、priority-calculator、utils）
-- 安全工具：2 个（validators.ts、auth-token.ts）
+- 安全工具：1 个（validators.ts）
 - 限流和缓存：2 个（rate-limiter.ts、lru-cache.ts）
 - Swagger 配置：1 个（swagger.ts）
 - 错误处理：1 个（errors.ts）
 - 类型定义：1 个（types.ts）
-- 数据库：1 个（prisma.ts）
 - Worker 线程：2 个（worker-manager、nlp.worker）
-- 中间件：1 个（middleware.ts）
 - Electron 主进程：3 个（main.ts、preload.ts、types.d.ts）
 
 **测试文件（.test.tsx/.test.ts）**：22 个
@@ -277,17 +261,9 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
 
 项目包含以下配置文件：package.json 定义项目依赖和 npm 脚本；next.config.mjs 配置 Next.js 构建选项；tsconfig.json 配置 TypeScript 编译选项；tailwind.config.ts 配置 Tailwind CSS 主题和变体；jest.config.js 配置 Jest 测试环境；jest.setup.js 配置 Jest 测试设置；.eslintrc.json 配置 ESLint 规则；.prettierrc 配置 Prettier 格式化规则。
 
-部署相关配置文件包括：Dockerfile 定义多阶段构建流程；docker-compose.yml 定义容器编排配置；.dockerignore 配置构建上下文排除规则；.env.production 定义生产环境变量模板；tsconfig.electron.json Electron TypeScript 配置。这些配置文件共同支撑了项目的开发、测试和部署流程。
+Electron 相关配置文件包括 tsconfig.electron.json。环境变量模板为 .env.production。这些配置文件共同支撑了项目的开发、测试和桌面应用构建流程。
 
 ## 十二、变更日志
-
-### v2.71.0（当前版本 - 2026-01-30）
-
-本版本修复了邀请码管理的备注字段验证问题。
-
-**Bug 修复**：
-- 修复创建邀请码时备注字段为空导致 400 错误的问题
-- 优化备注字段验证逻辑：允许空字符串，仅在有内容时验证长度
 
 ### v2.66.0（2026-01-30）
 

@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Check, ChevronDown } from "lucide-react";
-import { createContext, useContext, useState, HTMLAttributes, ReactNode, useRef, useEffect } from "react";
+import { createContext, useContext, useState, HTMLAttributes, ReactNode, useRef, useEffect, useCallback } from "react";
 
 /**
  * Select 上下文类型
@@ -164,7 +164,7 @@ export function SelectTrigger({ children, className, ...props }: SelectTriggerPr
       className={cn(
         "flex items-center justify-between w-full px-3 py-2 text-left",
         "bg-white border border-gray-300 rounded-lg",
-        "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+        "focus:outline-none focus:ring-2 focus:ring-reddit-orange focus:border-transparent",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         "transition-colors duration-200",
         className
@@ -194,16 +194,53 @@ export interface SelectContentProps<T> extends HTMLAttributes<HTMLUListElement> 
  * 显示所有可选项
  */
 export function SelectContent<T extends string | number>({ options, className, ...props }: SelectContentProps<T>) {
-  const { value, onChange, disabled } = useSelectContext();
+  const { value, onChange, disabled, setOpen } = useSelectContext();
+  const listRef = useRef<HTMLUListElement>(null);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLUListElement>) => {
+    const items = listRef.current?.querySelectorAll('[role="option"]:not([aria-disabled="true"])');
+    if (!items || items.length === 0) return;
+
+    const focusedElement = document.activeElement;
+    const itemsArray = Array.from(items) as HTMLElement[];
+    const currentIndex = itemsArray.indexOf(focusedElement as HTMLElement);
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const nextIndex = currentIndex < itemsArray.length - 1 ? currentIndex + 1 : 0;
+      itemsArray[nextIndex].focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prevIndex = currentIndex > 0 ? currentIndex - 1 : itemsArray.length - 1;
+      itemsArray[prevIndex].focus();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (focusedElement && focusedElement instanceof HTMLElement) {
+        focusedElement.click();
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setOpen(false);
+    }
+  }, [setOpen]);
+
+  useEffect(() => {
+    if (listRef.current) {
+      const firstItem = listRef.current.querySelector('[role="option"]') as HTMLElement;
+      firstItem?.focus();
+    }
+  }, []);
 
   return (
     <ul
+      ref={listRef}
       className={cn(
         "absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg",
         "max-h-60 overflow-auto",
         className
       )}
       role="listbox"
+      onKeyDown={handleKeyDown}
       {...props}
     >
       {options.map((option) => (
@@ -247,12 +284,14 @@ export function SelectItem<T extends string | number>({ value, label, disabled, 
     <li
       role="option"
       aria-selected={isSelected}
+      aria-disabled={disabled || undefined}
+      tabIndex={-1}
       onClick={() => !disabled && onChange(value)}
       className={cn(
         "relative flex items-center px-3 py-2 cursor-pointer",
         "transition-colors duration-150",
         isSelected
-          ? "bg-blue-50 text-blue-900"
+          ? "bg-primary-50 text-reddit-text"
           : "text-gray-900 hover:bg-gray-100",
         disabled && "opacity-50 cursor-not-allowed",
         className
@@ -260,7 +299,7 @@ export function SelectItem<T extends string | number>({ value, label, disabled, 
       {...props}
     >
       <span className="flex-1">{label}</span>
-      {isSelected && <Check className="w-4 h-4 ml-2 text-blue-600" />}
+      {isSelected && <Check className="w-4 h-4 ml-2 text-reddit-orange" />}
     </li>
   );
 }

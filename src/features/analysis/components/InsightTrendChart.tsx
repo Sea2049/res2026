@@ -106,8 +106,8 @@ export function InsightTrendChart({
       </div>
 
       {/* 趋势分布统计 */}
-      <div className="p-4 bg-gray-50 border-b">
-        <div className="grid grid-cols-3 gap-4">
+      <div className="p-4 bg-gray-50 border-b" role="region" aria-label="趋势统计">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">
               {trendDistribution.up}
@@ -143,7 +143,7 @@ export function InsightTrendChart({
         className="overflow-auto"
         style={{ maxHeight: height - 200 }}
       >
-        <div className="divide-y">
+        <div className="divide-y" role="list" aria-label="洞察趋势列表">
           {sortedResults.map((result) => {
             const insight = insightMap.get(result.insightId);
             if (!insight) return null;
@@ -151,6 +151,7 @@ export function InsightTrendChart({
             return (
               <div
                 key={result.insightId}
+                role="listitem"
                 className="p-4 hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-start justify-between">
@@ -200,7 +201,7 @@ export function InsightTrendChart({
 
       {/* 图例 */}
       <div className="p-4 border-t bg-gray-50">
-        <div className="flex items-center justify-center gap-6 text-sm">
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-sm">
           <div className="flex items-center gap-2">
             <span>📈</span>
             <span className="text-gray-600">上升 - 关注度增加</span>

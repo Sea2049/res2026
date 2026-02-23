@@ -217,7 +217,7 @@ export function SearchSuggestions({
     >
       {isLoading ? (
         <div className="p-4 text-center text-gray-500">
-          <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-reddit-orange"></div>
           <p className="mt-2 text-sm">加载建议中...</p>
         </div>
       ) : (
@@ -228,8 +228,8 @@ export function SearchSuggestions({
               role="option"
               className={cn(
                 "px-4 py-2 cursor-pointer transition-colors",
-                "hover:bg-blue-50",
-                selectedIndex === index && "bg-blue-100"
+                "hover:bg-primary-50",
+                selectedIndex === index && "bg-primary-100"
               )}
               onClick={() => handleSuggestionClick(suggestion)}
               onMouseEnter={() => setSelectedIndex(index)}

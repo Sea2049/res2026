@@ -16,17 +16,15 @@ Reddit Insight Tool 是一个功能强大的 Reddit 社区话题分析与洞察�
 
 本项目采用现代化的技术栈构建，确保了开发效率和运行性能的最佳平衡。后端框架选用 Next.js 14+，利用其 App Router 架构实现服务端渲染、静态生成和 API Routes 能力，显著提升首屏加载速度、SEO 效果和后端 API 服务能力。开发语言为 TypeScript，通过静态类型检查在编译阶段发现潜在错误，大幅提高代码质量和可维护性。样式方案采用 Tailwind CSS，结合原子化设计理念实现快速样式开发，同时配合 Shadcn/UI 组件库提供一致的设计语言和丰富的交互组件。
 
-数据处理方面，项目通过 Next.js API Routes 实现服务端代理，统一处理与 Reddit API 的通信，将 API 密钥和敏感配置存储在服务端环境变量中，避免在前端代码中暴露。fetch-helper 工具模块提供统一的请求封装、错误处理和重试机制，有效处理网络异常和 API 限流情况。自然语言处理模块集成了中文和英文的处理能力，支持文本清洗、分词、停用词过滤、情感分析和关键词提取等核心功能。为提升处理性能，NLP 计算通过 Web Worker 在独立线程中执行，避免阻塞 UI 渲染。错误处理模块提供统一的错误类型和处理机制，确保整个应用的错误处理一致性。测试方面使用 Jest 和 React Testing Library 构建完整的单元测试体系，确保核心业务逻辑的可靠性。容器化部署基于 Docker，采用多阶段构建策略优化镜像大小，最终产出约 100MB 的精简镜像。
+数据处理方面，项目通过 Next.js API Routes 实现服务端代理，统一处理与 Reddit API 的通信，将 API 密钥和敏感配置存储在服务端环境变量中，避免在前端代码中暴露。fetch-helper 工具模块提供统一的请求封装、错误处理和重试机制，有效处理网络异常和 API 限流情况。自然语言处理模块集成了中文和英文的处理能力，支持文本清洗、分词、停用词过滤、情感分析和关键词提取等核心功能。为提升处理性能，NLP 计算通过 Web Worker 在独立线程中执行，避免阻塞 UI 渲染。错误处理模块提供统一的错误类型和处理机制，确保整个应用的错误处理一致性。测试方面使用 Jest 和 React Testing Library 构建完整的单元测试体系，确保核心业务逻辑的可靠性。桌面应用采用 Electron 框架打包为 Windows 可执行文件，无需额外部署即可本地运行。
 
 ## 快速开始
 
 ### 环境准备
 
-在开始之前，请确保您的开发环境满足以下要求。操作系统支持 Windows、macOS 和 Linux。必须安装 Node.js 18.17 或更高版本，建议使用 LTS 版本以获得最佳稳定性。包管理器推荐使用 pnpm，也可以使用 npm 或 yarn。Docker 环境用于生产部署，需要安装 Docker Desktop（Windows/macOS）或 Docker Engine（Linux）。
+在开始之前，请确保您的开发环境满足以下要求。操作系统支持 Windows、macOS 和 Linux。必须安装 Node.js 18.17 或更高版本，建议使用 LTS 版本以获得最佳稳定性。包管理器推荐使用 npm 或 yarn。
 
 ### 本地开发
-
-克隆项目仓库到本地目录，进入项目根目录后执行以下命令安装依赖。首次安装可能需要几分钟时间，取决于网络状况。安装完成后，执行启动命令启动开发服务器。开发服务器启动后，默认运行在 http://localhost:3000，您可以在浏览器中访问该地址查看应用。开发模式下支持热重载，修改代码后页面会自动刷新。
 
 ```bash
 # 克隆项目
@@ -34,15 +32,68 @@ git clone https://github.com/Sea2049/res2026.git
 cd res2026
 
 # 安装依赖
-pnpm install
+npm install
 
-# 启动开发服务器
-pnpm dev
+# 启动开发服务器（Web 模式）
+npm run dev
+
+# 启动桌面应用开发模式（Electron + Next.js）
+npm run electron:dev
 ```
+
+### 桌面应用构建
+
+```bash
+# 完整构建 Windows 桌面版（生成 dist/win-unpacked/）
+npm run electron:build
+
+# 构建安装包（NSIS 安装程序 + Portable 版本）
+npm run electron:build:installer
+```
+
+构建完成后，双击 `dist/win-unpacked/Reddit Insight Tool.exe` 即可运行。
+
+### 发给别的电脑使用
+
+**方式一：一个压缩包（免安装，解压即用）**
+
+```bash
+npm run electron:dist
+```
+
+会在 `dist/` 下生成 `RedditInsightTool-<版本>-win64.zip`（约 130MB）。把该 zip 发给对方，对方解压后运行其中的「Reddit Insight Tool.exe」即可，无需安装。若只改动了代码未重新 build，可只执行：
+
+```bash
+npm run electron:build:zip
+```
+
+**方式二：安装包（单文件安装程序）**
+
+```bash
+npm run electron:build:installer
+```
+
+会在 `dist/` 下生成 NSIS 安装程序（如 `Reddit Insight Tool Setup 2.71.0.exe`）。把该 exe 发给对方，对方双击安装即可（可选桌面/开始菜单快捷方式）。
+
+### 分发给他人（一台电脑发给另一台安装/使用）
+
+- **方式一：发一个压缩包（免安装）**  
+  先构建再打 zip，把生成的**一个**压缩包发出去即可：
+  ```bash
+  npm run electron:dist
+  ```
+  会在 `dist/` 下生成 **`RedditInsightTool-<版本>-win64.zip`**（约 130MB）。对方解压后直接运行其中的「Reddit Insight Tool.exe」即可使用，无需安装。  
+  若执行 `npm run electron:build:zip` 时报「文件被占用」，请先关闭正在运行的 Reddit Insight Tool 再重试。
+
+- **方式二：发安装包（安装到本机）**  
+  ```bash
+  npm run electron:build:installer
+  ```
+  会在 `dist/` 下生成 **NSIS 安装程序**（如 `Reddit Insight Tool Setup 2.71.0.exe`）和**便携版**（如 `RedditInsightTool-2.71.0-portable.exe`）。把安装程序或便携版 exe 发给对方即可；对方运行安装程序可安装到电脑并创建桌面/开始菜单快捷方式。
 
 ### 环境变量配置
 
-项目根目录提供了 .env.production 文件作为生产环境变量的模板。复制该文件为 .env.local 并填入您的配置值。主要配置项包括 Reddit API 的客户端 ID、客户端密钥、用户代理信息和应用名称。请访问 Reddit 官网的开发者门户申请 API 凭证，遵守 Reddit 的 API 使用条款和速率限制规定。API 密钥必须存储在环境变量中，切勿写入代码仓库或提交到版本控制系统。
+项目根目录提供了 `.env.local.example` 文件作为环境变量模板。复制为 `.env.local` 并填入配置值。主要配置项包括 AI 分析的 API 密钥（智谱AI、通义千问）。Reddit 数据使用匿名公开 JSON API 获取，无需注册 API 凭证。
 
 ## API 架构
 
@@ -73,36 +124,6 @@ fetch-helper 工具模块提供统一的请求封装和错误处理逻辑。每�
 
 为提升自然语言处理性能，项目采用 Web Worker 实现并行计算。Worker 线程位于 src/lib/workers 目录下，包含 worker-manager.ts 和 nlp.worker.ts 两个文件。worker-manager 负责 Worker 线程的创建、任务分发和结果回收，nlp.worker 执行具体的 NLP 计算任务。这种架构将 CPU 密集型操作从主线程分离，避免阻塞 UI 渲染，提升用户体验。
 
-## Docker 部署
-
-### 构建生产镜像
-
-项目提供了完整的 Docker 部署支持，采用多阶段构建策略优化镜像大小。执行以下命令构建生产镜像。构建过程会自动安装依赖、编译应用并打包运行时文件。构建完成后，镜像大小约为 100MB，相比直接使用 Node.js 基础镜像减少了约 70% 的体积。
-
-```bash
-# 构建 Docker 镜像
-docker build -t reddit-insight-tool:latest .
-```
-
-### 使用 Docker Compose 运行
-
-项目根目录提供了 docker-compose.yml 文件，定义了完整的容器运行环境。执行以下命令启动服务。Docker Compose 会自动创建网络、挂载数据卷并配置健康检查。服务启动后，可以通过 http://localhost:3000 访问应用。
-
-```bash
-# 启动服务
-docker-compose up -d
-
-# 查看日志
-docker-compose logs -f
-
-# 停止服务
-docker-compose down
-```
-
-### 阿里云 ECS 部署
-
-详细的生产环境部署指南请参考 DEPLOYMENT.md 文档。该文档包含了阿里云 ECS 实例配置、Docker 安装、Nginx 反向代理设置、SSL 证书申请等完整步骤。建议生产环境使用 Nginx 作为反向代理，并配置 HTTPS 加密传输以确保数据安全。
-
 ## 项目结构
 
 项目采用功能导向的目录结构组织代码，将相关功能的组件、钩子和工具函数集中在同一目录下。这种结构便于开发者快速定位和理解特定功能的实现，同时也简化了模块复用和测试的流程。
@@ -122,15 +143,8 @@ res2026/
 │   │   └── ui/                 # Shadcn/UI 基础组件
 │   ├── features/               # 功能模块
 │   │   ├── topic-selection/    # 话题选择模块
-│   │   │   ├── components/     # 搜索和列表组件
-│   │   │   └── hooks/          # 搜索逻辑钩子
 │   │   ├── analysis/           # 分析模块
-│   │   │   ├── components/     # 可视化组件
-│   │   │   ├── hooks/          # 分析流程钩子
-│   │   │   └── utils/          # 分析工具类（情感模式、优先级计算）
 │   │   └── product-appeal/     # 产品吸引力评估模块
-│   │       ├── components/     # 评分和图谱组件
-│   │       └── hooks/          # 吸引力分析钩子
 │   ├── lib/                    # 基础支撑代码
 │   │   ├── api/                # API 工具和类型定义
 │   │   ├── ai/                 # AI集成（智谱AI、千问AI）
@@ -139,15 +153,10 @@ res2026/
 │   │   ├── errors.ts           # 错误处理模块
 │   │   ├── types.ts            # 类型定义
 │   │   └── utils.ts            # 工具函数
-│   ├── middleware.ts            # Next.js 中间件（邀请码验证）
 ├── electron/                   # Electron 桌面应用
 │   ├── main.ts                 # 主进程
 │   ├── preload.ts              # 预加载脚本
 │   └── types.d.ts              # 类型定义
-├── prisma/                    # 数据库配置和迁移
-│   └── schema.prisma           # 数据库模型定义
-├── Dockerfile                  # Docker 构建文件
-├── docker-compose.yml          # 容器编排配置
 ├── package.json                # 项目依赖
 ├── next.config.mjs             # Next.js 配置
 ├── FRAMEWORK.md                # 框架文档
@@ -200,10 +209,6 @@ res2026/
 
 Web Worker 模块位于 src/lib/workers 目录下，提供并行计算能力。worker-manager.ts 负责 Worker 线程的创建、任务分发和结果回收。nlp.worker.ts 执行具体的 NLP 计算任务，包括分词、情感分析、关键词提取和洞察检测。这种架构将 CPU 密集型操作从主线程分离，避免阻塞 UI 渲染，显著提升用户体验。
 
-### 中间件与数据库
-
-中间件模块（middleware.ts）负责请求拦截和访问控制，当前实现对首页的邀请码验证。数据库模块使用 Prisma ORM 管理数据持久化，数据库配置文件位于 prisma 目录下。Prisma 客户端封装（src/lib/prisma.ts）提供单例访问模式，支持开发环境热重载。
-
 ## 测试
 
 项目使用 Jest 和 React Testing Library 构建单元测试体系。测试文件分布在各功能模块的 __tests__ 目录下，与被测试的文件放在一起便于维护。执行以下命令运行测试。测试覆盖率报告会在终端输出，覆盖率阈值配置在 jest.config.js 中，核心逻辑的覆盖率要求达到 80% 以上。
@@ -229,7 +234,7 @@ pnpm test:coverage
 
 代码提交前请完成以下安全检查。首先检查 SQL 注入风险，确保所有用户输入都经过验证和转义，不使用字符串拼接构建查询。其次检查 XSS 风险，所有用户生成的内容在渲染前必须经过转义处理，React 默认的转义机制可以防范大部分 XSS 攻击。最后检查边界情况处理，确保程序能够正确处理空值、网络失败和超时等异常场景，不会因此崩溃或给出误导性结果。
 
-API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入前端代码或提交到版本控制系统。API Routes 应实现请求频率限制，防止单个用户过度消耗资源。敏感信息如 API 密钥必须存储在环境变量中，严禁写入代码仓库。生产环境配置使用 .env.production 模板，不直接提交包含真实值的配置文件。
+API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入前端代码或提交到版本控制系统。API Routes 应实现请求频率限制，防止单个用户过度消耗资源。
 
 ## 文件统计
 
@@ -243,81 +248,15 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
 
 ## 版本历史
 
-### v2.71.0（2026-01-30）
+### v2.80.0（2026-02-17）
 
-本版本修复了邀请码管理的 Bug。
+本版本完成桌面版瘦身清理，移除了服务端部署相关模块和邀请码管理系统，使项目聚焦于 Windows 桌面应用的核心功能。
 
-**Bug 修复**：
-- 修复创建邀请码时备注字段为空导致 400 错误的问题
-- 优化备注字段验证逻辑：允许空字符串，仅在有内容时验证长度
-
-### v2.66.0（2026-01-30）
-
-本版本完成了 API 文档、测试覆盖、限流系统和 Worker 增强等多项改进。
-
-**核心功能**：
-- **API 文档**：集成 OpenAPI 3.0 规范，新增 `/api-docs` Swagger UI 可视化文档
-- **请求限流**：新增滑动窗口限流器，预配置 6 种限流策略（Reddit/AI/导出/邀请码/管理/分析）
-- **LRU 缓存**：新增通用 LRU 缓存，支持固定大小、TTL、命中率统计
-- **类型安全**：替换所有 `any` 类型为具体类型定义
-- **Worker 增强**：支持多任务类型（analyze/sentiment_only/keywords_only/batch_analyze）和分片并行处理
-
-**测试增强**：
-- 新增 7 个测试文件，覆盖 lib 模块和 API 路由
-- 测试套件从 15 个增加到 22 个
-- 总文件数达到 101 个
-
-### v2.7.0（2026-01-30）
-
-本版本完成了 API 安全性的全面增强，新增输入验证工具库和 Token 签名机制。
-
-**核心功能**：
-- **输入验证工具库**：新增 validators.ts，提供 Reddit 参数、邀请码、文件名等验证函数
-- **Token 签名机制**：新增 auth-token.ts，使用 HMAC-SHA256 生成安全验证 Token
-- **Cookie 安全升级**：邀请码验证 Cookie 从简单布尔值升级为签名 Token，防止伪造
-- **中间件增强**：验证签名 Token 而非简单布尔值，支持 Token 过期检查
-- **环境变量化**：CORS 代理 URL 和 Token 密钥配置移至环境变量
-
-**安全改进**：
-- 所有 API 路由集成输入验证，防止参数注入
-- 文件名验证防止路径遍历攻击
-- Token 验证使用时序安全比较，防止时序攻击
-- 总文件数达到 91 个
-
-### v2.6.3（2026-01-29）
-
-本版本完成了生产环境部署优化，修复了多个 Docker/Alpine 兼容性问题，确保应用在 sea2049.com 稳定运行。
-
-**部署优化**：
-- **Prisma 兼容性修复**：添加 `linux-musl-openssl-3.0.x` 到 binaryTargets，解决 Alpine Linux 环境下的 Query Engine 缺失问题
-- **依赖管理优化**：将 `undici` 从 devDependencies 移至 dependencies，修复生产构建时的模块导入错误
-- **Docker 镜像优化**：在 runner 阶段安装 OpenSSL，复制完整的 Prisma CLI 并设置正确权限
-- **启动脚本改进**：使用本地安装的 Prisma CLI 替代 npx，避免下载不兼容版本
-- **环境变量修复**：调整 docker-compose.yml 优先级，确保 .env.production 中的配置正确加载
-
-**技术细节**：
-- Prisma 版本锁定为 5.22.0，避免 v7 破坏性变更
-- 修复 package.json JSON 语法错误（缺失逗号）
-- 优化 Dockerfile 权限设置，确保 nextjs 用户可访问 Prisma 引擎目录
-
-### v2.6.1（2026-01-29）
-
-本版本新增邀请码管理系统，提供用户访问控制和管理员后台功能，增强应用的安全性和访问管理能力。
-
-**核心功能**：
-- **邀请码验证系统**：用户访问首页前需要输入有效邀请码
-- **管理员后台**：支持创建、查看、启用/禁用、删除邀请码
-- **中间件拦截**：通过 Next.js 中间件对首页访问进行验证
-- **数据库集成**：使用 Prisma ORM 和 SQLite 数据库持久化邀请码数据
-- **Cookie 认证**：验证成功后设置 HttpOnly Cookie，支持自定义过期时间
-
-**技术亮点**：
-- 集成 Prisma ORM，支持数据库迁移和类型安全
-- 新增2个 API 端点（/api/invite/verify、/api/invite/admin）
-- 邀请码支持配置最大使用次数、过期时间和备注
-- 管理员 API 通过 ADMIN_PASSWORD 环境变量验证
-- 新增2个页面组件（/invite、/admin/invite）
-- 总文件数达到89个
+**清理内容**：
+- 移除邀请码验证/管理系统（页面、API、中间件、Prisma ORM）
+- 移除 Docker/Cloudflare/Nginx/SEA2049/阿里云部署文件和脚本
+- 清理 Prisma、nanoid 等不再需要的依赖
+- 更新项目文档为桌面应用优先
 
 ### v2.6.0（2026-01-28）
 
@@ -363,10 +302,6 @@ Web Worker版：新增Web Worker并行计算架构，提升NLP处理性能。
 ### v1.2.0（2026-01-12）
 
 API代理版：新增API Routes服务端代理层，提升安全性。
-
-### v1.1.0（2026-01-10）
-
-Docker部署版：新增Docker容器化部署支持。
 
 ### v1.0.0（2026-01-05）
 

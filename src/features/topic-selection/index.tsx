@@ -204,11 +204,11 @@ export function TopicSelection({
               <button
                 onClick={handleSelectAll}
                 disabled={isLoading}
-                className="text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                className="text-sm text-reddit-orange hover:text-primary-700 disabled:opacity-50"
               >
                 全选
               </button>
-              <span className="text-gray-300">|</span>
+              <span className="text-gray-300" aria-hidden="true">|</span>
               <button
                 onClick={handleDeselectAll}
                 disabled={isLoading || selectedTopicIds.size === 0}
@@ -221,30 +221,30 @@ export function TopicSelection({
         )}
 
         {selectedTopics.length > 0 && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="p-4 bg-primary-50 border border-reddit-border rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-blue-900">
+              <span className="font-medium text-reddit-text">
                 已选 {selectedTopics.length} 个主题
               </span>
               <button
                 onClick={clearSelectedTopics}
-                className="text-sm text-blue-600 hover:text-blue-800 underline"
+                className="text-sm text-reddit-orange hover:text-primary-700 underline"
               >
                 清空已选
               </button>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto sm:max-h-none sm:overflow-visible">
               {selectedTopics.slice(0, 5).map((topic) => (
                 <span
                   key={topic.id}
-                  className="inline-flex items-center px-3 py-1 bg-white border border-blue-300 rounded-full text-sm text-blue-800"
+                  className="inline-flex items-center px-3 py-1 bg-white border border-reddit-border rounded-full text-sm text-primary-700"
                 >
                   {"subscriber_count" in topic ? "社区" : "帖子"}: {topic.title.substring(0, 20)}
                   {topic.title.length > 20 && "..."}
                 </span>
               ))}
               {selectedTopics.length > 5 && (
-                <span className="inline-flex items-center px-3 py-1 bg-blue-100 border border-blue-300 rounded-full text-sm text-blue-800">
+                <span className="inline-flex items-center px-3 py-1 bg-primary-100 border border-reddit-border rounded-full text-sm text-primary-700">
                   +{selectedTopics.length - 5} 更多
                 </span>
               )}

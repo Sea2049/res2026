@@ -129,7 +129,7 @@ export function EmptyState({
           <ul className="text-sm text-gray-600 space-y-2 text-left">
             {config.suggestions.map((suggestion, index) => (
               <li key={index} className="flex items-start gap-2">
-                <span className="text-blue-500 mt-1">•</span>
+                <span className="text-reddit-orange mt-1">•</span>
                 <span>{suggestion}</span>
               </li>
             ))}
@@ -146,7 +146,7 @@ export function EmptyState({
               variant={action.variant || "default"}
               className={
                 action.variant === "default"
-                  ? "bg-blue-600 hover:bg-blue-700"
+                  ? "bg-reddit-orange hover:bg-primary-700"
                   : ""
               }
             >

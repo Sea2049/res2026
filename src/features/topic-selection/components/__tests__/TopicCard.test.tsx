@@ -87,7 +87,7 @@ describe('TopicCard', () => {
     expect(checkbox).toBeChecked();
     
     const card = screen.getByRole('button');
-    expect(card).toHaveClass('ring-2', 'ring-blue-500');
+    expect(card).toHaveClass('ring-2', 'ring-reddit-orange');
   });
 
   /**

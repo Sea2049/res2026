@@ -114,12 +114,20 @@ describe('用户流程集成测试', () => {
       // 1. 渲染话题搜索 Hook
       const { result: searchResult } = renderHook(() => useTopicSearch());
 
-      // 2. 搜索 Subreddit
+      // 2. 仅搜索 Subreddit（避免合并帖子结果导致 length=3）
       await act(async () => {
-        await searchResult.current.search('react');
+        searchResult.current.setKeyword('react');
+        searchResult.current.setSearchOptions({
+          ...searchResult.current.searchOptions,
+          subredditOnly: true,
+          postOnly: false,
+        });
+      });
+      await act(async () => {
+        await searchResult.current.search();
       });
 
-      // 3. 验证搜索结果
+      // 3. 验证搜索结果（2 个 subreddit）
       await waitFor(() => {
         expect(searchResult.current.results).toHaveLength(2);
         expect(searchResult.current.results[0].display_name).toBe('javascript');
@@ -139,7 +147,13 @@ describe('用户流程集成测试', () => {
     it('应该能够取消选择话题', async () => {
       const { result: searchResult } = renderHook(() => useTopicSearch());
 
-      // 搜索并选择话题
+      await act(async () => {
+        searchResult.current.setKeyword('react');
+        searchResult.current.setSearchOptions({
+          ...searchResult.current.searchOptions,
+          subredditOnly: true,
+        });
+      });
       await act(async () => {
         await searchResult.current.search();
       });
@@ -160,7 +174,13 @@ describe('用户流程集成测试', () => {
     it('应该能够清空搜索和选择', async () => {
       const { result: searchResult } = renderHook(() => useTopicSearch());
 
-      // 搜索并选择话题
+      await act(async () => {
+        searchResult.current.setKeyword('react');
+        searchResult.current.setSearchOptions({
+          ...searchResult.current.searchOptions,
+          subredditOnly: true,
+        });
+      });
       await act(async () => {
         await searchResult.current.search();
       });

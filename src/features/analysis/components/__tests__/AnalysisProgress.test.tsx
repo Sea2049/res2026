@@ -101,7 +101,7 @@ describe('AnalysisProgress 组件', () => {
     const { container: container1 } = render(
       <AnalysisProgress session={createMockSession('analyzing', 50)} />
     );
-    expect(container1.querySelector('.bg-blue-500')).toBeInTheDocument();
+    expect(container1.querySelector('.bg-reddit-orange')).toBeInTheDocument();
 
     const { container: container2 } = render(
       <AnalysisProgress session={createMockSession('completed', 100)} />

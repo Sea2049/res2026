@@ -16,11 +16,6 @@ export const SUBREDDIT_REGEX = /^[a-zA-Z0-9_]{1,50}$/;
 export const POST_ID_REGEX = /^[a-zA-Z0-9]{1,10}$/;
 
 /**
- * 邀请码正则：8位大写字母数字
- */
-export const INVITE_CODE_REGEX = /^[A-Z0-9]{8}$/;
-
-/**
  * UUID v4 正则
  */
 export const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -106,19 +101,6 @@ export function validateSortType(
     return true; // 允许为空，使用默认值
   }
   return validTypes.includes(sort);
-}
-
-/**
- * 验证邀请码格式
- * @param code 邀请码
- * @returns 是否有效
- */
-export function validateInviteCode(code: string | null | undefined): boolean {
-  if (!code || typeof code !== 'string') {
-    return false;
-  }
-  const trimmed = code.trim().toUpperCase();
-  return INVITE_CODE_REGEX.test(trimmed);
 }
 
 /**

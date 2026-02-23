@@ -206,14 +206,16 @@ export const TopicList = memo(function TopicList({
           <span>已选 {selectedTopicIds.size} 个</span>
         </div>
         
-        {topics.map((topic) => (
-          <TopicCard
-            key={topic.id}
-            topic={topic}
-            isSelected={selectedTopicIds.has(topic.id)}
-            onToggleSelect={() => onToggleSelect(topic)}
-          />
-        ))}
+        <div role="list" aria-label="话题列表">
+          {topics.map((topic) => (
+            <TopicCard
+              key={topic.id}
+              topic={topic}
+              isSelected={selectedTopicIds.has(topic.id)}
+              onToggleSelect={() => onToggleSelect(topic)}
+            />
+          ))}
+        </div>
       </div>
     );
   }, [topics, selectedTopicIds, onToggleSelect, renderEmptyState, getResultStats]);
@@ -236,12 +238,12 @@ export const TopicList = memo(function TopicList({
         {topicGroups.map((group) => (
           <div key={group.type} className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium text-gray-300">
-              <span>{group.icon}</span>
+              <span aria-hidden="true">{group.icon}</span>
               <span>{group.label}</span>
               <span className="text-gray-500">({group.items.length})</span>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-3" role="list" aria-label={`${group.label}列表`}>
               {group.items.map((topic) => (
                 <TopicCard
                   key={topic.id}

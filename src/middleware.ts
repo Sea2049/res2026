@@ -69,7 +69,14 @@ async function verifyTokenInEdge(token: string | undefined): Promise<boolean> {
   }
 
   // 使用 Web Crypto API 验证签名
-  const secret = process.env.INVITE_TOKEN_SECRET || 'reddit-insight-tool-default-secret-key-2026'
+  const secret = process.env.INVITE_TOKEN_SECRET
+    || (process.env.NODE_ENV === 'development' ? 'dev-only-default-secret-key' : '');
+
+  if (!secret) {
+    console.error('INVITE_TOKEN_SECRET is not configured');
+    return false;
+  }
+
   const expectedSignature = await hmacSha256(secret, timestampStr)
 
   // 简单比较
@@ -81,6 +88,16 @@ export async function middleware(request: NextRequest) {
 
   // 仅对首页进行验证
   if (pathname !== '/') {
+    return NextResponse.next()
+  }
+
+  // Electron 桌面版（localhost 访问）或环境变量配置跳过邀请码校验
+  const host = request.headers.get('host') || ''
+  const isLocalhost = host.startsWith('127.0.0.1') || host.startsWith('localhost')
+  const allowBypass =
+    (process.env.DISABLE_INVITE_CHECK === 'true' && process.env.RUNTIME_TARGET === 'electron') ||
+    isLocalhost
+  if (allowBypass) {
     return NextResponse.next()
   }
 

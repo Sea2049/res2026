@@ -98,13 +98,13 @@ export function AnalysisProgress({
   const getProgressColor = (): string => {
     if (isError) return "bg-red-500";
     if (isCompleted) return "bg-green-500";
-    return "bg-blue-500";
+    return "bg-reddit-orange";
   };
 
   const getStatusIcon = (): { icon: string; color: string } => {
     switch (session.status) {
       case "fetching":
-        return { icon: "📥", color: "text-blue-600" };
+        return { icon: "📥", color: "text-reddit-orange" };
       case "analyzing":
         return { icon: "🔍", color: "text-purple-600" };
       case "completed":
@@ -215,7 +215,14 @@ export function AnalysisProgress({
             )}
           </div>
         </div>
-        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+        <div
+          className="h-3 bg-gray-200 rounded-full overflow-hidden"
+          role="progressbar"
+          aria-valuenow={session.progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="分析进度"
+        >
           <div
             className={`h-full ${getProgressColor()} transition-all duration-300`}
             style={{ width: `${session.progress}%` }}
@@ -231,7 +238,7 @@ export function AnalysisProgress({
                 step.progress === 100
                   ? "bg-green-100 text-green-600"
                   : step.progress > 0
-                  ? "bg-blue-100 text-blue-600"
+                  ? "bg-primary-100 text-reddit-orange"
                   : "bg-gray-100 text-gray-400"
               }`}
             >
@@ -254,13 +261,20 @@ export function AnalysisProgress({
                   {step.progress}%
                 </span>
               </div>
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-1.5 bg-gray-100 rounded-full overflow-hidden"
+                role="progressbar"
+                aria-valuenow={step.progress}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`${step.label}进度`}
+              >
                 <div
                   className={`h-full transition-all duration-300 ${
                     step.progress === 100
                       ? "bg-green-500"
                       : step.progress > 0
-                      ? "bg-blue-500"
+                      ? "bg-reddit-orange"
                       : "bg-gray-300"
                   }`}
                   style={{ width: `${step.progress}%` }}
@@ -275,8 +289,8 @@ export function AnalysisProgress({
       </div>
 
       {session.currentStep && session.status !== "completed" && (
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-700">{session.currentStep}</p>
+        <div className="mt-4 p-3 bg-primary-50 rounded-lg">
+          <p className="text-sm text-primary-700">{session.currentStep}</p>
         </div>
       )}
 
@@ -290,7 +304,8 @@ export function AnalysisProgress({
         <div className="mt-4 flex justify-end">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="取消分析"
+            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-reddit-orange"
           >
             取消分析
           </button>
