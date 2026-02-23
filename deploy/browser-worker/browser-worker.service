@@ -1,0 +1,39 @@
+[Unit]
+Description=Reddit Browser Worker Service
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=browser-worker
+Group=browser-worker
+WorkingDirectory=/opt/browser-worker
+
+ExecStartPre=/bin/bash -c 'which Xvfb || (echo "Xvfb not found" && exit 1)'
+ExecStartPre=/bin/bash -c 'which node || (echo "node not found" && exit 1)'
+ExecStartPre=/bin/bash -c 'test -f /opt/browser-worker/dist/server.js || (echo "server.js not found, build first" && exit 1)'
+
+Environment=NODE_ENV=production
+Environment=PORT=3001
+Environment=DISPLAY=:99
+Environment=USE_XVFB=true
+Environment=DB_PATH=/opt/browser-worker/data/browser-worker.db
+EnvironmentFile=-/opt/browser-worker/.env
+
+ExecStartPre=/bin/bash -c 'Xvfb :99 -screen 0 1920x1080x24 &'
+
+ExecStart=/usr/bin/node /opt/browser-worker/dist/server.js
+
+Restart=always
+RestartSec=10
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=browser-worker
+
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

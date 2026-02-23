@@ -167,3 +167,63 @@ export async function fetchWithFallbacks(targetUrl: string): Promise<Response> {
   (error as Error & { status?: number }).status = lastStatus || 500;
   throw error;
 }
+
+// ==================== Browser Worker 兜底扩展 ====================
+
+/**
+ * 在现有多策略兜底链之外，增加 Browser Worker 兜底能力。
+ *
+ * 使用方式：
+ * - 如果 `options.useBrowserWorker=true` 且 `BROWSER_WORKER_URL` 已配置，
+ *   则在其他所有策略失败后，将请求转发给 Browser Worker 执行。
+ * - 否则行为与 fetchWithFallbacks 完全一致。
+ */
+export async function fetchWithBrowserWorkerFallback(
+  targetUrl: string,
+  options?: { useBrowserWorker?: boolean }
+): Promise<Response> {
+  // 先尝试所有现有策略
+  try {
+    return await fetchWithFallbacks(targetUrl);
+  } catch (primaryError) {
+    // 仅在明确要求且 Worker 已配置时才尝试兜底
+    const workerUrl = process.env.BROWSER_WORKER_URL;
+    if (!options?.useBrowserWorker || !workerUrl) {
+      throw primaryError;
+    }
+
+    // 动态导入避免循环依赖，按需加载
+    const { browserWorkerClient } = await import("./browser-worker-client");
+
+    try {
+      console.log(`[API] Trying Browser Worker fallback for: ${targetUrl}`);
+      const workerResp = await browserWorkerClient.fetch({
+        url: targetUrl,
+        method: "GET",
+        strategy_hints: {
+          prefer_http_first: false,
+          allow_browser_fallback: true,
+        },
+      });
+
+      if (!workerResp.ok) {
+        const err = new Error(
+          workerResp.error_message ?? `Worker returned error: ${workerResp.error_code}`
+        ) as Error & { status?: number; workerErrorCode?: string };
+        err.status = workerResp.status;
+        err.workerErrorCode = workerResp.error_code;
+        throw err;
+      }
+
+      // 将 Worker 的 json_body 包装成标准 Response 返回
+      return new Response(JSON.stringify(workerResp.json_body), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (workerError) {
+      console.warn("[API] Browser Worker fallback failed:", workerError);
+      // 抛出原始错误，保持调用方的错误语义
+      throw primaryError;
+    }
+  }
+}

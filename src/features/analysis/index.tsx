@@ -158,13 +158,13 @@ export function AnalysisDashboard({
       )}
 
       {selectedTopics.length > 0 && !session && (
-        <Card className="mb-6 bg-primary-50 border-reddit-border">
+        <Card className="mb-6 bg-white border border-gray-200 border-l-4 border-l-reddit-orange shadow-sm">
           <CardContent className="flex flex-col sm:flex-row items-center justify-between p-6 gap-4">
             <div>
               <p className="font-semibold text-reddit-text text-lg">
                 已选择 {selectedTopics.length} 个主题待分析
               </p>
-              <p className="text-sm text-primary-700 mt-1">
+              <p className="text-sm text-gray-600 mt-1">
                 点击"开始分析"按钮获取评论数据并进行分析
               </p>
             </div>
@@ -219,13 +219,31 @@ export function AnalysisDashboard({
 
       {hasAnalysisResult && session.result && (
         <div className="space-y-6">
+          {session.result.fetchStats && (
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <Badge variant="outline" className="text-gray-600">
+                帖子总评论 {session.result.fetchStats.totalAvailable}
+              </Badge>
+              <Badge variant="outline" className="text-gray-600">
+                已抓取 {session.result.fetchStats.rawFetched}
+              </Badge>
+              <Badge variant="outline" className="text-gray-600">
+                已分析 {session.result.fetchStats.analyzedComments}
+              </Badge>
+              {session.result.fetchStats.completionGap > 0 && (
+                <Badge variant="outline" className="text-amber-700 border-amber-200">
+                  缺口 {session.result.fetchStats.completionGap}
+                </Badge>
+              )}
+            </div>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Badge variant="outline" className="text-gray-600">
                 {session.topics.length} 个主题
               </Badge>
               <Badge variant="outline" className="text-gray-600">
-                {session.result.comments.length} 条评论
+                {session.result.fetchStats?.analyzedComments ?? session.result.comments.length} 条评论
               </Badge>
               <Badge variant="outline" className="text-gray-600">
                 {session.result.keywords.length} 个关键词
@@ -253,7 +271,7 @@ export function AnalysisDashboard({
           </div>
 
           <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 lg:w-[500px]">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
               <TabsTrigger value="keywords">关键词</TabsTrigger>
               <TabsTrigger value="sentiment">情感</TabsTrigger>
               <TabsTrigger value="insights">洞察</TabsTrigger>
@@ -414,15 +432,15 @@ function TimePeriodTip() {
     return null;
   }
 
-  // 根据状态选择颜色
+  // 根据状态选择颜色，减少大面积黄底，使用白底+边框强调
   const getAlertStyle = () => {
     switch (timeStatus.status) {
       case "peak":
-        return "bg-amber-50 border-amber-200 text-amber-800";
+        return "bg-white border border-amber-200 border-l-4 border-l-amber-500 text-amber-800";
       case "transition":
-        return "bg-primary-50 border-reddit-border text-primary-700";
+        return "bg-white border border-gray-200 border-l-4 border-l-reddit-orange text-gray-700";
       default:
-        return "bg-green-50 border-green-200 text-green-800";
+        return "bg-white border border-green-200 border-l-4 border-l-green-500 text-green-800";
     }
   };
 

@@ -37,8 +37,8 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="lg:col-span-3">
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 min-h-[600px]">
+          <section className="lg:col-span-3 flex flex-col min-h-0">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 min-h-[600px] max-h-[calc(100vh-2rem)] overflow-y-auto">
               <AnalysisDashboard
                 selectedTopics={selectedTopics}
                 allSearchResults={allSearchResults}

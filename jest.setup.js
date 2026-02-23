@@ -7,6 +7,40 @@ if (typeof global.TextDecoder === 'undefined') {
 if (typeof global.TextEncoder === 'undefined') {
   global.TextEncoder = require('util').TextEncoder;
 }
+if (typeof global.ReadableStream === 'undefined') {
+  global.ReadableStream = require('node:stream/web').ReadableStream;
+}
+if (typeof global.WritableStream === 'undefined') {
+  global.WritableStream = require('node:stream/web').WritableStream;
+}
+if (typeof global.TransformStream === 'undefined') {
+  global.TransformStream = require('node:stream/web').TransformStream;
+}
+if (typeof global.MessageChannel === 'undefined' || typeof global.MessagePort === 'undefined') {
+  const { MessageChannel, MessagePort } = require('node:worker_threads');
+  if (typeof global.MessageChannel === 'undefined') {
+    global.MessageChannel = MessageChannel;
+  }
+  if (typeof global.MessagePort === 'undefined') {
+    global.MessagePort = MessagePort;
+  }
+}
+
+const { Request, Response, Headers, FormData } = require('undici');
+
+// 为 Next.js route handler 测试补齐 Web API 构造器
+if (typeof global.Request === 'undefined') {
+  global.Request = Request;
+}
+if (typeof global.Response === 'undefined') {
+  global.Response = Response;
+}
+if (typeof global.Headers === 'undefined') {
+  global.Headers = Headers;
+}
+if (typeof global.FormData === 'undefined') {
+  global.FormData = FormData;
+}
 
 global.fetch = jest.fn();
 

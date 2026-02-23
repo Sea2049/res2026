@@ -157,7 +157,7 @@ export function CommentList({
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-reddit-orange focus:border-transparent"
         />
       </div>
-      <div className="max-h-64 sm:max-h-96 overflow-y-auto" role="list" aria-label="评论列表">
+      <div className="min-h-[12rem] max-h-[min(36rem,70vh)] overflow-y-auto" role="list" aria-label="评论列表">
         {filteredComments.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             <p>没有找到匹配的评论</p>

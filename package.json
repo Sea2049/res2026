@@ -24,7 +24,10 @@
     "electron:build:zip": "node scripts/zip-win-unpacked.js",
     "electron:build:installer": "npm run electron:build:next && npm run electron:compile && npm run electron:build:prepare && electron-builder --win",
     "electron:dist": "npm run electron:build && npm run electron:build:zip",
-    "electron": "npm run electron:compile && electron ."
+    "electron": "npm run electron:compile && electron .",
+    "test:validator": "jest src/lib/validators/__tests__ --runInBand",
+    "test:route-mock": "jest src/app/api/jobs/__tests__/crawl.route.*.test.ts --runInBand",
+    "test:ci:phased": "npm run test:validator && npm run test:route-mock"
   },
   "keywords": [
     "reddit",

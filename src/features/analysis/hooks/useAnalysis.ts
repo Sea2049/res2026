@@ -26,6 +26,10 @@ import type {
   AnalysisResult,
   AnalysisConfig,
   ErrorInfo,
+  FetchStats,
+  CrawlJob,
+  GetJobResultsSummaryResponse,
+  GetJobResultsCommentsResponse,
 } from "@/lib/types";
 
 /**
@@ -67,12 +71,56 @@ interface UseAnalysisReturn {
   exportToExcel: (searchResults: SearchResult[]) => Blob | null;
 }
 
+// ==================== 轮询配置 ====================
+const POLL_INTERVAL_INITIAL_MS = 1000;
+const POLL_INTERVAL_MAX_MS = 5000;
+const POLL_TIMEOUT_MS = 180000; // 约 3 分钟
+
 /**
  * 生成唯一会话 ID
  * @returns 唯一 ID 字符串
  */
 function generateSessionId(): string {
   return `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+/**
+ * 从 topics 构建 POST /api/jobs/crawl 请求体
+ */
+function buildCrawlRequestBody(
+  topics: SearchResult[],
+  maxComments: number
+): { source: "reddit"; target_comments: number; max_comments: number; analysis_scope: "full"; filters?: { subreddits?: string[]; post_ids?: string[] } } {
+  const subreddits: string[] = [];
+  const postIds: string[] = [];
+  for (const t of topics) {
+    if ("subscriber_count" in t) {
+      subreddits.push(t.display_name);
+    } else {
+      subreddits.push(t.subreddit);
+      postIds.push(t.id);
+    }
+  }
+  const target = Math.min(maxComments * Math.max(1, topics.length), 10000);
+  const body: { source: "reddit"; target_comments: number; max_comments: number; analysis_scope: "full"; filters?: { subreddits?: string[]; post_ids?: string[] } } = {
+    source: "reddit",
+    target_comments: Math.max(1, target),
+    max_comments: Math.min(10000, target),
+    analysis_scope: "full",
+  };
+  if (subreddits.length > 0 || postIds.length > 0) {
+    body.filters = {};
+    if (subreddits.length > 0) body.filters.subreddits = subreddits;
+    if (postIds.length > 0) body.filters.post_ids = postIds;
+  }
+  return body;
+}
+
+function estimateTotalComments(topics: SearchResult[]): number {
+  const postTotal = topics
+    .filter((t): t is Extract<SearchResult, { num_comments: number }> => "num_comments" in t)
+    .reduce((sum, t) => sum + (t.num_comments || 0), 0);
+  return postTotal > 0 ? postTotal : topics.length * 1000;
 }
 
 /**
@@ -150,6 +198,7 @@ export function useAnalysis(): UseAnalysisReturn {
   const [session, setSession] = useState<AnalysisSession | null>(null);
   const [errorInfo, setErrorInfo] = useState<ErrorInfo | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const jobIdRef = useRef<string | null>(null);
   const workerManagerRef = useRef<ReturnType<typeof getNLPWorkerManager> | null>(null);
   const configRef = useRef<AnalysisConfig>({
     maxComments: 1000,
@@ -294,20 +343,277 @@ export function useAnalysis(): UseAnalysisReturn {
   );
 
   /**
+   * Jobs 流程：POST crawl -> 轮询状态 -> GET results
+   * 失败时返回 null，触发回退
+   */
+  const runJobsFlow = useCallback(
+    async (topics: SearchResult[], signal: AbortSignal): Promise<AnalysisResult | null> => {
+      const maxComments = configRef.current.maxComments;
+      const body = buildCrawlRequestBody(topics, maxComments);
+
+      updateSession({ currentStep: "正在提交采集任务..." });
+
+      let createRes: Response;
+      try {
+        createRes = await fetch("/api/jobs/crawl", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal,
+        });
+      } catch (e) {
+        console.warn("[useAnalysis] Jobs crawl 请求异常:", e);
+        return null;
+      }
+
+      if (!createRes || !createRes.ok) {
+        const errText = createRes ? await createRes.text().catch(() => "") : "";
+        console.warn("[useAnalysis] Jobs crawl 请求失败:", createRes?.status ?? "(无响应)", errText);
+        return null;
+      }
+
+      let createData: { job_id: string };
+      try {
+        createData = await createRes.json();
+      } catch {
+        console.warn("[useAnalysis] Jobs crawl 响应解析失败");
+        return null;
+      }
+
+      const jobId = createData?.job_id;
+      if (!jobId) {
+        console.warn("[useAnalysis] Jobs crawl 未返回 job_id");
+        return null;
+      }
+
+      jobIdRef.current = jobId;
+      updateSession({ currentStep: "任务已提交，轮询中..." });
+
+      // 轮询：初始 1s，退避至 5s，超时约 3 分钟
+      let intervalMs = POLL_INTERVAL_INITIAL_MS;
+      const startTime = Date.now();
+      let job: CrawlJob | null = null;
+
+      while (Date.now() - startTime < POLL_TIMEOUT_MS) {
+        if (signal.aborted) return null;
+        await new Promise((r) => setTimeout(r, intervalMs));
+        if (signal.aborted) return null;
+
+        let statusRes: Response;
+        try {
+          statusRes = await fetch(`/api/jobs/${jobId}`, { signal });
+        } catch (e) {
+          console.warn("[useAnalysis] Jobs 状态查询异常:", e);
+          return null;
+        }
+        if (!statusRes.ok) {
+          console.warn("[useAnalysis] Jobs 状态查询失败:", statusRes.status);
+          return null;
+        }
+        job = (await statusRes.json()) as CrawlJob;
+        if (!job?.job_id) return null;
+
+        const status = job.status;
+        const progress = job.progress;
+        const analyzed = progress?.analyzed_comments ?? 0;
+        updateSession({
+          progress: Math.min(90, 20 + Math.round((analyzed / (job.target_comments || 1)) * 70)),
+          currentStep: `采集进度: ${analyzed} 条评论...`,
+        });
+
+        if (status === "completed" || status === "partial_success") {
+          break;
+        }
+        if (status === "failed" || status === "cancelled") {
+          console.warn("[useAnalysis] Jobs 终态异常:", status);
+          return null;
+        }
+
+        intervalMs = Math.min(intervalMs + 500, POLL_INTERVAL_MAX_MS);
+      }
+
+      if (!job || (job.status !== "completed" && job.status !== "partial_success")) {
+        console.warn("[useAnalysis] Jobs 轮询超时或未完成");
+        return null;
+      }
+
+      // GET results
+      updateSession({ currentStep: "正在获取分析结果..." });
+      let resultsRes: Response;
+      try {
+        resultsRes = await fetch(`/api/jobs/${jobId}/results?view=summary`, { signal });
+      } catch (e) {
+        console.warn("[useAnalysis] Jobs results 请求异常:", e);
+        return null;
+      }
+      if (!resultsRes.ok) {
+        console.warn("[useAnalysis] Jobs results 请求失败:", resultsRes.status);
+        return null;
+      }
+
+      const resultsData = (await resultsRes.json()) as GetJobResultsSummaryResponse;
+      const summary = resultsData?.summary;
+      const analyzedCount = summary?.analyzed_comments ?? job.progress.analyzed_comments ?? 0;
+
+      if (analyzedCount === 0) {
+        console.warn("[useAnalysis] Jobs 返回 0 条分析结果，回退");
+        return null;
+      }
+
+      // 优先使用后端返回的完整 analysis_result
+      const serverAnalysis = summary?.analysis_result;
+      const dist = summary?.sentiment_distribution ?? { positive: 0, neutral: 0, negative: 0 };
+      const total = dist.positive + dist.neutral + dist.negative || 1;
+      const sentiment = {
+        positive: dist.positive,
+        negative: dist.negative,
+        neutral: dist.neutral,
+        positivePercentage: Math.round((dist.positive / total) * 100),
+        negativePercentage: Math.round((dist.negative / total) * 100),
+        neutralPercentage: Math.round((dist.neutral / total) * 100),
+      };
+      const topKeywords = summary?.top_keywords ?? [];
+      const keywords = topKeywords.map((word) => ({ word, count: 1, sentiment: "neutral" as const }));
+      const insights = (summary?.top_insight_types ?? []).slice(0, 5).map((type, i) => ({
+        id: `insight_${i}`,
+        type: type as "pain_point" | "feature_request" | "praise" | "question",
+        title: String(type),
+        description: "",
+        confidence: 0.5,
+        relatedComments: [],
+      }));
+
+      const statsFromSummary = summary?.fetch_stats;
+      const fetchStats: FetchStats = {
+        totalAvailable: estimateTotalComments(topics),
+        rawFetched: statsFromSummary?.raw_fetched ?? job.progress.raw_fetched,
+        uniqueNormalized:
+          statsFromSummary?.unique_normalized ?? job.progress.unique_normalized,
+        analyzedComments:
+          statsFromSummary?.analyzed_comments ?? job.progress.analyzed_comments,
+        completionGap:
+          statsFromSummary?.completion_gap ?? job.progress.completion_gap,
+        source: "jobs",
+      };
+
+      // P1：summary 不返回完整 comments，单独分页取第一页（提升大结果响应速度）
+      let commentsPage: AnalysisResult["comments"] = [];
+      try {
+        const commentsRes = await fetch(
+          `/api/jobs/${jobId}/results?view=comments&limit=100`,
+          { signal }
+        );
+        if (commentsRes.ok) {
+          const data = (await commentsRes.json()) as GetJobResultsCommentsResponse;
+          commentsPage = Array.isArray(data?.comments) ? data.comments : [];
+        }
+      } catch {
+        // ignore: comments 失败不阻断整体结果
+      }
+
+      const result: AnalysisResult = {
+        keywords: serverAnalysis?.keywords ?? keywords,
+        sentiment: serverAnalysis?.sentiment ?? sentiment,
+        insights: serverAnalysis?.insights ?? insights,
+        comments: commentsPage,
+        fetchStats,
+      };
+      return result;
+    },
+    [updateSession]
+  );
+
+  /**
+   * 旧链路：redditApi + 本地分析，保证功能不瘫痪
+   */
+  const runLegacyFlow = useCallback(
+    async (topics: SearchResult[], signal: AbortSignal): Promise<AnalysisResult> => {
+      let allComments: {
+        id: string;
+        body: string;
+        author: string;
+        score: number;
+        created_utc: number;
+        parent_id: string;
+      }[] = [];
+      const totalTopics = topics.length;
+      const fetchErrors: Array<{ topicId: string; error: Error }> = [];
+
+      for (let i = 0; i < topics.length; i++) {
+        if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+        const topic = topics[i];
+        const progress = Math.round(((i + 0.5) / totalTopics) * 50);
+        updateSession({ progress, currentStep: `正在处理第 ${i + 1}/${totalTopics} 个主题...` });
+        try {
+          const comments = await fetchCommentsForTopic(topic);
+          allComments = [...allComments, ...comments];
+        } catch (error) {
+          console.error(`获取主题 ${topic.id} 评论失败:`, error);
+          fetchErrors.push({
+            topicId: topic.id,
+            error: error instanceof Error ? error : new Error(String(error)),
+          });
+        }
+      }
+
+      if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+      if (allComments.length === 0) {
+        throw createNoDataError(
+          fetchErrors.length > 0
+            ? "获取评论失败，请检查网络连接或选择其他主题"
+            : "未找到可分析的评论，请尝试选择其他主题"
+        );
+      }
+
+      updateSession({
+        status: "analyzing",
+        progress: 50,
+        currentStep: `获取到 ${allComments.length} 条评论，开始分析...`,
+      });
+      if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+
+      updateSession({ progress: 60, currentStep: "正在进行情感分析和关键词提取..." });
+
+      let result: AnalysisResult;
+      try {
+        result = await analyzeWithWorker(allComments);
+        if ((!result.comments || result.comments.length === 0) && allComments.length > 0) {
+          const recoveredComments = allComments.map((c) => ({
+            ...c,
+            sentiment: "neutral" as const,
+            sentimentScore: 0,
+            keywords: [],
+          }));
+          result = { ...result, comments: recoveredComments };
+        }
+      } catch (workerError) {
+        console.error("Worker 分析失败，回退到主线程分析:", workerError);
+        result = analyzeCommentsLib(allComments, configRef.current);
+      }
+
+      const fetchStats: FetchStats = {
+        totalAvailable: estimateTotalComments(topics),
+        rawFetched: allComments.length,
+        uniqueNormalized: allComments.length,
+        analyzedComments: result.comments.length,
+        completionGap: 0,
+        source: "legacy",
+      };
+      return { ...result, fetchStats };
+    },
+    [fetchCommentsForTopic, updateSession, analyzeWithWorker]
+  );
+
+  /**
    * 开始分析
-   * 获取所有选中主题的评论并进行分析
-   * @param topics 要分析的主题列表
+   * 优先 Jobs API，失败/不可用时回退到旧链路
    */
   const startAnalysis = useCallback(
     async (topics: SearchResult[]) => {
-      // 清除之前的错误
       setErrorInfo(null);
-
       if (!topics || topics.length === 0) {
-        const error = createInvalidInputError('请先选择要分析的主题');
-        const info = convertToErrorInfo(error);
-        setErrorInfo(info);
-
+        const error = createInvalidInputError("请先选择要分析的主题");
+        setErrorInfo(convertToErrorInfo(error));
         setSession({
           id: generateSessionId(),
           topics: [],
@@ -322,11 +628,9 @@ export function useAnalysis(): UseAnalysisReturn {
         return;
       }
 
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-
+      if (abortControllerRef.current) abortControllerRef.current.abort();
       abortControllerRef.current = new AbortController();
+      jobIdRef.current = null;
       const { signal } = abortControllerRef.current;
 
       const newSession: AnalysisSession = {
@@ -340,147 +644,61 @@ export function useAnalysis(): UseAnalysisReturn {
         createdAt: Date.now(),
         completedAt: null,
       };
-
       setSession(newSession);
 
       try {
-        let allComments: {
-          id: string;
-          body: string;
-          author: string;
-          score: number;
-          created_utc: number;
-          parent_id: string;
-        }[] = [];
-        const totalTopics = topics.length;
-        let fetchErrors: Array<{ topicId: string; error: Error }> = [];
+        let result: AnalysisResult | null = await runJobsFlow(topics, signal);
 
-        // 获取评论
-        for (let i = 0; i < topics.length; i++) {
-          if (signal.aborted) {
-            return;
-          }
-
-          const topic = topics[i];
-          const progress = Math.round(((i + 0.5) / totalTopics) * 50);
-          updateSession({ progress, currentStep: `正在处理第 ${i + 1}/${totalTopics} 个主题...` });
-
-          try {
-            const comments = await fetchCommentsForTopic(topic);
-            allComments = [...allComments, ...comments];
-          } catch (error) {
-            console.error(`获取主题 ${topic.id} 评论失败:`, error);
-            fetchErrors.push({
-              topicId: topic.id,
-              error: error instanceof Error ? error : new Error(String(error)),
-            });
-            // 继续处理其他主题，不完全中断
-          }
+        if (result === null && !signal.aborted) {
+          console.warn("[useAnalysis] Jobs 不可用或失败，回退到旧链路");
+          updateSession({ currentStep: "回退到本地采集分析..." });
+          result = await runLegacyFlow(topics, signal);
         }
 
-        if (signal.aborted) {
-          return;
-        }
-
-        if (allComments.length === 0) {
-          const error = createNoDataError(
-            fetchErrors.length > 0
-              ? '获取评论失败，请检查网络连接或选择其他主题'
-              : '未找到可分析的评论，请尝试选择其他主题'
-          );
-          const info = convertToErrorInfo(error);
-          setErrorInfo(info);
-
-          updateSession({
-            status: "error",
+        if (signal.aborted) return;
+        if (result) {
+          const finalSession: AnalysisSession = {
+            ...newSession,
+            status: "completed",
             progress: 100,
-            currentStep: error.userMessage,
-            error: error.message,
-          });
-          return;
+            currentStep: "分析完成！",
+            result,
+            error: null,
+            completedAt: Date.now(),
+          };
+          setSession(finalSession);
         }
-
-        updateSession({
-          status: "analyzing",
-          progress: 50,
-          currentStep: `获取到 ${allComments.length} 条评论，开始分析...`,
-        });
-
-        if (signal.aborted) {
-          return;
-        }
-
-        // 更新进度
-        updateSession({
-          progress: 60,
-          currentStep: '正在进行情感分析和关键词提取...',
-        });
-
-        // 使用 Worker 进行分析
-        let result: AnalysisResult;
-        try {
-          result = await analyzeWithWorker(allComments);
-          
-          // 完整性检查：如果 Worker 返回的 comments 为空但原始数据不为空
-          if ((!result.comments || result.comments.length === 0) && allComments.length > 0) {
-            console.warn("Worker 返回数据异常 (comments丢失)，尝试修复...");
-            
-            // 尝试修复：将原始评论转换为 SentimentComment 格式
-            const recoveredComments = allComments.map(c => ({
-              ...c,
-              sentiment: "neutral" as const,
-              sentimentScore: 0,
-              keywords: []
-            }));
-            
-            result = {
-              ...result,
-              comments: recoveredComments
-            };
-            
-            console.log("已使用原始评论数据修复 result.comments，数量:", result.comments.length);
-          }
-        } catch (workerError) {
-          console.error("Worker 分析失败，回退到主线程分析:", workerError);
-          // 降级：主线程执行
-          result = analyzeCommentsLib(allComments, configRef.current);
-        }
-
-        if (signal.aborted) {
-          return;
-        }
-
-        const finalSession: AnalysisSession = {
-          ...newSession,
-          status: "completed",
-          progress: 100,
-          currentStep: "分析完成！",
-          result,
-          error: null,
-          completedAt: Date.now(),
-        };
-
-        setSession(finalSession);
       } catch (error) {
-        if (!signal.aborted) {
-          handleError(error);
-        }
+        if (!signal.aborted) handleError(error);
       }
     },
-    [fetchCommentsForTopic, updateSession, analyzeWithWorker, handleError]
+    [runJobsFlow, runLegacyFlow, handleError]
   );
 
   /**
    * 取消当前分析
+   * 若有 jobId 则调用 /api/jobs/{jobId}/cancel
    */
-  const cancelAnalysis = useCallback(() => {
-    // 取消 API 请求
+  const cancelAnalysis = useCallback(async () => {
+    const jobId = jobIdRef.current;
+    if (jobId) {
+      try {
+        await fetch(`/api/jobs/${jobId}/cancel`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: "operator_request" }),
+        });
+      } catch (error) {
+        console.warn("Jobs cancel 请求失败:", error);
+      }
+      jobIdRef.current = null;
+    }
+
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
 
-    // 取消 Worker 任务
     try {
       const workerManager = getWorkerManager();
       workerManager.cancel();
@@ -488,7 +706,6 @@ export function useAnalysis(): UseAnalysisReturn {
       console.error("取消 Worker 任务失败:", error);
     }
 
-    // 更新会话状态
     setSession((prev) => {
       if (!prev) return prev;
       return {
@@ -500,8 +717,6 @@ export function useAnalysis(): UseAnalysisReturn {
         completedAt: Date.now(),
       };
     });
-
-    // 清除错误信息
     setErrorInfo(null);
   }, [getWorkerManager]);
 

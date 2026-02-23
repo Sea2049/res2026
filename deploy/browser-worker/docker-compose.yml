@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  browser-worker:
+    build:
+      context: ../..
+      dockerfile: deploy/browser-worker/Dockerfile
+    container_name: reddit-browser-worker
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - USE_XVFB=true
+      - DISPLAY=:99
+      - DB_PATH=/app/data/browser-worker.db
+      - WORKER_TOKEN=${WORKER_TOKEN:-changeme}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - MAX_CONCURRENT_BROWSERS=${MAX_CONCURRENT_BROWSERS:-3}
+    volumes:
+      - browser-worker-data:/app/data
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  browser-worker-data:
+    driver: local
