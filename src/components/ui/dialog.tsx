@@ -129,7 +129,7 @@ export function Dialog({ open: controlledOpen, onOpenChange, className, children
           role="dialog"
           aria-modal="true"
         >
-          <DialogContent>{children}</DialogContent>
+          {children}
         </div>
       )}
     </DialogContext.Provider>
@@ -164,7 +164,7 @@ export function DialogContent({ className, children, ...props }: DialogContentPr
     <div
       ref={contentRef}
       className={cn(
-        "relative bg-white rounded-lg shadow-xl",
+        "relative rounded-lg border border-border bg-card text-card-foreground shadow-xl",
         "max-w-lg w-full mx-4",
         "animate-in zoom-in-95 duration-200",
         className
@@ -189,14 +189,14 @@ export function DialogHeader({ className, ...props }: DialogHeaderProps) {
  * 对话框标题组件
  */
 export function DialogTitle({ className, ...props }: DialogTitleProps) {
-  return <h2 className={cn("text-lg font-semibold text-gray-900", className)} {...props} />;
+  return <h2 className={cn("text-lg font-semibold text-foreground", className)} {...props} />;
 }
 
 /**
  * 对话框描述组件
  */
 export function DialogDescription({ className, ...props }: DialogDescriptionProps) {
-  return <p className={cn("text-sm text-gray-500 mt-1", className)} {...props} />;
+  return <p className={cn("text-sm text-muted-foreground mt-1", className)} {...props} />;
 }
 
 /**
@@ -219,8 +219,9 @@ export function DialogClose({ className, ...props }: HTMLAttributes<HTMLButtonEl
       onClick={() => setOpen(false)}
       className={cn(
         "absolute top-4 right-4 p-1 rounded-md",
-        "text-gray-400 hover:text-gray-600",
+        "text-muted-foreground hover:text-foreground",
         "transition-colors duration-200",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         className
       )}
       aria-label="关闭"

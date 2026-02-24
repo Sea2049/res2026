@@ -506,8 +506,21 @@ export interface RedditListingResponse {
 /**
  * Reddit 鍒楄〃椤? */
 export interface RedditChild {
-  kind: 't1' | 't2' | 't3' | 't4' | 't5' | 't6';
-  data: RedditPostData | RedditCommentData | RedditSubredditData;
+  kind: 't1' | 't2' | 't3' | 't4' | 't5' | 't6' | 'more';
+  data: RedditPostData | RedditCommentData | RedditSubredditData | RedditMoreData;
+}
+
+/**
+ * Reddit 折叠评论占位符（kind: more）
+ * children 为评论 id（不含 t1_ 前缀）
+ */
+export interface RedditMoreData {
+  id: string;
+  name: string;
+  parent_id: string;
+  depth: number;
+  children: string[];
+  count?: number;
 }
 
 /**

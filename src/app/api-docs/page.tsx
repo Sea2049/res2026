@@ -31,13 +31,13 @@ export default function ApiDocsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="bg-white p-8 rounded-lg shadow-md">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+        <div className="bg-card border border-border p-8 rounded-lg shadow-md">
           <h1 className="text-xl font-bold text-red-600 mb-2">加载失败</h1>
-          <p className="text-gray-600">{error}</p>
+          <p className="text-muted-foreground">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-reddit-orange text-white rounded hover:bg-orange-600"
+            className="mt-4 px-4 py-2 bg-reddit-orange text-white rounded hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             重试
           </button>
@@ -48,10 +48,10 @@ export default function ApiDocsPage() {
 
   if (!spec) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-reddit-orange mx-auto"></div>
-          <p className="mt-4 text-gray-600">加载 API 文档...</p>
+          <p className="mt-4 text-muted-foreground">加载 API 文档…</p>
         </div>
       </div>
     );
@@ -61,7 +61,7 @@ export default function ApiDocsPage() {
     <div className="swagger-wrapper">
       <style jsx global>{`
         .swagger-wrapper {
-          background: #fafafa;
+          background: hsl(var(--background));
         }
         .swagger-ui .topbar {
           display: none;
@@ -70,10 +70,10 @@ export default function ApiDocsPage() {
           margin: 20px 0;
         }
         .swagger-ui .info .title {
-          color: #3b4151;
+          color: hsl(var(--foreground));
         }
         .swagger-ui .scheme-container {
-          background: #fff;
+          background: hsl(var(--card));
           box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
       `}</style>

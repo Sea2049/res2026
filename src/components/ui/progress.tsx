@@ -63,12 +63,12 @@ export const Progress = ({
     <div className={cn("w-full", className)} {...props}>
       {showLabel && (
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-gray-700">进度</span>
-          <span className="text-sm font-medium text-gray-900">{clampedValue}%</span>
+          <span className="text-sm font-medium text-muted-foreground">进度</span>
+          <span className="text-sm font-medium text-foreground">{clampedValue}%</span>
         </div>
       )}
       <div
-        className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden"
+        className="relative w-full h-2 bg-muted rounded-full overflow-hidden"
         role="progressbar"
         aria-valuenow={clampedValue}
         aria-valuemin={0}
@@ -76,7 +76,7 @@ export const Progress = ({
       >
         <div
           className={cn(
-            "h-full rounded-full transition-all duration-300 ease-out",
+            "h-full rounded-full transition-[width] duration-300 ease-out",
             getVariantClasses(variant)
           )}
           style={{ width: `${clampedValue}%` }}

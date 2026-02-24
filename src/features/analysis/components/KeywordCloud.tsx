@@ -49,13 +49,13 @@ function calculateFontSize(
 function getSentimentColor(sentiment?: "positive" | "negative" | "neutral"): string {
   switch (sentiment) {
     case "positive":
-      return "text-green-600";
+      return "border-emerald-200 bg-emerald-500/10 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-400/15 dark:text-emerald-300";
     case "negative":
-      return "text-red-600";
+      return "border-rose-200 bg-rose-500/10 text-rose-700 dark:border-rose-900/60 dark:bg-rose-400/15 dark:text-rose-300";
     case "neutral":
-      return "text-gray-600";
+      return "border-slate-200 bg-slate-500/10 text-slate-700 dark:border-slate-800 dark:bg-slate-400/10 dark:text-slate-300";
     default:
-      return "text-gray-700";
+      return "border-border bg-background/40 text-foreground/80";
   }
 }
 
@@ -71,7 +71,7 @@ export function KeywordCloud({
 }: KeywordCloudProps) {
   if (!keywords || keywords.length === 0) {
     return (
-      <div className={`p-8 text-center text-gray-500 bg-gray-50 rounded-lg ${className || ""}`}>
+      <div className={`p-8 text-center text-muted-foreground bg-muted/20 rounded-lg border border-border ${className || ""}`}>
         <p>暂无关键词数据</p>
         <p className="text-sm mt-2">请先执行分析以生成关键词</p>
       </div>
@@ -82,41 +82,30 @@ export function KeywordCloud({
   const maxCount = Math.max(...displayKeywords.map((k) => k.count), 1);
 
   return (
-    <div className={`bg-white p-6 rounded-lg shadow-sm ${className || ""}`}>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">关键词云</h3>
-      <div className="flex flex-wrap gap-3" aria-label="关键词云">
+    <div className={`${className || ""}`}>
+      <div className="flex min-h-[180px] flex-wrap items-center justify-center gap-2 sm:gap-3" aria-label="关键词云">
         {displayKeywords.map((keyword) => {
           const fontSize = calculateFontSize(keyword.count, maxCount);
           const sentimentColor = getSentimentColor(keyword.sentiment);
 
           return (
-            <span
+            <button
+              type="button"
               key={keyword.word}
-              role="button"
-              tabIndex={0}
-              className={`inline-block px-3 py-1.5 rounded-full cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-reddit-orange ${sentimentColor} bg-opacity-10`}
+              className={`inline-flex select-none items-center rounded-full border px-3 py-1.5 font-medium leading-none transition hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-0 ${sentimentColor}`}
               style={{
                 fontSize: `${fontSize}px`,
-                backgroundColor: keyword.sentiment
-                  ? `var(--${keyword.sentiment}-bg, #f3f4f6)`
-                  : "#f3f4f6",
               }}
               title={`出现 ${keyword.count} 次${keyword.sentiment ? ` | 情感: ${keyword.sentiment}` : ""}`}
               aria-label={`关键词: ${keyword.word}, 出现 ${keyword.count} 次${keyword.sentiment ? `, 情感: ${keyword.sentiment}` : ""}`}
               onClick={() => onKeywordClick?.(keyword)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onKeywordClick?.(keyword);
-                }
-              }}
             >
               {keyword.word}
-            </span>
+            </button>
           );
         })}
       </div>
-      <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-500">
+      <div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1">
           <span className="w-3 h-3 rounded-full bg-green-500"></span>
           <span>正面</span>

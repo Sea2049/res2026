@@ -114,7 +114,7 @@ export const TabsList = ({ className, children, ...props }: TabsListProps) => {
   return (
     <div
       className={cn(
-        "inline-flex items-center justify-center rounded-lg bg-gray-100 p-1",
+        "inline-flex items-center justify-center rounded-lg bg-muted p-1",
         className
       )}
       role="tablist"
@@ -167,12 +167,12 @@ export const TabsTrigger = ({ value, className, children, ...props }: TabsTrigge
       onClick={() => setActiveTab(value)}
       onKeyDown={handleKeyDown}
       className={cn(
-        "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all",
-        "focus:outline-none focus:ring-2 focus:ring-reddit-orange focus:ring-offset-2",
+        "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-200",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "disabled:pointer-events-none disabled:opacity-50",
         isActive
-          ? "bg-white text-gray-900 shadow-sm"
-          : "text-gray-500 hover:text-gray-900 hover:bg-gray-200/50",
+          ? "bg-background text-foreground shadow-sm"
+          : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
         className
       )}
       {...props}

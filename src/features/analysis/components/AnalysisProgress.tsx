@@ -106,13 +106,13 @@ export function AnalysisProgress({
       case "fetching":
         return { icon: "📥", color: "text-reddit-orange" };
       case "analyzing":
-        return { icon: "🔍", color: "text-purple-600" };
+        return { icon: "🔍", color: "text-purple-400" };
       case "completed":
-        return { icon: "✅", color: "text-green-600" };
+        return { icon: "✅", color: "text-green-400" };
       case "error":
-        return { icon: "❌", color: "text-red-600" };
+        return { icon: "❌", color: "text-red-400" };
       default:
-        return { icon: "⏳", color: "text-gray-600" };
+        return { icon: "⏳", color: "text-muted-foreground" };
     }
   };
 
@@ -194,9 +194,9 @@ export function AnalysisProgress({
   const steps = getStepDetails();
 
   return (
-    <div className={`bg-white p-6 rounded-lg shadow-sm ${className || ""}`}>
+    <div className={`bg-card border border-border p-6 rounded-lg shadow-sm ${className || ""}`}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">分析进度</h3>
+        <h3 className="text-lg font-semibold text-foreground">分析进度</h3>
         <div className={`flex items-center gap-2 ${statusInfo.color}`}>
           <span className="text-xl">{statusInfo.icon}</span>
           <span className="font-medium">{STEP_LABELS[session.status]}</span>
@@ -204,19 +204,19 @@ export function AnalysisProgress({
       </div>
 
       <div className="mb-4">
-        <div className="flex justify-between text-sm text-gray-600 mb-1">
+        <div className="flex justify-between text-sm text-muted-foreground mb-1">
           <span>总体进度</span>
           <div className="flex items-center gap-2">
             <span className="font-medium">{session.progress}%</span>
             {remainingTime !== null && isInProgress && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-muted-foreground">
                 预计剩余 {formatRemainingTime(remainingTime)}
               </span>
             )}
           </div>
         </div>
         <div
-          className="h-3 bg-gray-200 rounded-full overflow-hidden"
+          className="h-3 bg-muted rounded-full overflow-hidden"
           role="progressbar"
           aria-valuenow={session.progress}
           aria-valuemin={0}
@@ -224,7 +224,7 @@ export function AnalysisProgress({
           aria-label="分析进度"
         >
           <div
-            className={`h-full ${getProgressColor()} transition-all duration-300`}
+            className={`h-full ${getProgressColor()} transition-[width] duration-300`}
             style={{ width: `${session.progress}%` }}
           />
         </div>
@@ -236,10 +236,10 @@ export function AnalysisProgress({
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
                 step.progress === 100
-                  ? "bg-green-100 text-green-600"
+                  ? "bg-green-500/15 text-green-300"
                   : step.progress > 0
-                  ? "bg-primary-100 text-reddit-orange"
-                  : "bg-gray-100 text-gray-400"
+                  ? "bg-reddit-orange/15 text-reddit-orange"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
               {step.progress === 100 ? "✓" : index + 1}
@@ -248,21 +248,21 @@ export function AnalysisProgress({
               <div className="flex justify-between text-sm mb-1">
                 <span
                   className={
-                    step.progress > 0 ? "text-gray-900" : "text-gray-500"
+                    step.progress > 0 ? "text-foreground" : "text-muted-foreground"
                   }
                 >
                   {step.label}
                 </span>
                 <span
                   className={
-                    step.progress > 0 ? "text-gray-600" : "text-gray-400"
+                    step.progress > 0 ? "text-muted-foreground" : "text-muted-foreground/70"
                   }
                 >
                   {step.progress}%
                 </span>
               </div>
               <div
-                className="h-1.5 bg-gray-100 rounded-full overflow-hidden"
+                className="h-1.5 bg-muted rounded-full overflow-hidden"
                 role="progressbar"
                 aria-valuenow={step.progress}
                 aria-valuemin={0}
@@ -270,7 +270,7 @@ export function AnalysisProgress({
                 aria-label={`${step.label}进度`}
               >
                 <div
-                  className={`h-full transition-all duration-300 ${
+                  className={`h-full transition-[width] duration-300 ${
                     step.progress === 100
                       ? "bg-green-500"
                       : step.progress > 0
@@ -281,7 +281,7 @@ export function AnalysisProgress({
                 />
               </div>
               {step.details && step.progress > 0 && (
-                <p className="text-xs text-gray-500 mt-1">{step.details}</p>
+                <p className="text-xs text-muted-foreground mt-1">{step.details}</p>
               )}
             </div>
           </div>
@@ -289,23 +289,24 @@ export function AnalysisProgress({
       </div>
 
       {session.currentStep && session.status !== "completed" && (
-        <div className="mt-4 p-3 bg-primary-50 rounded-lg">
-          <p className="text-sm text-primary-700">{session.currentStep}</p>
+        <div className="mt-4 p-3 bg-reddit-orange/10 border border-reddit-orange/20 rounded-lg">
+          <p className="text-sm text-reddit-orange">{session.currentStep}</p>
         </div>
       )}
 
       {session.error && (
-        <div className="mt-4 p-3 bg-red-50 rounded-lg">
-          <p className="text-sm text-red-700">{session.error}</p>
+        <div className="mt-4 p-3 bg-red-500/10 border border-red-900/50 rounded-lg">
+          <p className="text-sm text-red-200/90">{session.error}</p>
         </div>
       )}
 
       {isInProgress && (
         <div className="mt-4 flex justify-end">
           <button
+            type="button"
             onClick={onCancel}
             aria-label="取消分析"
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-reddit-orange"
+            className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             取消分析
           </button>
@@ -313,8 +314,8 @@ export function AnalysisProgress({
       )}
 
       {isCompleted && (
-        <div className="mt-4 p-3 bg-green-50 rounded-lg">
-          <p className="text-sm text-green-700 text-center">
+        <div className="mt-4 p-3 bg-green-500/10 border border-green-900/50 rounded-lg">
+          <p className="text-sm text-green-200/90 text-center">
             分析完成！共处理 {session.result?.comments.length || 0} 条评论
           </p>
         </div>

@@ -148,6 +148,13 @@ describe('useAnalysis Hook', () => {
     expect(() => JSON.parse(exported!)).not.toThrow();
   });
 
+  it('应该暴露分页与全量导出接口', () => {
+    const { result } = renderHook(() => useAnalysis());
+    expect(typeof result.current.loadMoreComments).toBe('function');
+    expect(typeof result.current.exportResultFull).toBe('function');
+    expect(typeof result.current.exportToExcelFull).toBe('function');
+  });
+
   it('应该能够导出 CSV 格式结果', async () => {
     const { result } = renderHook(() => useAnalysis());
 

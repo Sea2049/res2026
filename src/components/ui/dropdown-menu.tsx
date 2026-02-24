@@ -115,8 +115,8 @@ export function DropdownMenuTrigger({ className, children, ...props }: HTMLAttri
       onClick={() => setOpen(!open)}
       className={cn(
         "inline-flex items-center justify-center p-2 rounded-md",
-        "text-gray-700 hover:bg-gray-100",
-        "focus:outline-none focus:ring-2 focus:ring-reddit-orange",
+        "text-foreground hover:bg-accent/50",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "transition-colors duration-200",
         className
       )}
@@ -179,7 +179,7 @@ export function DropdownMenuContent({ children, className, ...props }: DropdownM
       ref={menuRef}
       className={cn(
         "absolute right-0 z-10 min-w-[8rem] py-1",
-        "bg-white border border-gray-200 rounded-lg shadow-lg",
+        "bg-popover text-popover-foreground border border-border rounded-lg shadow-lg",
         "animate-in fade-in zoom-in-95 duration-200",
         className
       )}
@@ -212,11 +212,11 @@ export function DropdownMenuItem({
         onClick={() => setOpen(false)}
         className={cn(
           "relative flex items-center w-full px-3 py-2 text-sm",
-          "focus:outline-none focus:bg-gray-100",
+          "focus-visible:outline-none focus-visible:bg-accent/50",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           destructive
-            ? "text-red-600 hover:bg-red-50 hover:text-red-700"
-            : "text-gray-700 hover:bg-gray-100",
+            ? "text-destructive hover:bg-destructive/10"
+            : "text-foreground hover:bg-accent/50",
           "transition-colors duration-150",
           className
         )}
@@ -236,7 +236,7 @@ export function DropdownMenuSeparator({ className, ...props }: HTMLAttributes<HT
   return (
     <li
       role="separator"
-      className={cn("my-1 h-px bg-gray-200", className)}
+      className={cn("my-1 h-px bg-border", className)}
       {...props}
     />
   );

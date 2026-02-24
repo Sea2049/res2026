@@ -90,10 +90,12 @@ export async function GET(
     const { searchParams } = new URL(request.url);
 
     const view = (searchParams.get("view") ?? "summary") as "summary" | "items" | "comments";
-    const limit = Math.min(
-      parseInt(searchParams.get("limit") ?? "20", 10) || 20,
-      100
-    );
+    const full = searchParams.get("full") === "1";
+    const defaultLimit = full && view === "comments" ? 10000 : 20;
+    const rawLimit = parseInt(searchParams.get("limit") ?? String(defaultLimit), 10) || defaultLimit;
+    const limit = full && view === "comments"
+      ? Math.min(rawLimit, 10000)
+      : Math.min(rawLimit, 100);
     const cursor = searchParams.get("cursor") ?? undefined;
 
     const job = jobStore.get(jobId);

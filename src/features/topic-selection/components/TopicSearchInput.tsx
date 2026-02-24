@@ -231,8 +231,9 @@ export function TopicSearchInput({
             onFocus={handleFocus}
             placeholder={placeholder}
             className={cn(
-              "flex-1 px-4 py-2 border rounded-lg",
-              "focus:outline-none focus:ring-2 focus:ring-reddit-orange",
+              "flex-1 px-4 py-2 border border-input bg-background text-foreground rounded-lg",
+              "placeholder:text-muted-foreground",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
               "disabled:opacity-50 disabled:cursor-not-allowed",
               error && "border-red-500"
             )}
@@ -255,7 +256,7 @@ export function TopicSearchInput({
             )}
             aria-label="搜索按钮"
           >
-            {isLoading ? "搜索中..." : "搜索"}
+            {isLoading ? "搜索中…" : "搜索"}
           </button>
         </div>
         {error && (
@@ -269,12 +270,12 @@ export function TopicSearchInput({
         <div
           ref={dropdownRef}
           id="search-history-dropdown"
-          className="absolute top-full left-0 right-0 mt-2 bg-white border rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto"
+          className="absolute top-full left-0 right-0 mt-2 bg-popover text-popover-foreground border border-border rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto"
           role="listbox"
           aria-label="搜索历史"
         >
-          <div className="p-2 border-b flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">
+          <div className="p-2 border-b border-border flex items-center justify-between">
+            <span className="text-sm font-medium text-foreground">
               搜索历史
             </span>
             <button
@@ -296,19 +297,19 @@ export function TopicSearchInput({
                 role="option"
                 className={cn(
                   "px-3 py-2 cursor-pointer flex items-center justify-between group",
-                  "hover:bg-gray-100",
-                  getHighlightedHistoryItem(index) && "bg-primary-100"
+                  "hover:bg-accent/50",
+                  getHighlightedHistoryItem(index) && "bg-accent/60"
                 )}
                 onClick={() => handleHistoryItemClick(keyword)}
                 onMouseEnter={() => setHistoryIndex(index)}
                 aria-selected={getHighlightedHistoryItem(index)}
               >
-                <span className="flex-1 text-sm text-gray-700 truncate">
+                <span className="flex-1 text-sm text-foreground truncate">
                   {keyword}
                 </span>
                 <button
                   onClick={(e) => handleRemoveHistoryItem(e, keyword)}
-                  className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-600 transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
                   aria-label={`删除 ${keyword}`}
                 >
                   <svg

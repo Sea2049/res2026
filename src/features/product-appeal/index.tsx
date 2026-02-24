@@ -33,8 +33,8 @@ export function ProductAppeal({ comments, onClose }: ProductAppealProps) {
       <Card className="p-8" aria-live="polite" aria-busy="true">
         <div className="flex flex-col items-center justify-center">
           <Spinner className="w-12 h-12 mb-4" aria-hidden="true" />
-          <p className="text-gray-600">正在分析产品吸引力...</p>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-muted-foreground">正在分析产品吸引力…</p>
+          <p className="text-sm text-muted-foreground mt-2">
             分析用户反馈中的身份契合度、问题紧急度和信任信号
           </p>
         </div>
@@ -44,9 +44,9 @@ export function ProductAppeal({ comments, onClose }: ProductAppealProps) {
 
   if (error) {
     return (
-      <Card className="p-6 bg-red-50 border-red-200">
-        <h3 className="text-red-800 font-medium mb-2">分析失败</h3>
-        <p className="text-red-600 text-sm mb-4">{error}</p>
+      <Card className="p-6 bg-red-500/10 border-red-900/50">
+        <h3 className="text-red-300 font-medium mb-2">分析失败</h3>
+        <p className="text-red-200/90 text-sm mb-4">{error}</p>
         <div className="flex gap-2">
           <Button onClick={() => analyzeAppeal(comments)} variant="default" aria-label="重试分析">
             重试
@@ -64,7 +64,7 @@ export function ProductAppeal({ comments, onClose }: ProductAppealProps) {
   if (!result) {
     return (
       <Card className="p-6">
-        <p className="text-gray-600 text-center">暂无吸引力分析数据</p>
+        <p className="text-muted-foreground text-center">暂无吸引力分析数据</p>
       </Card>
     );
   }
@@ -74,8 +74,8 @@ export function ProductAppeal({ comments, onClose }: ProductAppealProps) {
       {/* 标题区域 */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">产品吸引力评估</h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <h2 className="text-2xl font-bold text-foreground">产品吸引力评估</h2>
+          <p className="text-sm text-muted-foreground mt-1">
             基于 {comments.length} 条评论的综合分析
           </p>
         </div>
@@ -88,7 +88,7 @@ export function ProductAppeal({ comments, onClose }: ProductAppealProps) {
 
       {/* 评分卡片 */}
       <section>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        <h3 className="text-lg font-semibold text-foreground mb-4">
           吸引力评分
         </h3>
         <AppealScore score={result} />
@@ -97,7 +97,7 @@ export function ProductAppeal({ comments, onClose }: ProductAppealProps) {
       {/* 反对意见映射 */}
       {result.objections && result.objections.length > 0 && (
         <section>
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
             反对意见分析
           </h3>
           <ObjectionMap objections={result.objections} />

@@ -23,13 +23,16 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
  */
 const getVariantClasses = (variant: BadgeVariant): string => {
   const variants = {
-    default: "bg-gray-100 text-gray-800 border-gray-200",
-    primary: "bg-primary-100 text-primary-700 border-reddit-border",
-    secondary: "bg-purple-100 text-purple-800 border-purple-200",
-    success: "bg-green-100 text-green-800 border-green-200",
-    warning: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    danger: "bg-red-100 text-red-800 border-red-200",
-    outline: "bg-transparent text-gray-800 border-gray-300",
+    default: "bg-muted/60 text-muted-foreground border-border",
+    primary: "bg-primary/15 text-primary border-primary/30",
+    secondary: "bg-accent/60 text-accent-foreground border-border",
+    success:
+      "bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 dark:border-emerald-900/60",
+    warning:
+      "bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 dark:border-amber-900/60",
+    danger:
+      "bg-destructive/10 dark:bg-destructive/15 text-destructive dark:text-destructive/90 border-destructive/30 dark:border-destructive/60",
+    outline: "bg-transparent text-foreground border-border",
   };
   return variants[variant];
 };

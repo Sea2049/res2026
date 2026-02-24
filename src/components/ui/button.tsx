@@ -40,12 +40,13 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
  */
 const getVariantClasses = (variant: ButtonVariant): string => {
   const variants = {
-    default: "bg-gray-100 text-gray-900 hover:bg-gray-200",
-    primary: "bg-reddit-orange text-white hover:bg-orange-600 active:bg-orange-700",
-    secondary: "bg-gray-600 text-white hover:bg-gray-700",
-    ghost: "bg-transparent hover:bg-gray-100 text-gray-900",
-    outline: "border border-gray-300 bg-transparent hover:bg-gray-50 text-gray-900",
-    destructive: "bg-red-600 text-white hover:bg-red-700",
+    default: "bg-muted text-foreground hover:bg-muted/80",
+    // 避免依赖固定色阶，统一走语义 token（支持 Light/Dark）
+    primary: "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/85",
+    secondary: "bg-accent text-accent-foreground hover:bg-accent/80",
+    ghost: "bg-transparent text-foreground hover:bg-accent/50",
+    outline: "border border-border bg-transparent text-foreground hover:bg-accent/50",
+    destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
   };
   return variants[variant];
 };
@@ -84,9 +85,9 @@ export const Button = ({
       aria-busy={loading || undefined}
       aria-disabled={disabled || loading || undefined}
       className={cn(
-        "inline-flex items-center justify-center rounded-lg font-medium",
+        "inline-flex min-h-10 items-center justify-center rounded-lg font-medium",
         "transition-colors duration-200",
-        "focus:outline-none focus:ring-2 focus:ring-reddit-orange focus:ring-offset-2",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         getVariantClasses(variant),
         getSizeClasses(size),

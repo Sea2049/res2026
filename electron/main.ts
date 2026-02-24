@@ -12,6 +12,48 @@ let mainWindow: BrowserWindow | null = null;
 let nextProcess: ChildProcess | null = null;
 let logLines: string[] = [];
 
+type ThemeMode = 'light' | 'dark';
+let currentThemeMode: ThemeMode = 'light';
+
+function isThemeMode(value: unknown): value is ThemeMode {
+  return value === 'light' || value === 'dark';
+}
+
+function getThemeConfigPath(): string {
+  return path.join(app.getPath('userData'), 'theme-config.json');
+}
+
+function getThemeModeFromStore(): ThemeMode {
+  try {
+    const configPath = getThemeConfigPath();
+    if (!fs.existsSync(configPath)) return 'light';
+    const raw = fs.readFileSync(configPath, 'utf-8');
+    const parsed = JSON.parse(raw) as { themeMode?: unknown };
+    return isThemeMode(parsed?.themeMode) ? parsed.themeMode : 'light';
+  } catch {
+    return 'light';
+  }
+}
+
+function setThemeModeToStore(mode: ThemeMode) {
+  try {
+    const configPath = getThemeConfigPath();
+    fs.writeFileSync(configPath, JSON.stringify({ themeMode: mode }, null, 2), 'utf-8');
+  } catch {
+    // ignore
+  }
+}
+
+function broadcastThemeMode(mode: ThemeMode) {
+  currentThemeMode = mode;
+  setThemeModeToStore(mode);
+  // 刷新菜单 radio 勾选状态
+  createMenu();
+  if (mainWindow) {
+    mainWindow.webContents.send('theme-mode-changed', mode);
+  }
+}
+
 function log(msg: string): void {
   const line = `[${new Date().toISOString()}] ${msg}`;
   logLines.push(line);
@@ -350,6 +392,32 @@ function createMenu(): void {
         { role: 'forceReload', label: '强制刷新' },
         { role: 'toggleDevTools', label: '开发者工具' },
         { type: 'separator' },
+        {
+          label: '主题',
+          submenu: [
+            {
+              label: '浅色',
+              type: 'radio',
+              checked: currentThemeMode === 'light',
+              click: () => broadcastThemeMode('light'),
+            },
+            {
+              label: '深色',
+              type: 'radio',
+              checked: currentThemeMode === 'dark',
+              click: () => broadcastThemeMode('dark'),
+            },
+            { type: 'separator' },
+            {
+              label: '设置…',
+              accelerator: 'CmdOrCtrl+,',
+              click: () => {
+                if (mainWindow) mainWindow.webContents.send('open-settings');
+              },
+            },
+          ],
+        },
+        { type: 'separator' },
         { role: 'resetZoom', label: '重置缩放' },
         { role: 'zoomIn', label: '放大' },
         { role: 'zoomOut', label: '缩小' },
@@ -410,6 +478,16 @@ function createWindow(): void {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
+    // 确保渲染端拿到初始主题（避免监听器注册时机导致丢消息）
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('theme-mode-changed', currentThemeMode);
+    }
+  });
+
+  mainWindow.webContents.once('did-finish-load', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('theme-mode-changed', currentThemeMode);
+    }
   });
 
   // 外部链接在默认浏览器中打开
@@ -440,6 +518,15 @@ if (!gotTheLock) {
 
 app.whenReady().then(async () => {
   ipcMain.handle('get-version', () => app.getVersion());
+
+  // 初始化主题（默认浅色），并允许渲染端读取/写入主进程持久化设置
+  currentThemeMode = getThemeModeFromStore();
+  ipcMain.handle('get-theme-mode', () => currentThemeMode);
+  ipcMain.handle('set-theme-mode', (_event, mode: unknown) => {
+    if (!isThemeMode(mode)) return false;
+    broadcastThemeMode(mode);
+    return true;
+  });
 
   ipcMain.handle('export-pdf', async (_event, html: string, defaultFilename: string) => {
     try {

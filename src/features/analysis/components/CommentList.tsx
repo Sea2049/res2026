@@ -26,6 +26,23 @@ interface CommentListProps {
    * 额外的类名
    */
   className?: string;
+
+  /**
+   * Jobs 模式：是否还有更多评论可加载
+   */
+  hasMore?: boolean;
+  /**
+   * Jobs 模式：加载更多回调
+   */
+  onLoadMore?: () => void;
+  /**
+   * Jobs 模式：加载更多中
+   */
+  isLoadingMore?: boolean;
+  /**
+   * 已分析评论总数（用于展示“已加载/总分析”）
+   */
+  totalCount?: number;
 }
 
 /**
@@ -65,6 +82,10 @@ export function CommentList({
   onSentimentChange,
   onCommentClick,
   className,
+  hasMore = false,
+  onLoadMore,
+  isLoadingMore = false,
+  totalCount,
 }: CommentListProps) {
   const [searchKeyword, setSearchKeyword] = useState("");
 
@@ -105,16 +126,16 @@ export function CommentList({
 
   if (!comments || comments.length === 0) {
     return (
-      <div className={`p-8 text-center text-gray-500 bg-gray-50 rounded-lg ${className || ""}`}>
+      <div className={`p-8 text-center text-muted-foreground bg-muted/20 border border-border rounded-lg ${className || ""}`}>
         <p>暂无评论数据</p>
       </div>
     );
   }
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm ${className || ""}`}>
-      <div className="p-4 border-b">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">评论列表</h3>
+    <div className={`bg-card border border-border rounded-lg shadow-sm ${className || ""}`}>
+      <div className="p-4 border-b border-border">
+        <h3 className="text-lg font-semibold text-foreground mb-3">评论列表</h3>
         <div className="flex flex-wrap gap-2 mb-3">
           {(["all", "positive", "negative", "neutral"] as const).map((sentiment) => {
             const labels: Record<typeof sentiment, string> = {
@@ -124,23 +145,24 @@ export function CommentList({
               neutral: "中性",
             };
             const colors: Record<typeof sentiment, string> = {
-              all: "bg-gray-100 text-gray-700 border-gray-300",
-              positive: "bg-green-100 text-green-700 border-green-300",
-              negative: "bg-red-100 text-red-700 border-red-300",
-              neutral: "bg-gray-100 text-gray-700 border-gray-300",
+              all: "bg-muted/60 text-foreground border-border",
+              positive: "bg-emerald-500/10 text-emerald-300 border-emerald-900/60",
+              negative: "bg-rose-500/10 text-rose-300 border-rose-900/60",
+              neutral: "bg-slate-400/10 text-slate-300 border-slate-800",
             };
             const isActive = selectedSentiment === sentiment;
             const count = sentimentCounts[sentiment];
 
             return (
               <button
+                type="button"
                 key={sentiment}
                 onClick={() => onSentimentChange?.(sentiment)}
                 aria-pressed={isActive}
-                className={`px-3 py-1.5 text-sm rounded-full border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-reddit-orange ${
+                className={`px-3 py-1.5 text-sm rounded-full border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                   isActive
-                    ? `${colors[sentiment]} ring-2 ring-offset-1`
-                    : `${colors[sentiment]} opacity-60 hover:opacity-100`
+                    ? `${colors[sentiment]}`
+                    : `${colors[sentiment]} opacity-70 hover:opacity-100`
                 }`}
               >
                 {labels[sentiment]} ({count})
@@ -150,16 +172,16 @@ export function CommentList({
         </div>
         <input
           type="text"
-          placeholder="搜索评论内容或作者..."
+          placeholder="搜索评论内容或作者…"
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
           aria-label="搜索评论内容或作者"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-reddit-orange focus:border-transparent"
+          className="w-full px-3 py-2 border border-input bg-background text-foreground placeholder:text-muted-foreground rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:border-transparent"
         />
       </div>
       <div className="min-h-[12rem] max-h-[min(36rem,70vh)] overflow-y-auto" role="list" aria-label="评论列表">
         {filteredComments.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-muted-foreground">
             <p>没有找到匹配的评论</p>
           </div>
         ) : (
@@ -168,15 +190,15 @@ export function CommentList({
               <div
                 key={comment.id}
                 role="listitem"
-                className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                className="p-4 hover:bg-accent/30 cursor-pointer transition-colors"
                 onClick={() => onCommentClick?.(comment)}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-foreground">
                       u/{comment.author}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       {formatRelativeTime(comment.created_utc)}
                     </span>
                   </div>
@@ -193,7 +215,7 @@ export function CommentList({
                         : "中性"}
                     </span>
                     {comment.score > 0 && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         ▲ {comment.score}
                       </span>
                     )}
@@ -201,7 +223,7 @@ export function CommentList({
                 </div>
                 {/* dangerouslySetInnerHTML: 已通过 escapeHtml 进行 XSS 防护，仅用于换行符转换 */}
                 <p
-                  className="text-sm text-gray-700 line-clamp-3"
+                  className="text-sm text-foreground/90 line-clamp-3 break-words"
                   dangerouslySetInnerHTML={{
                     __html: escapeHtml(comment.body).replace(/\n/g, "<br/>"),
                   }}
@@ -211,13 +233,13 @@ export function CommentList({
                     {comment.keywords.slice(0, 5).map((keyword) => (
                       <span
                         key={keyword}
-                        className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded"
+                        className="px-2 py-0.5 bg-muted/60 text-muted-foreground text-xs rounded border border-border"
                       >
                         {keyword}
                       </span>
                     ))}
                     {comment.keywords.length > 5 && (
-                      <span className="px-2 py-0.5 text-gray-500 text-xs">
+                      <span className="px-2 py-0.5 text-muted-foreground text-xs">
                         +{comment.keywords.length - 5}
                       </span>
                     )}
@@ -229,8 +251,23 @@ export function CommentList({
         )}
       </div>
       {filteredComments.length > 0 && (
-        <div className="p-3 border-t bg-gray-50 text-center text-sm text-gray-500">
-          显示 {filteredComments.length} 条评论
+        <div className="p-3 border-t border-border bg-muted/20 text-center text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <span>
+              显示 {filteredComments.length} 条（已加载 {comments.length}
+              {typeof totalCount === "number" ? ` / 总分析 ${totalCount}` : ""}）
+            </span>
+            {hasMore && (
+              <button
+                type="button"
+                onClick={onLoadMore}
+                disabled={isLoadingMore}
+                className="px-3 py-1.5 text-sm rounded-md border border-border bg-background hover:bg-accent/40 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              >
+                {isLoadingMore ? "加载中..." : "加载更多"}
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -51,8 +51,19 @@ export function AnalysisDashboard({
   onSelectedTopicsChange,
   className,
 }: AnalysisDashboardProps) {
-  const { session, startAnalysis, cancelAnalysis, resetAnalysis, exportResult, exportToExcel } =
-    useAnalysis();
+  const {
+    session,
+    startAnalysis,
+    cancelAnalysis,
+    resetAnalysis,
+    exportResult,
+    exportToExcel,
+    exportResultFull,
+    exportToExcelFull,
+    loadMoreComments,
+    hasMoreComments,
+    isLoadingMoreComments,
+  } = useAnalysis();
   const { session: deepInsightSession, generateDeepInsights, cancelGeneration: cancelDeepInsight, resetSession: resetDeepInsight } =
     useDeepInsights();
   const [activeTab, setActiveTab] = useState<string>("keywords");
@@ -90,7 +101,7 @@ export function AnalysisDashboard({
   };
 
   const handleExportJson = async () => {
-    const data = exportResult("json");
+    const data = await exportResultFull("json");
     if (data) {
       const filename = `reddit-insight-analysis-${Date.now()}.json`;
       await serverExport(data, filename, 'json');
@@ -98,7 +109,7 @@ export function AnalysisDashboard({
   };
 
   const handleExportCsv = async () => {
-    const data = exportResult("csv");
+    const data = await exportResultFull("csv");
     if (data) {
       const filename = `reddit-insight-keywords-${Date.now()}.csv`;
       await serverExport(data, filename, 'txt'); // CSV 用 txt 格式处理
@@ -106,7 +117,7 @@ export function AnalysisDashboard({
   };
 
   const handleExportExcel = async () => {
-    const blob = exportToExcel(allSearchResults);
+    const blob = await exportToExcelFull(allSearchResults);
     if (blob) {
       // Excel 是二进制格式，需要特殊处理
       const reader = new FileReader();
@@ -143,11 +154,11 @@ export function AnalysisDashboard({
 
   return (
     <div className={className} aria-label="分析仪表盘">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+      <div className="mb-4">
+        <h2 className="text-2xl font-bold text-foreground mb-1.5">
           评论分析
         </h2>
-        <p className="text-gray-500 text-sm">
+        <p className="text-muted-foreground text-sm">
           对选中主题的评论进行深度分析，发现用户痛点和需求洞察
         </p>
       </div>
@@ -158,19 +169,19 @@ export function AnalysisDashboard({
       )}
 
       {selectedTopics.length > 0 && !session && (
-        <Card className="mb-6 bg-white border border-gray-200 border-l-4 border-l-reddit-orange shadow-sm">
+        <Card className="mb-6 border-l-2 border-l-primary shadow-sm">
           <CardContent className="flex flex-col sm:flex-row items-center justify-between p-6 gap-4">
             <div>
-              <p className="font-semibold text-reddit-text text-lg">
+              <p className="font-semibold text-foreground text-lg">
                 已选择 {selectedTopics.length} 个主题待分析
               </p>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 点击"开始分析"按钮获取评论数据并进行分析
               </p>
             </div>
             <Button
               onClick={handleStartAnalysis}
-              className="bg-reddit-orange hover:bg-primary-700 text-white"
+              variant="primary"
               size="lg"
             >
               <Play className="mr-2 h-4 w-4" />
@@ -181,8 +192,8 @@ export function AnalysisDashboard({
       )}
 
       {selectedTopics.length === 0 && !session && (
-        <div className="mb-6 p-12 text-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-          <p className="text-gray-500 text-lg">
+        <div className="mb-6 p-12 text-center bg-muted/20 rounded-lg border-2 border-dashed border-border">
+          <p className="text-muted-foreground text-lg">
             请先在左侧"主题筛选"中选择要分析的主题
           </p>
         </div>
@@ -201,7 +212,7 @@ export function AnalysisDashboard({
             <div className="mt-4">
               <Button
                 variant="outline"
-                className="bg-white hover:bg-red-50 text-red-600 border-red-200"
+                className="border-red-900/50 text-destructive hover:bg-destructive/10"
                 onClick={() => {
                   resetAnalysis();
                   if (selectedTopics.length > 0) {
@@ -219,38 +230,48 @@ export function AnalysisDashboard({
 
       {hasAnalysisResult && session.result && (
         <div className="space-y-6">
-          {session.result.fetchStats && (
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <Badge variant="outline" className="text-gray-600">
-                帖子总评论 {session.result.fetchStats.totalAvailable}
-              </Badge>
-              <Badge variant="outline" className="text-gray-600">
-                已抓取 {session.result.fetchStats.rawFetched}
-              </Badge>
-              <Badge variant="outline" className="text-gray-600">
-                已分析 {session.result.fetchStats.analyzedComments}
-              </Badge>
-              {session.result.fetchStats.completionGap > 0 && (
-                <Badge variant="outline" className="text-amber-700 border-amber-200">
-                  缺口 {session.result.fetchStats.completionGap}
-                </Badge>
-              )}
-            </div>
+          {session.result.fetchStats?.source === "legacy" && (
+            <Alert className="mb-2">
+              <Info className="h-4 w-4" />
+              <AlertTitle>提示</AlertTitle>
+              <AlertDescription>
+                当前结果来自本地回退链路（legacy）。该模式通常只抓取基础页评论，可能不如 Jobs 模式完整；建议稍后重试以获取更完整的折叠评论。
+              </AlertDescription>
+            </Alert>
           )}
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Badge variant="outline" className="text-gray-600">
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              {session.result.fetchStats && (
+                <>
+                  <Badge variant="outline" className="h-8 text-muted-foreground">
+                    帖子总评论 {session.result.fetchStats.totalAvailable}
+                  </Badge>
+                  <Badge variant="outline" className="h-8 text-muted-foreground">
+                    已抓取 {session.result.fetchStats.rawFetched}
+                  </Badge>
+                  <Badge variant="outline" className="h-8 text-muted-foreground">
+                    已分析 {session.result.fetchStats.analyzedComments}
+                  </Badge>
+                  {session.result.fetchStats.completionGap > 0 && (
+                    <Badge variant="warning" className="h-8">
+                      缺口 {session.result.fetchStats.completionGap}
+                    </Badge>
+                  )}
+                </>
+              )}
+
+              <Badge variant="outline" className="h-8 text-muted-foreground">
                 {session.topics.length} 个主题
               </Badge>
-              <Badge variant="outline" className="text-gray-600">
+              <Badge variant="outline" className="h-8 text-muted-foreground">
                 {session.result.fetchStats?.analyzedComments ?? session.result.comments.length} 条评论
               </Badge>
-              <Badge variant="outline" className="text-gray-600">
+              <Badge variant="outline" className="h-8 text-muted-foreground">
                 {session.result.keywords.length} 个关键词
               </Badge>
             </div>
-            
-            <div className="flex gap-2">
+
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <Button variant="outline" size="sm" onClick={handleExportExcel}>
                 <Download className="mr-2 h-4 w-4" />
                 Excel
@@ -270,8 +291,8 @@ export function AnalysisDashboard({
             </div>
           </div>
 
-          <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 mb-4">
               <TabsTrigger value="keywords">关键词</TabsTrigger>
               <TabsTrigger value="sentiment">情感</TabsTrigger>
               <TabsTrigger value="insights">洞察</TabsTrigger>
@@ -279,7 +300,7 @@ export function AnalysisDashboard({
               <TabsTrigger value="comments">评论</TabsTrigger>
             </TabsList>
 
-            <div className="mt-6">
+            <div className="mt-4">
               <TabsContent value="keywords" className="space-y-4">
                 <Card>
                   <CardHeader>
@@ -407,6 +428,10 @@ export function AnalysisDashboard({
                         comments={session.result.comments}
                         selectedSentiment={selectedSentiment}
                         onSentimentChange={setSelectedSentiment}
+                        hasMore={hasMoreComments}
+                        isLoadingMore={isLoadingMoreComments}
+                        onLoadMore={loadMoreComments}
+                        totalCount={session.result.fetchStats?.analyzedComments}
                       />
                     )}
                   </CardContent>
@@ -436,11 +461,11 @@ function TimePeriodTip() {
   const getAlertStyle = () => {
     switch (timeStatus.status) {
       case "peak":
-        return "bg-white border border-amber-200 border-l-4 border-l-amber-500 text-amber-800";
+        return "border-amber-200 bg-amber-50 text-amber-950 border-l-2 border-l-amber-500 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100";
       case "transition":
-        return "bg-white border border-gray-200 border-l-4 border-l-reddit-orange text-gray-700";
+        return "border-orange-200 bg-orange-50 text-orange-950 border-l-2 border-l-primary dark:border-orange-900/50 dark:bg-orange-950/30 dark:text-orange-100";
       default:
-        return "bg-white border border-green-200 border-l-4 border-l-green-500 text-green-800";
+        return "border-emerald-200 bg-emerald-50 text-emerald-950 border-l-2 border-l-emerald-500 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100";
     }
   };
 
@@ -448,16 +473,16 @@ function TimePeriodTip() {
   const getIcon = () => {
     switch (timeStatus.status) {
       case "peak":
-        return <Moon className="h-5 w-5" />;
+        return <Moon className="h-5 w-5" aria-hidden="true" />;
       case "transition":
-        return <Sunset className="h-5 w-5" />;
+        return <Sunset className="h-5 w-5" aria-hidden="true" />;
       default:
-        return <Sun className="h-5 w-5" />;
+        return <Sun className="h-5 w-5" aria-hidden="true" />;
     }
   };
 
   return (
-    <div className={`mb-4 p-4 rounded-lg border ${getAlertStyle()}`}>
+    <div className={`mb-4 rounded-lg border p-4 shadow-sm ${getAlertStyle()}`}>
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 mt-0.5">
           {getIcon()}
@@ -468,9 +493,10 @@ function TimePeriodTip() {
               {timeStatus.label}
             </p>
             <button
+              type="button"
               onClick={() => setIsDismissed(true)}
               aria-label="关闭提示"
-              className="text-xs opacity-60 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-reddit-orange rounded"
+              className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-current/80 hover:bg-black/5 hover:text-current dark:hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               知道了
             </button>

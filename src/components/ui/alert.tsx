@@ -43,29 +43,29 @@ export interface AlertDescriptionProps extends HTMLAttributes<HTMLParagraphEleme
 const getVariantStyles = (variant: AlertVariant) => {
   const variants = {
     default: {
-      container: "bg-gray-50 border-gray-200 text-gray-900",
+      container: "bg-muted/40 border-border text-foreground",
       icon: Info,
-      iconColor: "text-gray-500",
+      iconColor: "text-muted-foreground",
     },
     info: {
-      container: "bg-primary-50 border-reddit-border text-reddit-text",
+      container: "bg-reddit-orange/10 border-reddit-orange/30 text-foreground",
       icon: Info,
       iconColor: "text-reddit-orange",
     },
     success: {
-      container: "bg-green-50 border-green-200 text-green-900",
+      container: "bg-green-500/10 border-green-900/50 text-foreground",
       icon: CheckCircle,
-      iconColor: "text-green-500",
+      iconColor: "text-green-400",
     },
     warning: {
-      container: "bg-yellow-50 border-yellow-200 text-yellow-900",
+      container: "bg-amber-500/10 border-amber-900/50 text-foreground",
       icon: AlertTriangle,
-      iconColor: "text-yellow-500",
+      iconColor: "text-amber-400",
     },
     error: {
-      container: "bg-red-50 border-red-200 text-red-900",
+      container: "bg-red-500/10 border-red-900/50 text-foreground",
       icon: AlertCircle,
-      iconColor: "text-red-500",
+      iconColor: "text-red-400",
     },
   };
   
@@ -97,7 +97,7 @@ export const Alert = ({ variant = "default", dismissible = false, onDismiss, cla
       {dismissible && (
         <button
           onClick={onDismiss}
-          className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+          className="flex-shrink-0 rounded-md text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           aria-label="关闭"
         >
           <X className="w-4 h-4" />

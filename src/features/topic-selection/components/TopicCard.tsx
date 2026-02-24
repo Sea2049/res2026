@@ -45,7 +45,9 @@ const getTypeLabel = (isSubreddit: boolean): string => {
  * 获取主题类型标签颜色
  */
 const getTypeLabelColor = (isSubreddit: boolean): string => {
-  return isSubreddit ? "bg-green-100 text-green-800" : "bg-primary-100 text-primary-700";
+  return isSubreddit
+    ? "bg-emerald-500/15 text-emerald-300 border border-emerald-900/60"
+    : "bg-reddit-orange/15 text-reddit-orange border border-reddit-orange/30";
 };
 
 /**
@@ -133,8 +135,8 @@ export const TopicCard = memo(function TopicCard({
       className={cn(
         "p-4 border rounded-lg cursor-pointer",
         "hover:shadow-md transition-shadow duration-200",
-        "bg-white",
-        isSelected && "ring-2 ring-reddit-orange bg-primary-50",
+        "bg-card border-border text-card-foreground",
+        isSelected && "ring-2 ring-reddit-orange bg-reddit-orange/10",
         className
       )}
       role="button"
@@ -153,19 +155,19 @@ export const TopicCard = memo(function TopicCard({
             <span className={cn("px-2 py-0.5 text-xs font-medium rounded", getTypeLabelColor(isSubreddit))}>
               {getTypeLabel(isSubreddit)}
             </span>
-            <h3 className="font-semibold text-gray-900 truncate">
+            <h3 className="font-semibold text-foreground truncate">
               {title}
             </h3>
           </div>
           
-          <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+          <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
             {description}
           </p>
           
-          <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{meta}</span>
             {isSubreddit && (
-              <span className="text-gray-400">r/{subredditName}</span>
+              <span className="text-muted-foreground/70">r/{subredditName}</span>
             )}
           </div>
         </div>
@@ -178,7 +180,7 @@ export const TopicCard = memo(function TopicCard({
               e.stopPropagation();
               onToggleSelect?.();
             }}
-            className="w-5 h-5 text-reddit-orange rounded focus:ring-reddit-orange cursor-pointer"
+            className="w-5 h-5 text-reddit-orange rounded border-border bg-background focus:ring-reddit-orange cursor-pointer"
             aria-label={`选择${getTypeLabel(isSubreddit)}`}
           />
           <a

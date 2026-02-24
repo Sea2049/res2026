@@ -56,7 +56,7 @@ const OBJECTION_LABELS: Record<ObjectionType, { label: string; description: stri
 export function ObjectionMap({ objections }: ObjectionMapProps) {
   if (!objections || objections.length === 0) {
     return (
-      <Card className="p-6 text-center text-gray-500">
+      <Card className="p-6 text-center text-muted-foreground">
         <p>未检测到明显的反对意见</p>
       </Card>
     );
@@ -80,29 +80,29 @@ export function ObjectionMap({ objections }: ObjectionMapProps) {
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{info.icon}</span>
                 <div>
-                  <h4 className="font-medium text-gray-900">{info.label}</h4>
-                  <p className="text-xs text-gray-600">{info.description}</p>
+                  <h4 className="font-medium text-foreground">{info.label}</h4>
+                  <p className="text-xs text-muted-foreground">{info.description}</p>
                 </div>
               </div>
               <div className="text-left sm:text-right">
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl font-bold text-foreground">
                   {objection.count}
                 </div>
-                <div className="text-xs text-gray-500">次提及</div>
+                <div className="text-xs text-muted-foreground">次提及</div>
               </div>
             </div>
 
             {/* 示例评论 */}
             {objection.examples.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <p className="text-xs font-medium text-gray-700 mb-2">
+              <div className="mt-3 pt-3 border-t border-border">
+                <p className="text-xs font-medium text-foreground mb-2">
                   示例评论：
                 </p>
                 <div className="space-y-1">
                   {objection.examples.slice(0, 2).map((example, index) => (
                     <p
                       key={index}
-                      className="text-xs text-gray-600 italic pl-3 border-l-2 border-gray-300"
+                      className="text-xs text-muted-foreground italic pl-3 border-l-2 border-border"
                     >
                       "{example.substring(0, 100)}
                       {example.length > 100 ? "..." : ""}"
@@ -115,13 +115,13 @@ export function ObjectionMap({ objections }: ObjectionMapProps) {
             {/* 严重程度指示器 */}
             <div className="mt-3">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-600">严重程度</span>
+                <span className="text-muted-foreground">严重程度</span>
                 <span className={getSeverityTextColor(severity)}>
                   {getSeverityLabel(severity)}
                 </span>
               </div>
               <div
-                className="w-full bg-gray-200 rounded-full h-1.5 mt-1"
+                className="w-full bg-muted rounded-full h-1.5 mt-1"
                 role="progressbar"
                 aria-valuenow={objection.count}
                 aria-valuemin={0}
@@ -141,11 +141,11 @@ export function ObjectionMap({ objections }: ObjectionMapProps) {
       })}
 
       {/* 总结卡片 */}
-      <Card className="p-4 bg-primary-50 border-reddit-border">
-        <h4 className="text-sm font-medium text-reddit-text mb-2">
+      <Card className="p-4 bg-reddit-orange/10 border border-reddit-orange/20">
+        <h4 className="text-sm font-medium text-foreground mb-2">
           💡 如何应对反对意见
         </h4>
-        <ul className="space-y-1 text-xs text-primary-700">
+        <ul className="space-y-1 text-xs text-muted-foreground">
           {generateRecommendations(sortedObjections).map((rec, index) => (
             <li key={index}>• {rec}</li>
           ))}
@@ -163,18 +163,18 @@ function getObjectionSeverity(count: number): "low" | "medium" | "high" {
 
 function getSeverityStyle(severity: "low" | "medium" | "high"): string {
   const styles = {
-    low: "bg-yellow-50 border-yellow-200",
-    medium: "bg-orange-50 border-orange-200",
-    high: "bg-red-50 border-red-200",
+    low: "bg-amber-500/10 border-amber-900/50",
+    medium: "bg-orange-500/10 border-orange-900/50",
+    high: "bg-red-500/10 border-red-900/50",
   };
   return styles[severity];
 }
 
 function getSeverityTextColor(severity: "low" | "medium" | "high"): string {
   const colors = {
-    low: "text-yellow-700",
-    medium: "text-orange-700",
-    high: "text-red-700",
+    low: "text-amber-300",
+    medium: "text-orange-300",
+    high: "text-red-300",
   };
   return colors[severity];
 }

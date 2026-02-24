@@ -132,7 +132,7 @@ export function Select<T extends string | number>({
     <SelectContext.Provider value={{ value, onChange: handleSelect, open, setOpen, disabled }}>
       <div ref={containerRef} className={cn("relative w-full", className)} {...props}>
         <SelectTrigger>
-          {selectedLabel || <span className="text-gray-400">{placeholder}</span>}
+          {selectedLabel || <span className="text-muted-foreground">{placeholder}</span>}
         </SelectTrigger>
         {open && <SelectContent options={options} />}
       </div>
@@ -163,8 +163,8 @@ export function SelectTrigger({ children, className, ...props }: SelectTriggerPr
       disabled={disabled}
       className={cn(
         "flex items-center justify-between w-full px-3 py-2 text-left",
-        "bg-white border border-gray-300 rounded-lg",
-        "focus:outline-none focus:ring-2 focus:ring-reddit-orange focus:border-transparent",
+        "bg-background border border-input rounded-lg text-foreground",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:border-transparent",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         "transition-colors duration-200",
         className
@@ -174,7 +174,7 @@ export function SelectTrigger({ children, className, ...props }: SelectTriggerPr
       {...props}
     >
       {children}
-      <ChevronDown className="w-4 h-4 ml-2 text-gray-500" />
+      <ChevronDown className="w-4 h-4 ml-2 text-muted-foreground" />
     </button>
   );
 }
@@ -235,7 +235,7 @@ export function SelectContent<T extends string | number>({ options, className, .
     <ul
       ref={listRef}
       className={cn(
-        "absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg",
+        "absolute z-10 w-full mt-1 bg-popover text-popover-foreground border border-border rounded-lg shadow-lg",
         "max-h-60 overflow-auto",
         className
       )}
@@ -291,8 +291,9 @@ export function SelectItem<T extends string | number>({ value, label, disabled, 
         "relative flex items-center px-3 py-2 cursor-pointer",
         "transition-colors duration-150",
         isSelected
-          ? "bg-primary-50 text-reddit-text"
-          : "text-gray-900 hover:bg-gray-100",
+          ? "bg-accent text-accent-foreground"
+          : "text-foreground hover:bg-accent/50 focus-visible:bg-accent/50",
+        "focus-visible:outline-none",
         disabled && "opacity-50 cursor-not-allowed",
         className
       )}

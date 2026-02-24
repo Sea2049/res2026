@@ -108,10 +108,10 @@ export const TopicList = memo(function TopicList({
       return (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">🔍</div>
-          <h3 className="text-lg font-semibold text-white mb-2">
+          <h3 className="text-lg font-semibold text-foreground mb-2">
             未找到相关结果
           </h3>
-          <p className="text-gray-300">
+          <p className="text-muted-foreground">
             尝试使用其他关键词搜索
           </p>
         </div>
@@ -121,10 +121,10 @@ export const TopicList = memo(function TopicList({
     return (
       <div className="text-center py-12">
         <div className="text-6xl mb-4">📋</div>
-        <h3 className="text-lg font-semibold text-white mb-2">
+        <h3 className="text-lg font-semibold text-foreground mb-2">
           开始搜索主题
         </h3>
-        <p className="text-gray-300">
+        <p className="text-muted-foreground">
           输入关键词搜索感兴趣的 Subreddit 或 Post
         </p>
       </div>
@@ -140,16 +140,16 @@ export const TopicList = memo(function TopicList({
         {[...Array(3)].map((_, index) => (
           <div
             key={index}
-            className="p-4 border rounded-lg bg-gray-50 animate-pulse"
+            className="p-4 border border-border rounded-lg bg-muted/20 animate-pulse"
             aria-hidden="true"
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                <div className="h-4 bg-muted rounded w-1/3"></div>
+                <div className="h-4 bg-muted rounded w-full"></div>
+                <div className="h-4 bg-muted rounded w-2/3"></div>
               </div>
-              <div className="w-5 h-5 bg-gray-200 rounded"></div>
+              <div className="w-5 h-5 bg-muted rounded"></div>
             </div>
           </div>
         ))}
@@ -164,10 +164,10 @@ export const TopicList = memo(function TopicList({
     return (
       <div className="text-center py-12">
         <div className="text-6xl mb-4">⚠️</div>
-        <h3 className="text-lg font-semibold text-white mb-2">
+        <h3 className="text-lg font-semibold text-foreground mb-2">
           搜索失败
         </h3>
-        <p className="text-gray-300 mb-4">
+        <p className="text-muted-foreground mb-4">
           {error || "网络请求失败，请稍后重试"}
         </p>
       </div>
@@ -201,7 +201,7 @@ export const TopicList = memo(function TopicList({
     
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between text-sm text-gray-300">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>搜索结果：{getResultStats()}</span>
           <span>已选 {selectedTopicIds.size} 个</span>
         </div>
@@ -230,17 +230,17 @@ export const TopicList = memo(function TopicList({
 
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between text-sm text-gray-300">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>搜索结果：{getResultStats()}</span>
           <span>已选 {selectedTopicIds.size} 个</span>
         </div>
 
         {topicGroups.map((group) => (
           <div key={group.type} className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-300">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <span aria-hidden="true">{group.icon}</span>
               <span>{group.label}</span>
-              <span className="text-gray-500">({group.items.length})</span>
+              <span className="text-muted-foreground/70">({group.items.length})</span>
             </div>
             
             <div className="space-y-3" role="list" aria-label={`${group.label}列表`}>

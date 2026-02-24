@@ -260,7 +260,7 @@ export function InsightGraph({
   if (insights.length === 0) {
     return (
       <div
-        className={`p-8 text-center text-gray-500 bg-gray-50 rounded-lg ${className || ""}`}
+        className={`p-8 text-center text-muted-foreground bg-muted/20 border border-border rounded-lg ${className || ""}`}
         style={{ height }}
       >
         <p>暂无洞察数据</p>
@@ -271,17 +271,17 @@ export function InsightGraph({
 
   return (
     <div
-      className={`relative bg-white rounded-lg shadow-sm overflow-hidden ${className || ""}`}
+      className={`relative bg-card border border-border rounded-lg shadow-sm overflow-hidden ${className || ""}`}
       style={{ height }}
     >
       {/* 图例 */}
-      <div className="absolute top-4 left-4 z-10 bg-white/90 p-2 rounded-lg shadow-sm hidden sm:block">
-        <div className="text-xs font-medium text-gray-700 mb-2">洞察类型</div>
+      <div className="absolute top-4 left-4 z-10 bg-popover/90 text-popover-foreground border border-border p-2 rounded-lg shadow-sm hidden sm:block">
+        <div className="text-xs font-medium text-foreground mb-2">洞察类型</div>
         <div className="space-y-1">
           {Object.entries(TYPE_COLORS).map(([type, color]) => (
             <div key={type} className="flex items-center gap-2">
               <span>{TYPE_ICONS[type as Insight["type"]]}</span>
-              <span className="text-xs text-gray-600">
+              <span className="text-xs text-muted-foreground">
                 {type === "pain_point"
                   ? "用户痛点"
                   : type === "feature_request"
@@ -293,19 +293,19 @@ export function InsightGraph({
             </div>
           ))}
         </div>
-        <div className="mt-3 text-xs font-medium text-gray-700 mb-2">关系类型</div>
+        <div className="mt-3 text-xs font-medium text-foreground mb-2">关系类型</div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <div className="w-6 h-0.5 bg-reddit-orange"></div>
-            <span className="text-xs text-gray-600">相似</span>
+            <span className="text-xs text-muted-foreground">相似</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-0.5 border-t-2 border-dashed border-red-500"></div>
-            <span className="text-xs text-gray-600">对立</span>
+            <span className="text-xs text-muted-foreground">对立</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-0.5 border-t-2 border-dashed border-gray-400"></div>
-            <span className="text-xs text-gray-600">相关</span>
+            <span className="text-xs text-muted-foreground">相关</span>
           </div>
         </div>
       </div>
@@ -315,14 +315,14 @@ export function InsightGraph({
         <button
           onClick={() => setZoom((z) => Math.min(z + 0.1, 2))}
           aria-label="放大"
-          className="w-8 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-reddit-orange"
+          className="w-8 h-8 bg-card border border-border rounded-lg shadow-sm flex items-center justify-center text-muted-foreground hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           +
         </button>
         <button
           onClick={() => setZoom((z) => Math.max(z - 0.1, 0.5))}
           aria-label="缩小"
-          className="w-8 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-reddit-orange"
+          className="w-8 h-8 bg-card border border-border rounded-lg shadow-sm flex items-center justify-center text-muted-foreground hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           -
         </button>
@@ -332,7 +332,7 @@ export function InsightGraph({
             setOffset({ x: 0, y: 0 });
           }}
           aria-label="重置缩放"
-          className="px-3 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center text-gray-600 text-xs hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-reddit-orange"
+          className="px-3 h-8 bg-card border border-border rounded-lg shadow-sm flex items-center justify-center text-muted-foreground text-xs hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           重置
         </button>
@@ -362,7 +362,7 @@ export function InsightGraph({
               stroke={getEdgeColor(edge.type, edge.strength)}
               strokeWidth={edge.strength * 3}
               strokeDasharray={getEdgeStrokeDasharray(edge.type)}
-              className="transition-all duration-300"
+              className="transition-opacity duration-300"
             />
           );
         })}
@@ -394,21 +394,21 @@ export function InsightGraph({
                 r={radius + 4}
                 fill={color}
                 opacity={0.2}
-                className="transition-all duration-300"
+                className="transition-opacity duration-300"
               />
               {/* 节点主体 */}
               <circle
                 r={radius}
-                fill="white"
+                fill="hsl(var(--card))"
                 stroke={color}
                 strokeWidth={isSelected ? 3 : 2}
-                className="transition-all duration-300 hover:stroke-width-3"
+                className="transition-[stroke-width] duration-300 hover:stroke-width-3"
               />
               {/* 节点标签 */}
               <text
                 y={radius + 16}
                 textAnchor="middle"
-                className="text-xs fill-gray-600"
+                className="text-xs fill-muted-foreground"
                 style={{ fontSize: "10px" }}
               >
                 {node.insight.title.length > 15
@@ -419,7 +419,7 @@ export function InsightGraph({
               <text
                 y={-radius - 8}
                 textAnchor="middle"
-                className="text-xs fill-gray-500"
+                className="text-xs fill-muted-foreground/80"
                 style={{ fontSize: "9px" }}
               >
                 {Math.round(node.insight.confidence * 100)}%
@@ -431,7 +431,7 @@ export function InsightGraph({
 
       {/* 选中节点详情 */}
       {selectedNode && (
-        <div className="absolute bottom-4 left-4 right-4 bg-white/95 p-4 rounded-lg shadow-sm">
+        <div className="absolute bottom-4 left-4 right-4 bg-popover/95 text-popover-foreground border border-border p-4 rounded-lg shadow-sm">
           {(() => {
             const node = layout.nodes.find((n) => n.id === selectedNode);
             if (!node) return null;
@@ -440,14 +440,14 @@ export function InsightGraph({
               <div>
                 <div className="flex items-center gap-2">
                   <span>{TYPE_ICONS[node.insight.type]}</span>
-                  <h4 className="font-semibold text-gray-900">
+                  <h4 className="font-semibold text-foreground">
                     {node.insight.title}
                   </h4>
                 </div>
-                <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                   {node.insight.description}
                 </p>
-                <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                   <span>置信度: {Math.round(node.insight.confidence * 100)}%</span>
                   <span>评论数: {node.insight.count || 0}</span>
                   {node.insight.keyword && (

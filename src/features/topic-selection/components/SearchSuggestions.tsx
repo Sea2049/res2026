@@ -209,16 +209,16 @@ export function SearchSuggestions({
     <div
       ref={containerRef}
       className={cn(
-        "absolute top-full left-0 right-0 mt-2 bg-white border rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto",
+        "absolute top-full left-0 right-0 mt-2 bg-popover text-popover-foreground border border-border rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto",
         className
       )}
       role="listbox"
       aria-label="搜索建议"
     >
       {isLoading ? (
-        <div className="p-4 text-center text-gray-500">
+        <div className="p-4 text-center text-muted-foreground">
           <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-reddit-orange"></div>
-          <p className="mt-2 text-sm">加载建议中...</p>
+          <p className="mt-2 text-sm">加载建议中…</p>
         </div>
       ) : (
         <ul role="list">
@@ -228,14 +228,14 @@ export function SearchSuggestions({
               role="option"
               className={cn(
                 "px-4 py-2 cursor-pointer transition-colors",
-                "hover:bg-primary-50",
-                selectedIndex === index && "bg-primary-100"
+                "hover:bg-accent/50",
+                selectedIndex === index && "bg-accent/60"
               )}
               onClick={() => handleSuggestionClick(suggestion)}
               onMouseEnter={() => setSelectedIndex(index)}
               aria-selected={selectedIndex === index}
             >
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-foreground">
                 {suggestion}
               </span>
             </li>

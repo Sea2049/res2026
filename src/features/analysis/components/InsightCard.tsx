@@ -64,10 +64,10 @@ const SEVERITY_LABELS: Record<Insight["severity"], string> = {
  * 严重程度颜色映射
  */
 const SEVERITY_COLORS: Record<Insight["severity"], string> = {
-  low: "bg-gray-100 text-gray-700",
-  medium: "bg-yellow-100 text-yellow-700",
-  high: "bg-orange-100 text-orange-700",
-  critical: "bg-red-100 text-red-700",
+  low: "bg-muted/60 text-foreground",
+  medium: "bg-amber-500/10 text-amber-300",
+  high: "bg-orange-500/10 text-orange-300",
+  critical: "bg-red-500/10 text-red-300",
 };
 
 /**
@@ -116,10 +116,10 @@ const PRIORITY_LABELS: Record<string, string> = {
  * v2.6.0 新增
  */
 const PRIORITY_COLORS: Record<string, string> = {
-  critical: "bg-red-100 text-red-700 border-red-300",
-  high: "bg-orange-100 text-orange-700 border-orange-300",
-  medium: "bg-yellow-100 text-yellow-700 border-yellow-300",
-  low: "bg-green-100 text-green-700 border-green-300",
+  critical: "bg-red-500/10 text-red-300 border-red-900/50",
+  high: "bg-orange-500/10 text-orange-300 border-orange-900/50",
+  medium: "bg-amber-500/10 text-amber-300 border-amber-900/50",
+  low: "bg-emerald-500/10 text-emerald-300 border-emerald-900/50",
 };
 
 /**
@@ -173,12 +173,12 @@ function renderCommentItem(comment: SentimentComment, index: number): JSX.Elemen
   return (
     <div 
       key={comment.id} 
-      className="text-xs bg-gray-50 p-3 rounded border border-gray-100 hover:bg-gray-100 transition-colors"
+      className="text-xs bg-muted/20 p-3 rounded border border-border hover:bg-accent/30 transition-colors"
     >
-      <p className="text-gray-700 line-clamp-3">{comment.body}</p>
-      <div className="mt-2 flex items-center justify-between text-gray-400 text-[10px]">
+      <p className="text-foreground/90 line-clamp-3 break-words">{comment.body}</p>
+      <div className="mt-2 flex items-center justify-between text-muted-foreground text-[10px]">
         <span className="flex items-center gap-1">
-          <span className="w-5 h-5 bg-primary-100 rounded-full flex items-center justify-center text-reddit-orange text-[9px] font-medium">
+          <span className="w-5 h-5 bg-reddit-orange/15 rounded-full flex items-center justify-center text-reddit-orange text-[9px] font-medium">
             {comment.author.charAt(0).toUpperCase()}
           </span>
           <span>u/{comment.author}</span>
@@ -350,7 +350,7 @@ export const InsightCard = memo(function InsightCard({
 
   return (
     <div
-      className={`bg-white rounded-lg shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md ${className || ""}`}
+      className={`bg-card border border-border rounded-lg shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-md ${className || ""}`}
       onClick={handleCardClick}
     >
       <div className={`p-4 ${bgColor}`}>
@@ -364,19 +364,19 @@ export const InsightCard = memo(function InsightCard({
                 </h4>
                 {/* v2.6.0: WISH标记 */}
                 {insight.isWish && (
-                  <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-medium rounded">
+                  <span className="px-2 py-0.5 bg-purple-500/15 text-purple-300 text-[10px] font-medium rounded">
                     ✨ WISH
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {INSIGHT_TYPE_DESCRIPTIONS[insight.type]}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {insight.count && insight.count > 1 && (
-              <span className="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded-full">
+              <span className="px-2 py-1 bg-muted/60 text-muted-foreground text-xs rounded-full border border-border">
                 {insight.count} 条
               </span>
             )}
@@ -392,27 +392,27 @@ export const InsightCard = memo(function InsightCard({
                 {trendIcon}
               </span>
             )}
-            <span className="text-xs font-medium text-gray-600">
+            <span className="text-xs font-medium text-muted-foreground">
               置信度 {Math.round(insight.confidence * 100)}%
             </span>
           </div>
         </div>
       </div>
       <div className="p-4">
-        <p className="text-gray-700 text-sm leading-relaxed font-medium">
+        <p className="text-foreground/90 text-sm leading-relaxed font-medium break-words">
           {insight.description}
         </p>
         
         {/* 默认展示评论预览（无需点击即可查看前 2 条） */}
         {showPreview && insight.relatedComments.length > 0 && (
-          <div className="mt-4 pt-3 border-t space-y-3">
-            <p className="text-xs font-semibold text-gray-500 flex items-center gap-2">
+          <div className="mt-4 pt-3 border-t border-border space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
               <span>相关评论预览</span>
-              <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px]">
+              <span className="px-1.5 py-0.5 bg-muted/60 text-muted-foreground rounded text-[10px] border border-border">
                 {foundCount}/{insight.relatedComments.length}
               </span>
               {missingCount > 0 && (
-                <span className="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-[10px]">
+                <span className="px-1.5 py-0.5 bg-red-500/10 text-red-300 rounded text-[10px] border border-red-900/50">
                   {missingCount} 条缺失
                 </span>
               )}
@@ -421,7 +421,7 @@ export const InsightCard = memo(function InsightCard({
               {previewComments.length > 0 ? (
                 previewComments.map((comment) => renderCommentItem(comment, 0))
               ) : (
-                <div className="text-xs text-gray-400 text-center py-4">
+                <div className="text-xs text-muted-foreground text-center py-4">
                   评论数据加载中或不可用
                 </div>
               )}
@@ -430,7 +430,8 @@ export const InsightCard = memo(function InsightCard({
             {/* 显示更多评论按钮 */}
             {hasMoreComments && (
               <button
-                className="w-full mt-2 py-2 px-3 bg-primary-50 hover:bg-primary-100 text-reddit-orange text-xs font-medium rounded transition-colors flex items-center justify-center gap-1 focus:outline-none focus:ring-2 focus:ring-reddit-orange"
+                type="button"
+                className="w-full mt-2 py-2 px-3 bg-muted/40 hover:bg-muted/60 text-foreground text-xs font-medium rounded border border-border transition-colors flex items-center justify-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-reddit-orange/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 onClick={(e) => handleToggleRemainingComments(e, setShowRemainingComments, showRemainingComments)}
                 aria-expanded={showRemainingComments}
                 aria-label={showRemainingComments ? `收起剩余 ${remainingCount} 条评论` : `查看剩余 ${remainingCount} 条评论`}
@@ -452,14 +453,14 @@ export const InsightCard = memo(function InsightCard({
         {/* v2.6.0: 标签区域 */}
         <div className="mt-3 flex flex-wrap gap-2">
           {insight.keyword && (
-            <span className="inline-block px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded">
+            <span className="inline-block px-2 py-1 bg-reddit-orange/10 text-reddit-orange text-xs rounded border border-reddit-orange/20">
               关键词: {insight.keyword}
             </span>
           )}
           
           {/* 子分类标签 */}
           {insight.subType && SUBTYPE_LABELS[insight.subType] && (
-            <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded flex items-center gap-1">
+            <span className="inline-block px-2 py-1 bg-purple-500/15 text-purple-300 text-xs rounded border border-purple-900/50 flex items-center gap-1">
               <span>{SUBTYPE_ICONS[insight.subType]}</span>
               <span>{SUBTYPE_LABELS[insight.subType]}</span>
             </span>
@@ -467,14 +468,14 @@ export const InsightCard = memo(function InsightCard({
           
           {/* 紧急度标签（仅WISH信号） */}
           {insight.urgency !== undefined && insight.isWish && (
-            <span className="inline-block px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded">
+            <span className="inline-block px-2 py-1 bg-orange-500/10 text-orange-300 text-xs rounded border border-orange-900/50">
               紧急度: {insight.urgency.toFixed(1)}/10
             </span>
           )}
           
           {/* 身份信号 */}
           {insight.identitySignals && insight.identitySignals.length > 0 && (
-            <span className="inline-block px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded" title={insight.identitySignals.join(", ")}>
+            <span className="inline-block px-2 py-1 bg-teal-500/10 text-teal-300 text-xs rounded border border-teal-900/50" title={insight.identitySignals.join(", ")}>
               👤 目标用户: {insight.identitySignals[0]}
               {insight.identitySignals.length > 1 && ` +${insight.identitySignals.length - 1}`}
             </span>
@@ -482,7 +483,7 @@ export const InsightCard = memo(function InsightCard({
           
           {/* 反对意见 */}
           {insight.objections && insight.objections.length > 0 && (
-            <span className="inline-block px-2 py-1 bg-red-100 text-red-700 text-xs rounded">
+            <span className="inline-block px-2 py-1 bg-red-500/10 text-red-300 text-xs rounded border border-red-900/50">
               ⚠️ {insight.objections.length}个反对意见
             </span>
           )}

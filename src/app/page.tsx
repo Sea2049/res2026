@@ -14,18 +14,18 @@ export default function Home() {
   const [allSearchResults, setAllSearchResults] = useState<(Subreddit | Post)[]>([]);
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-background text-foreground">
       <div className="max-w-[1600px] mx-auto px-4 py-8">
         <header className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Reddit Insight Tool</h1>
-          <p className="text-gray-600 text-lg">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Reddit Insight Tool</h1>
+          <p className="text-muted-foreground text-lg">
             发现热门主题，洞察用户痛点
           </p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <section className="lg:col-span-2">
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <div className="bg-card border border-border rounded-lg shadow-sm lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
               <TopicSelection
                 onSelectedTopicsChange={(topics) => {
                   setSelectedTopics(topics);
@@ -38,7 +38,7 @@ export default function Home() {
           </section>
 
           <section className="lg:col-span-3 flex flex-col min-h-0">
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 min-h-[600px] max-h-[calc(100vh-2rem)] overflow-y-auto">
+            <div className="bg-card border border-border rounded-lg shadow-sm p-6 min-h-[600px] max-h-[calc(100vh-2rem)] overflow-y-auto">
               <AnalysisDashboard
                 selectedTopics={selectedTopics}
                 allSearchResults={allSearchResults}

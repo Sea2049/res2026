@@ -69,6 +69,28 @@ interface UseAnalysisReturn {
    * @returns Excel 文件 Blob
    */
   exportToExcel: (searchResults: SearchResult[]) => Blob | null;
+
+  /**
+   * Jobs 结果：分页加载更多评论（cursor）
+   */
+  loadMoreComments: () => Promise<void>;
+  /**
+   * 是否还有更多评论可加载（仅 Jobs）
+   */
+  hasMoreComments: boolean;
+  /**
+   * 是否正在加载更多评论
+   */
+  isLoadingMoreComments: boolean;
+
+  /**
+   * 导出全量结果（Jobs 会按需拉取 <=1万 条评论）
+   */
+  exportResultFull: (format: "json" | "csv") => Promise<string | null>;
+  /**
+   * 导出全量 Excel（Jobs 会按需拉取 <=1万 条评论）
+   */
+  exportToExcelFull: (searchResults: SearchResult[]) => Promise<Blob | null>;
 }
 
 // ==================== 轮询配置 ====================
@@ -97,7 +119,6 @@ function buildCrawlRequestBody(
     if ("subscriber_count" in t) {
       subreddits.push(t.display_name);
     } else {
-      subreddits.push(t.subreddit);
       postIds.push(t.id);
     }
   }
@@ -200,6 +221,8 @@ export function useAnalysis(): UseAnalysisReturn {
   const abortControllerRef = useRef<AbortController | null>(null);
   const jobIdRef = useRef<string | null>(null);
   const workerManagerRef = useRef<ReturnType<typeof getNLPWorkerManager> | null>(null);
+  const [commentsNextCursor, setCommentsNextCursor] = useState<string | null>(null);
+  const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
   const configRef = useRef<AnalysisConfig>({
     maxComments: 1000,
     minKeywordLength: 3,
@@ -207,6 +230,8 @@ export function useAnalysis(): UseAnalysisReturn {
     sentimentThreshold: 0.3,
     enableInsightDetection: true,
   });
+
+  const hasMoreComments = !!commentsNextCursor;
 
   /**
    * 获取 Worker 管理器实例
@@ -500,12 +525,13 @@ export function useAnalysis(): UseAnalysisReturn {
       let commentsPage: AnalysisResult["comments"] = [];
       try {
         const commentsRes = await fetch(
-          `/api/jobs/${jobId}/results?view=comments&limit=100`,
+          `/api/jobs/${jobId}/results?view=comments&limit=100&cursor=0`,
           { signal }
         );
         if (commentsRes.ok) {
           const data = (await commentsRes.json()) as GetJobResultsCommentsResponse;
           commentsPage = Array.isArray(data?.comments) ? data.comments : [];
+          setCommentsNextCursor(data?.pagination?.next_cursor ?? null);
         }
       } catch {
         // ignore: comments 失败不阻断整体结果
@@ -631,6 +657,8 @@ export function useAnalysis(): UseAnalysisReturn {
       if (abortControllerRef.current) abortControllerRef.current.abort();
       abortControllerRef.current = new AbortController();
       jobIdRef.current = null;
+      setCommentsNextCursor(null);
+      setIsLoadingMoreComments(false);
       const { signal } = abortControllerRef.current;
 
       const newSession: AnalysisSession = {
@@ -718,6 +746,8 @@ export function useAnalysis(): UseAnalysisReturn {
       };
     });
     setErrorInfo(null);
+    setCommentsNextCursor(null);
+    setIsLoadingMoreComments(false);
   }, [getWorkerManager]);
 
   /**
@@ -740,21 +770,70 @@ export function useAnalysis(): UseAnalysisReturn {
 
     setSession(null);
     setErrorInfo(null);
+    setCommentsNextCursor(null);
+    setIsLoadingMoreComments(false);
   }, [getWorkerManager]);
+
+  /**
+   * Jobs：分页加载更多评论
+   */
+  const loadMoreComments = useCallback(async (): Promise<void> => {
+    const jobId = jobIdRef.current;
+    if (!jobId) return;
+    if (!commentsNextCursor) return;
+    if (isLoadingMoreComments) return;
+
+    setIsLoadingMoreComments(true);
+    try {
+      const res = await fetch(
+        `/api/jobs/${jobId}/results?view=comments&limit=100&cursor=${encodeURIComponent(commentsNextCursor)}`
+      );
+      if (!res.ok) return;
+      const data = (await res.json()) as GetJobResultsCommentsResponse;
+      const next = data?.pagination?.next_cursor ?? null;
+      const newComments = Array.isArray(data?.comments) ? data.comments : [];
+
+      setCommentsNextCursor(next);
+      setSession((prev) => {
+        if (!prev?.result) return prev;
+        const existing = Array.isArray(prev.result.comments) ? prev.result.comments : [];
+        return {
+          ...prev,
+          result: {
+            ...prev.result,
+            comments: [...existing, ...newComments],
+          },
+        };
+      });
+    } catch {
+      // ignore
+    } finally {
+      setIsLoadingMoreComments(false);
+    }
+  }, [commentsNextCursor, isLoadingMoreComments]);
+
+  /**
+   * Jobs：拉取全量评论（<=1万）用于导出
+   */
+  const fetchAllJobCommentsForExport = useCallback(
+    async (jobId: string): Promise<AnalysisResult["comments"]> => {
+      const res = await fetch(
+        `/api/jobs/${jobId}/results?view=comments&full=1`
+      );
+      if (!res.ok) return [];
+      const data = (await res.json()) as GetJobResultsCommentsResponse;
+      return Array.isArray(data?.comments) ? data.comments : [];
+    },
+    []
+  );
 
   /**
    * 导出分析结果
    * @param format 导出格式
    * @returns 导出的数据字符串
    */
-  const exportResult = useCallback(
-    (format: "json" | "csv"): string | null => {
-      if (!session?.result) {
-        return null;
-      }
-
-      const { result, topics } = session;
-
+  const buildExportString = useCallback(
+    (format: "json" | "csv", result: AnalysisResult, topics: SearchResult[]): string | null => {
       if (format === "json") {
         return JSON.stringify(
           {
@@ -765,7 +844,7 @@ export function useAnalysis(): UseAnalysisReturn {
             },
             topics: {
               count: topics.length,
-              items: topics.map(topic => {
+              items: topics.map((topic) => {
                 if ("subscriber_count" in topic) {
                   return {
                     type: "subreddit",
@@ -776,18 +855,17 @@ export function useAnalysis(): UseAnalysisReturn {
                     subscribers: topic.subscriber_count,
                     url: topic.url,
                   };
-                } else {
-                  return {
-                    type: "post",
-                    id: topic.id,
-                    title: topic.title,
-                    author: topic.author,
-                    subreddit: topic.subreddit,
-                    score: topic.score,
-                    numComments: topic.num_comments,
-                    url: topic.url,
-                  };
                 }
+                return {
+                  type: "post",
+                  id: topic.id,
+                  title: topic.title,
+                  author: topic.author,
+                  subreddit: topic.subreddit,
+                  score: topic.score,
+                  numComments: topic.num_comments,
+                  url: topic.url,
+                };
               }),
             },
             statistics: {
@@ -796,14 +874,14 @@ export function useAnalysis(): UseAnalysisReturn {
               totalInsights: result.insights.length,
               sentimentDistribution: result.sentiment,
             },
-            keywords: result.keywords.map(kw => ({
+            keywords: result.keywords.map((kw) => ({
               word: kw.word,
               count: kw.count,
               sentiment: kw.sentiment || "neutral",
             })),
             sentiment: {
               distribution: result.sentiment,
-              comments: result.comments.map(c => ({
+              comments: result.comments.map((c) => ({
                 id: c.id,
                 author: c.author,
                 body: c.body,
@@ -814,7 +892,7 @@ export function useAnalysis(): UseAnalysisReturn {
                 permalink: c.permalink,
               })),
             },
-            insights: result.insights.map(insight => ({
+            insights: result.insights.map((insight) => ({
               id: insight.id,
               type: insight.type,
               title: insight.title,
@@ -904,7 +982,34 @@ export function useAnalysis(): UseAnalysisReturn {
 
       return null;
     },
-    [session]
+    []
+  );
+
+  const exportResult = useCallback(
+    (format: "json" | "csv"): string | null => {
+      if (!session?.result) {
+        return null;
+      }
+
+      return buildExportString(format, session.result, session.topics);
+    },
+    [buildExportString, session]
+  );
+
+  const exportResultFull = useCallback(
+    async (format: "json" | "csv"): Promise<string | null> => {
+      if (!session?.result) return null;
+      const jobId = jobIdRef.current;
+
+      // legacy 已是全量；jobs 可能只加载了第一页
+      if (session.result.fetchStats?.source === "jobs" && jobId) {
+        const comments = await fetchAllJobCommentsForExport(jobId);
+        return buildExportString(format, { ...session.result, comments }, session.topics);
+      }
+
+      return buildExportString(format, session.result, session.topics);
+    },
+    [buildExportString, fetchAllJobCommentsForExport, session]
   );
 
   /**
@@ -912,12 +1017,12 @@ export function useAnalysis(): UseAnalysisReturn {
    * @param allSearchResults 所有搜索结果（可选）
    * @returns Blob 对象，可用于下载
    */
-  const exportToExcel = useCallback((allSearchResults?: SearchResult[]): Blob | null => {
-    if (!session?.result) {
-      return null;
-    }
-
-    const { result, topics } = session;
+  const buildExcelBlob = useCallback(
+    (
+      result: AnalysisResult,
+      topics: SearchResult[],
+      allSearchResults?: SearchResult[]
+    ): Blob => {
 
     // 创建工作簿
     const workbook = XLSX.utils.book_new();
@@ -1078,7 +1183,36 @@ export function useAnalysis(): UseAnalysisReturn {
     return new Blob([excelBuffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
-  }, [session]);
+    },
+    []
+  );
+
+  const exportToExcel = useCallback(
+    (allSearchResults?: SearchResult[]): Blob | null => {
+      if (!session?.result) return null;
+      return buildExcelBlob(session.result, session.topics, allSearchResults);
+    },
+    [buildExcelBlob, session]
+  );
+
+  const exportToExcelFull = useCallback(
+    async (allSearchResults: SearchResult[]): Promise<Blob | null> => {
+      if (!session?.result) return null;
+      const jobId = jobIdRef.current;
+
+      if (session.result.fetchStats?.source === "jobs" && jobId) {
+        const comments = await fetchAllJobCommentsForExport(jobId);
+        return buildExcelBlob(
+          { ...session.result, comments },
+          session.topics,
+          allSearchResults
+        );
+      }
+
+      return buildExcelBlob(session.result, session.topics, allSearchResults);
+    },
+    [buildExcelBlob, fetchAllJobCommentsForExport, session]
+  );
 
   // 组件卸载时清理资源
   useEffect(() => {
@@ -1114,5 +1248,10 @@ export function useAnalysis(): UseAnalysisReturn {
     resetAnalysis,
     exportResult,
     exportToExcel,
+    loadMoreComments,
+    hasMoreComments,
+    isLoadingMoreComments,
+    exportResultFull,
+    exportToExcelFull,
   };
 }

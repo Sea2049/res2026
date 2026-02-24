@@ -78,7 +78,7 @@ function SimpleMarkdownRenderer({ content }: { content: string }) {
       } else {
         currentSection.push(line);
         renderedContent.push(
-          <pre key={`code-${i}`} className="bg-gray-100 p-4 rounded-lg overflow-x-auto my-4 text-sm">
+          <pre key={`code-${i}`} className="bg-muted/20 border border-border p-4 rounded-lg overflow-x-auto my-4 text-sm">
             <code>{currentSection.join("\n")}</code>
           </pre>
         );
@@ -97,14 +97,14 @@ function SimpleMarkdownRenderer({ content }: { content: string }) {
         renderedContent.push(
           <div key={`section-${i}`} className="mb-6">
             {currentSection.map((l, idx) => (
-              <p key={idx} className="mb-2 text-gray-700">{l}</p>
+              <p key={idx} className="mb-2 text-muted-foreground">{l}</p>
             ))}
           </div>
         );
         currentSection = [];
       }
       renderedContent.push(
-        <h1 key={`h1-${i}`} className="text-2xl font-bold mb-4 mt-6 text-gray-900">
+        <h1 key={`h1-${i}`} className="text-2xl font-bold mb-4 mt-6 text-foreground">
           {line.replace("# ", "")}
         </h1>
       );
@@ -113,14 +113,14 @@ function SimpleMarkdownRenderer({ content }: { content: string }) {
         renderedContent.push(
           <div key={`section-${i}`} className="mb-6">
             {currentSection.map((l, idx) => (
-              <p key={idx} className="mb-2 text-gray-700">{l}</p>
+              <p key={idx} className="mb-2 text-muted-foreground">{l}</p>
             ))}
           </div>
         );
         currentSection = [];
       }
       renderedContent.push(
-        <h2 key={`h2-${i}`} className="text-xl font-semibold mb-3 mt-5 text-gray-800">
+        <h2 key={`h2-${i}`} className="text-xl font-semibold mb-3 mt-5 text-foreground">
           {line.replace("## ", "")}
         </h2>
       );
@@ -129,14 +129,14 @@ function SimpleMarkdownRenderer({ content }: { content: string }) {
         renderedContent.push(
           <div key={`section-${i}`} className="mb-4">
             {currentSection.map((l, idx) => (
-              <p key={idx} className="mb-2 text-gray-700">{l}</p>
+              <p key={idx} className="mb-2 text-muted-foreground">{l}</p>
             ))}
           </div>
         );
         currentSection = [];
       }
       renderedContent.push(
-        <h3 key={`h3-${i}`} className="text-lg font-medium mb-2 mt-4 text-gray-800">
+        <h3 key={`h3-${i}`} className="text-lg font-medium mb-2 mt-4 text-foreground">
           {line.replace("### ", "")}
         </h3>
       );
@@ -145,7 +145,7 @@ function SimpleMarkdownRenderer({ content }: { content: string }) {
         renderedContent.push(
           <div key={`section-${i}`} className="mb-4">
             {currentSection.map((l, idx) => (
-              <p key={idx} className="mb-2 text-gray-700">{l}</p>
+              <p key={idx} className="mb-2 text-muted-foreground">{l}</p>
             ))}
           </div>
         );
@@ -157,7 +157,7 @@ function SimpleMarkdownRenderer({ content }: { content: string }) {
             <tbody>
               <tr key={i}>
                 {line.split("|").filter(cell => cell.trim()).map((cell, idx) => (
-                  <td key={idx} className="border border-gray-300 px-4 py-2 text-sm font-semibold bg-gray-50">
+                  <td key={idx} className="border border-border px-4 py-2 text-sm font-semibold bg-muted/20 text-foreground">
                     {cell.trim()}
                   </td>
                 ))}
@@ -171,14 +171,14 @@ function SimpleMarkdownRenderer({ content }: { content: string }) {
         renderedContent.push(
           <div key={`section-${i}`} className="mb-4">
             {currentSection.map((l, idx) => (
-              <p key={idx} className="mb-2 text-gray-700">{l}</p>
+              <p key={idx} className="mb-2 text-muted-foreground">{l}</p>
             ))}
           </div>
         );
         currentSection = [];
       }
       renderedContent.push(
-        <li key={`li-${i}`} className="mb-2 ml-4 text-gray-700">
+        <li key={`li-${i}`} className="mb-2 ml-4 text-muted-foreground">
           {line.replace("- ", "")}
         </li>
       );
@@ -187,7 +187,7 @@ function SimpleMarkdownRenderer({ content }: { content: string }) {
         renderedContent.push(
           <div key={`section-${i}`} className="mb-4">
             {currentSection.map((l, idx) => (
-              <p key={idx} className="mb-2 text-gray-700">{l}</p>
+              <p key={idx} className="mb-2 text-muted-foreground">{l}</p>
             ))}
           </div>
         );
@@ -202,13 +202,13 @@ function SimpleMarkdownRenderer({ content }: { content: string }) {
     renderedContent.push(
       <div key={`section-final`} className="mb-4">
         {currentSection.map((l, idx) => (
-          <p key={idx} className="mb-2 text-gray-700">{l}</p>
+          <p key={idx} className="mb-2 text-muted-foreground">{l}</p>
         ))}
       </div>
     );
   }
 
-  return <div className="prose prose-sm max-w-none">{renderedContent}</div>;
+  return <div className="max-w-none">{renderedContent}</div>;
 }
 
 /**
@@ -488,15 +488,15 @@ export function DeepInsights({
 
         <CardContent>
           {!session && !analysisResult && (
-            <div className="text-center py-12 text-gray-500">
-              <Lightbulb className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <div className="text-center py-12 text-muted-foreground">
+              <Lightbulb className="h-12 w-12 mx-auto mb-4 text-muted-foreground/60" aria-hidden="true" />
               <p>请先完成基础分析，然后点击"生成深度洞见"按钮</p>
             </div>
           )}
 
           {session && session.status === "loading" && (
             <div className="space-y-4" aria-live="polite">
-              <div className="flex items-center justify-between text-sm text-gray-600">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>{session.currentStep}</span>
                 <span>{session.progress}%</span>
               </div>
@@ -504,10 +504,10 @@ export function DeepInsights({
                 <Progress value={session.progress} className="w-full" />
               </div>
               <div className="flex justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-yellow-600" aria-hidden="true" />
+                <Loader2 className="h-8 w-8 animate-spin text-amber-400" aria-hidden="true" />
               </div>
-              <div className="text-center text-sm text-gray-500">
-                AI正在分析数据，这可能需要10-30秒...
+              <div className="text-center text-sm text-muted-foreground">
+                AI正在分析数据，这可能需要10-30秒…
               </div>
               <Button
                 onClick={onCancel}
@@ -531,7 +531,7 @@ export function DeepInsights({
                   <Button
                     onClick={handleGenerate}
                     variant="outline"
-                    className="bg-white hover:bg-red-50 text-red-600 border-red-200"
+                    className="border-red-900/50 text-destructive hover:bg-destructive/10"
                   >
                     <RefreshCw className="mr-2 h-4 w-4" />
                     重试
@@ -551,8 +551,8 @@ export function DeepInsights({
           {session && session.status === "success" && session.result && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="bg-green-500/15 text-green-300 border border-green-900/50 px-2 py-1 rounded text-xs font-medium">
                     已完成
                   </span>
                   <span>
@@ -577,7 +577,7 @@ export function DeepInsights({
               {isExpanded && (
                 <div 
                   ref={reportRef}
-                  className="border rounded-lg p-6 bg-white max-h-[400px] sm:max-h-[600px] lg:max-h-[800px] overflow-y-auto print:max-h-none print:overflow-visible"
+                  className="border border-border rounded-lg p-6 bg-muted/10 max-h-[400px] sm:max-h-[600px] lg:max-h-[800px] overflow-y-auto print:max-h-none print:overflow-visible"
                 >
                   <SimpleMarkdownRenderer content={session.result.content} />
                 </div>
@@ -592,7 +592,7 @@ export function DeepInsights({
                   {isExporting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      生成PDF中...
+                      生成PDF中…
                     </>
                   ) : (
                     <>

@@ -165,9 +165,9 @@ export function getSentimentColor(
   sentiment: "positive" | "negative" | "neutral"
 ): string {
   const colors = {
-    positive: "bg-green-100 text-green-700",
-    negative: "bg-red-100 text-red-700",
-    neutral: "bg-gray-100 text-gray-700",
+    positive: "bg-green-500/10 text-green-300 border border-green-900/50",
+    negative: "bg-red-500/10 text-red-300 border border-red-900/50",
+    neutral: "bg-muted/40 text-muted-foreground border border-border",
   };
   return colors[sentiment];
 }

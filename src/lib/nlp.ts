@@ -1070,10 +1070,10 @@ export function getInsightTypeStyle(
   type: "pain_point" | "feature_request" | "praise" | "question"
 ): string {
   const styles = {
-    pain_point: "bg-red-50 border-red-200",
-    feature_request: "bg-blue-50 border-blue-200",
-    praise: "bg-green-50 border-green-200",
-    question: "bg-yellow-50 border-yellow-200",
+    pain_point: "bg-red-500/10",
+    feature_request: "bg-blue-500/10",
+    praise: "bg-green-500/10",
+    question: "bg-amber-500/10",
   };
   return styles[type];
 }
@@ -1082,10 +1082,10 @@ export function getInsightIconColor(
   type: "pain_point" | "feature_request" | "praise" | "question"
 ): string {
   const colors = {
-    pain_point: "text-red-600",
-    feature_request: "text-blue-600",
-    praise: "text-green-600",
-    question: "text-yellow-600",
+    pain_point: "text-red-400",
+    feature_request: "text-blue-400",
+    praise: "text-green-400",
+    question: "text-amber-400",
   };
   return colors[type];
 }

@@ -53,7 +53,7 @@ const EMPTY_STATE_CONFIG: Record<
   }
 > = {
   "no-insights": {
-    icon: <Lightbulb className="w-16 h-16 text-gray-300" />,
+    icon: <Lightbulb className="w-16 h-16 text-muted-foreground/40" aria-hidden="true" />,
     title: "未检测到明显的用户洞察",
     description: "当前评论中没有检测到明显的用户痛点、需求或建议。这可能是由于：",
     suggestions: [
@@ -63,7 +63,7 @@ const EMPTY_STATE_CONFIG: Record<
     ],
   },
   "no-keywords": {
-    icon: <Search className="w-16 h-16 text-gray-300" />,
+    icon: <Search className="w-16 h-16 text-muted-foreground/40" aria-hidden="true" />,
     title: "未提取到关键词",
     description: "分析未能从评论中提取到足够的高频关键词。建议：",
     suggestions: [
@@ -73,7 +73,7 @@ const EMPTY_STATE_CONFIG: Record<
     ],
   },
   "no-comments": {
-    icon: <MessageSquare className="w-16 h-16 text-gray-300" />,
+    icon: <MessageSquare className="w-16 h-16 text-muted-foreground/40" aria-hidden="true" />,
     title: "未获取到评论数据",
     description: "无法获取到任何评论进行分析。可能的原因：",
     suggestions: [
@@ -83,7 +83,7 @@ const EMPTY_STATE_CONFIG: Record<
     ],
   },
   "no-topics": {
-    icon: <Search className="w-16 h-16 text-gray-300" />,
+    icon: <Search className="w-16 h-16 text-muted-foreground/40" aria-hidden="true" />,
     title: "请先选择要分析的主题",
     description: "在左侧\"主题筛选\"中搜索并选择要分析的话题，然后点击\"开始分析\"按钮。",
     suggestions: [
@@ -113,20 +113,20 @@ export function EmptyState({
     >
       <div className="mb-6">{config.icon}</div>
 
-      <h3 className="text-xl font-semibold text-gray-900 mb-3">
+      <h3 className="text-xl font-semibold text-foreground mb-3">
         {title || config.title}
       </h3>
 
-      <p className="text-gray-600 mb-6 max-w-md">
+      <p className="text-muted-foreground mb-6 max-w-md">
         {description || config.description}
       </p>
 
       {config.suggestions.length > 0 && (
-        <div className="bg-gray-50 rounded-lg p-6 max-w-md w-full mb-8">
-          <h4 className="text-sm font-medium text-gray-700 mb-3 text-left">
+        <div className="bg-muted/20 border border-border rounded-lg p-6 max-w-md w-full mb-8">
+          <h4 className="text-sm font-medium text-foreground mb-3 text-left">
             💡 建议：
           </h4>
-          <ul className="text-sm text-gray-600 space-y-2 text-left">
+          <ul className="text-sm text-muted-foreground space-y-2 text-left">
             {config.suggestions.map((suggestion, index) => (
               <li key={index} className="flex items-start gap-2">
                 <span className="text-reddit-orange mt-1">•</span>

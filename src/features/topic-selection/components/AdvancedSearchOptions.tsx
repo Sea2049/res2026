@@ -165,20 +165,20 @@ export function AdvancedSearchOptions({
       {isExpanded && (
         <div
           id="advanced-options-panel"
-          className="p-4 bg-white border border-gray-200 rounded-lg space-y-4"
+          className="p-4 bg-card border border-border rounded-lg space-y-4"
         >
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               搜索类型
             </label>
             <div className="flex gap-2">
               <button
                 onClick={() => handleTypeChange("all")}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm transition-colors",
+                  "px-4 py-2 rounded-lg text-sm border transition-colors",
                   !options.subredditOnly && !options.postOnly
-                    ? "bg-reddit-orange text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-100"
+                    ? "bg-reddit-orange text-white border-reddit-orange"
+                    : "bg-background/40 text-foreground border-border hover:bg-accent/50"
                 )}
                 aria-pressed={!options.subredditOnly && !options.postOnly}
               >
@@ -187,10 +187,10 @@ export function AdvancedSearchOptions({
               <button
                 onClick={() => handleTypeChange("subreddit")}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm transition-colors",
+                  "px-4 py-2 rounded-lg text-sm border transition-colors",
                   options.subredditOnly
-                    ? "bg-reddit-orange text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-100"
+                    ? "bg-reddit-orange text-white border-reddit-orange"
+                    : "bg-background/40 text-foreground border-border hover:bg-accent/50"
                 )}
                 aria-pressed={options.subredditOnly}
               >
@@ -199,10 +199,10 @@ export function AdvancedSearchOptions({
               <button
                 onClick={() => handleTypeChange("post")}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm transition-colors",
+                  "px-4 py-2 rounded-lg text-sm border transition-colors",
                   options.postOnly
-                    ? "bg-reddit-orange text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-100"
+                    ? "bg-reddit-orange text-white border-reddit-orange"
+                    : "bg-background/40 text-foreground border-border hover:bg-accent/50"
                 )}
                 aria-pressed={options.postOnly}
               >
@@ -212,7 +212,7 @@ export function AdvancedSearchOptions({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               排序方式
             </label>
             <div className="flex flex-wrap gap-2">
@@ -221,10 +221,10 @@ export function AdvancedSearchOptions({
                   key={option.value}
                   onClick={() => handleSortByChange(option.value)}
                   className={cn(
-                    "px-4 py-2 rounded-lg text-sm transition-colors",
+                    "px-4 py-2 rounded-lg text-sm border transition-colors",
                     options.sortBy === option.value
-                      ? "bg-reddit-orange text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      ? "bg-reddit-orange text-white border-reddit-orange"
+                      : "bg-muted/40 text-foreground border-border hover:bg-muted/60"
                   )}
                   aria-pressed={options.sortBy === option.value}
                 >
@@ -235,7 +235,7 @@ export function AdvancedSearchOptions({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               时间范围
             </label>
             <div className="flex flex-wrap gap-2">
@@ -244,10 +244,10 @@ export function AdvancedSearchOptions({
                   key={option.value}
                   onClick={() => handleTimeRangeChange(option.value)}
                   className={cn(
-                    "px-4 py-2 rounded-lg text-sm transition-colors",
+                    "px-4 py-2 rounded-lg text-sm border transition-colors",
                     options.timeRange === option.value
-                      ? "bg-reddit-orange text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      ? "bg-reddit-orange text-white border-reddit-orange"
+                      : "bg-muted/40 text-foreground border-border hover:bg-muted/60"
                   )}
                   aria-pressed={options.timeRange === option.value}
                 >
@@ -258,7 +258,7 @@ export function AdvancedSearchOptions({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               结果数量
             </label>
             <div className="flex flex-wrap gap-2">
@@ -267,10 +267,10 @@ export function AdvancedSearchOptions({
                   key={limit}
                   onClick={() => handleLimitChange(limit)}
                   className={cn(
-                    "px-4 py-2 rounded-lg text-sm transition-colors",
+                    "px-4 py-2 rounded-lg text-sm border transition-colors",
                     options.limit === limit
-                      ? "bg-reddit-orange text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      ? "bg-reddit-orange text-white border-reddit-orange"
+                      : "bg-muted/40 text-foreground border-border hover:bg-muted/60"
                   )}
                   aria-pressed={options.limit === limit}
                 >

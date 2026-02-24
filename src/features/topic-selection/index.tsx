@@ -160,10 +160,10 @@ export function TopicSelection({
     <div className={className}>
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          <h2 className="text-xl font-semibold text-foreground mb-2">
             主题筛选
           </h2>
-          <p className="text-gray-600 text-sm">
+          <p className="text-muted-foreground text-sm">
             搜索并选择感兴趣的 Subreddit 或 Post 进行分析
           </p>
         </div>
@@ -196,8 +196,8 @@ export function TopicSelection({
         />
 
         {results.length > 0 && (
-          <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
-            <span className="text-sm text-gray-600">
+          <div className="flex items-center justify-between p-3 bg-muted/20 border border-border rounded-lg">
+            <span className="text-sm text-muted-foreground">
               当前结果：{getCurrentResultInfo()}
             </span>
             <div className="flex gap-2">
@@ -208,11 +208,11 @@ export function TopicSelection({
               >
                 全选
               </button>
-              <span className="text-gray-300" aria-hidden="true">|</span>
+              <span className="text-muted-foreground/30" aria-hidden="true">|</span>
               <button
                 onClick={handleDeselectAll}
                 disabled={isLoading || selectedTopicIds.size === 0}
-                className="text-sm text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                className="text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
               >
                 取消全选
               </button>
@@ -221,9 +221,9 @@ export function TopicSelection({
         )}
 
         {selectedTopics.length > 0 && (
-          <div className="p-4 bg-primary-50 border border-reddit-border rounded-lg">
+          <div className="p-4 bg-reddit-orange/10 border border-reddit-orange/20 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-reddit-text">
+              <span className="font-medium text-foreground">
                 已选 {selectedTopics.length} 个主题
               </span>
               <button
@@ -237,14 +237,14 @@ export function TopicSelection({
               {selectedTopics.slice(0, 5).map((topic) => (
                 <span
                   key={topic.id}
-                  className="inline-flex items-center px-3 py-1 bg-white border border-reddit-border rounded-full text-sm text-primary-700"
+                  className="inline-flex items-center px-3 py-1 bg-card border border-border rounded-full text-sm text-foreground"
                 >
                   {"subscriber_count" in topic ? "社区" : "帖子"}: {topic.title.substring(0, 20)}
                   {topic.title.length > 20 && "..."}
                 </span>
               ))}
               {selectedTopics.length > 5 && (
-                <span className="inline-flex items-center px-3 py-1 bg-primary-100 border border-reddit-border rounded-full text-sm text-primary-700">
+                <span className="inline-flex items-center px-3 py-1 bg-muted/60 border border-border rounded-full text-sm text-foreground">
                   +{selectedTopics.length - 5} 更多
                 </span>
               )}
