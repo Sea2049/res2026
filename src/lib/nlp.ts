@@ -984,7 +984,7 @@ function extractInsights(
     });
   }
 
-  return insights.sort((a, b) => b.confidence - a.confidence).slice(0, 20);
+  return insights.sort((a, b) => b.confidence - a.confidence).slice(0, 100);
 }
 
 /**

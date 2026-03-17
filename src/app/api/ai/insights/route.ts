@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: "system",
-          content: "你是一个专业的数据分析师和社区洞察专家，擅长从Reddit评论数据中发现用户痛点、需求趋势和商业机会。请进行深入分析，提供有洞察力的建议和结论。输出要完整详尽。"
+          content: "你是一位顶级商业分析师和用户洞察专家，擅长从海量用户反馈中发现关键问题、隐藏机会和战略洞察。你的分析必须尖锐、直接、一针见血。禁止泛泛而谈，禁止车轱辘话，禁止不痛不痒的结论。每个结论都必须有数据支撑，每个建议都必须可执行。你的用户是追求真相和执行力的决策者，不是来听漂亮话的。"
         },
         {
           role: "user",
@@ -138,8 +138,8 @@ export async function POST(request: NextRequest) {
         }
       ],
       model: "qwen3.5-plus",
-      temperature: 0.7,
-      maxTokens: 8000
+      temperature: 0.5,
+      maxTokens: 10000
     });
 
     console.log("AI响应长度:", aiResponse.length);

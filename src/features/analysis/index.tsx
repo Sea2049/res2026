@@ -231,11 +231,19 @@ export function AnalysisDashboard({
       {hasAnalysisResult && session.result && (
         <div className="space-y-6">
           {session.result.fetchStats?.source === "legacy" && (
-            <Alert className="mb-2">
+            <Alert className="mb-2 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
               <Info className="h-4 w-4" />
-              <AlertTitle>提示</AlertTitle>
-              <AlertDescription>
-                当前结果来自本地回退链路（legacy）。该模式通常只抓取基础页评论，可能不如 Jobs 模式完整；建议稍后重试以获取更完整的折叠评论。
+              <AlertTitle>当前为 Legacy 回退模式</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>
+                  当前结果来自本地回退链路（legacy），可能不如 Jobs 模式完整。建议稍后重试以获取更完整的折叠评论。
+                </p>
+                <p className="rounded bg-amber-100/80 dark:bg-amber-900/30 px-2 py-1.5 text-sm font-medium text-amber-900 dark:text-amber-200">
+                  本次回退原因：{session.result.fetchStats.legacyFallbackReason || "未记录（请再点一次「重新分析」以查看具体原因）"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  若已配置代理（如 Clash 7897），请确认已重启 Next/Electron 后再点「重新分析」。详细排查见 docs/JOBS_TROUBLESHOOTING.md。
+                </p>
               </AlertDescription>
             </Alert>
           )}
@@ -253,8 +261,12 @@ export function AnalysisDashboard({
                     已分析 {session.result.fetchStats.analyzedComments}
                   </Badge>
                   {session.result.fetchStats.completionGap > 0 && (
-                    <Badge variant="warning" className="h-8">
-                      缺口 {session.result.fetchStats.completionGap}
+                    <Badge
+                      variant="warning"
+                      className="h-8"
+                      title="已抓取中未参与分析的数量"
+                    >
+                      未分析 {session.result.fetchStats.completionGap}
                     </Badge>
                   )}
                 </>

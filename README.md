@@ -240,9 +240,9 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
 
 | 类型 | 数量 | 说明 |
 |------|------|------|
-| TypeScript 组件（.tsx） | 41 | UI 组件、功能模块组件、Swagger UI 页面 |
-| TypeScript 工具（.ts） | 40 | 钩子、API Routes、API 客户端、NLP 处理、Worker、安全工具、限流、缓存 |
-| 测试文件 | 22 | 单元测试（lib、API 路由）和集成测试 |
+| TypeScript 组件（.tsx） | 43 | UI 组件、App Shell、功能模块组件、Swagger UI 页面 |
+| TypeScript 工具（.ts） | 52 | 钩子、API Routes（15个）、API 客户端、NLP 处理、Worker、Jobs、安全工具、限流、缓存 |
+| 测试文件 | 26 | 单元测试（lib、API 路由、Jobs）和集成测试 |
 | 配置文件 | 19 | 项目构建和测试配置 |
 | 文档文件 | 5 | FRAMEWORK、CODE_DIRECTORY、README、DEPLOYMENT、TESTING |
 

@@ -80,8 +80,12 @@ export async function GET(request: NextRequest) {
     }, { status: 400 });
   }
 
+  const sort = searchParams.get("sort") || "confidence";
+  const validSorts = ["confidence", "top", "new", "controversial", "old"];
+  const effectiveSort = validSorts.includes(sort) ? sort : "confidence";
+
   try {
-    const redditUrl = `https://www.reddit.com/r/${encodeURIComponent(subreddit)}/comments/${encodeURIComponent(postId)}.json?limit=100&sort=confidence`;
+    const redditUrl = `https://www.reddit.com/r/${encodeURIComponent(subreddit)}/comments/${encodeURIComponent(postId)}.json?limit=100&sort=${encodeURIComponent(effectiveSort)}`;
     
     try {
       const response = await fetchWithFallbacks(redditUrl);

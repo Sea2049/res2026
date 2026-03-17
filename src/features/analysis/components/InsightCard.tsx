@@ -35,7 +35,7 @@ const INSIGHT_TYPE_ICONS: Record<Insight["type"], string> = {
 /**
  * 趋势图标映射
  */
-const TREND_ICONS: Record<Insight["trend"], string> = {
+const TREND_ICONS: Record<NonNullable<Insight["trend"]>, string> = {
   up: "📈",
   down: "📉",
   stable: "➡️",
@@ -44,7 +44,7 @@ const TREND_ICONS: Record<Insight["trend"], string> = {
 /**
  * 趋势标签映射
  */
-const TREND_LABELS: Record<Insight["trend"], string> = {
+const TREND_LABELS: Record<NonNullable<Insight["trend"]>, string> = {
   up: "上升",
   down: "下降",
   stable: "稳定",
@@ -53,7 +53,7 @@ const TREND_LABELS: Record<Insight["trend"], string> = {
 /**
  * 严重程度标签映射
  */
-const SEVERITY_LABELS: Record<Insight["severity"], string> = {
+const SEVERITY_LABELS: Record<NonNullable<Insight["severity"]>, string> = {
   low: "低",
   medium: "中",
   high: "高",
@@ -63,7 +63,7 @@ const SEVERITY_LABELS: Record<Insight["severity"], string> = {
 /**
  * 严重程度颜色映射
  */
-const SEVERITY_COLORS: Record<Insight["severity"], string> = {
+const SEVERITY_COLORS: Record<NonNullable<Insight["severity"]>, string> = {
   low: "bg-muted/60 text-foreground",
   medium: "bg-amber-500/10 text-amber-300",
   high: "bg-orange-500/10 text-orange-300",

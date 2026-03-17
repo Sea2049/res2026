@@ -170,8 +170,9 @@ describe('RedditApiClient', () => {
       expect(results[0].author).toBe('user1');
     });
 
-    it('应该限制评论数量', async () => {
+    it('应该返回 API 返回的全部评论', async () => {
       const mockComments = Array.from({ length: 200 }, (_, i) => ({
+        kind: 't1',
         data: {
           id: `comment${i}`,
           body: `Comment ${i}`,
@@ -191,9 +192,9 @@ describe('RedditApiClient', () => {
         ],
       });
 
-      const results = await redditApi.getComments('testsub', 'post1', 100);
+      const results = await redditApi.getComments('testsub', 'post1');
 
-      expect(results.length).toBeLessThanOrEqual(100);
+      expect(results.length).toBe(200);
     });
 
     it('应该处理 429 错误并重试', async () => {

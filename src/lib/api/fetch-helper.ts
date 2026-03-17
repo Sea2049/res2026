@@ -151,11 +151,17 @@ export async function fetchWithFallbacks(targetUrl: string): Promise<Response> {
       }
       
       console.warn(`[API] Strategy ${strategy.name} failed with status: ${response.status}`);
+      if (strategy.name === "DirectWithProxy") {
+        console.warn("[API] 代理请求失败，请确认 Clash 等已开启且端口与 HTTP_PROXY 一致，并已重启 Next");
+      }
       lastStatus = response.status;
       lastError = new Error(`HTTP ${response.status} ${response.statusText}`);
       
     } catch (error) {
       console.warn(`[API] Strategy ${strategy.name} failed with error:`, error);
+      if (strategy.name === "DirectWithProxy") {
+        console.warn("[API] 代理请求异常，请确认 Clash 等已开启且端口与 HTTP_PROXY 一致，并已重启 Next");
+      }
       lastError = error;
     }
   }

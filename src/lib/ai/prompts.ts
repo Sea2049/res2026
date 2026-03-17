@@ -48,14 +48,14 @@ function formatTopics(topics: SearchResult[]): string {
 function formatKeywords(keywords: KeywordCount[]): string {
   if (!keywords || keywords.length === 0) return "无关键词数据";
 
-  const topKeywords = keywords.slice(0, 25);
+  const topKeywords = keywords;
   const formatted = topKeywords.map((kw, index) => {
     const sentimentLabels: Record<string, string> = {
       positive: "正面",
       negative: "负面",
       neutral: "中性"
     };
-    return `${index + 1}.${kw.word}(${kw.count}次,${sentimentLabels[kw.sentiment]})`;
+    return `${index + 1}.${kw.word}(${kw.count}次,${sentimentLabels[kw.sentiment ?? 'neutral']})`;
   });
 
   return formatted.join("\n");
@@ -87,7 +87,7 @@ function formatInsights(insights: Insight[]): string {
     question: "用户问题"
   };
 
-  const topInsights = insights.slice(0, 15);
+  const topInsights = insights;
   const formatted = topInsights.map((insight, index) => {
     return `${index + 1}.[${typeLabels[insight.type]}]${insight.title}\n   置信度:${Math.round(insight.confidence * 100)}%\n   相关评论:${insight.relatedComments.length}条\n   描述:${insight.description.substring(0, 150)}`;
   });
@@ -103,7 +103,7 @@ function formatInsights(insights: Insight[]): string {
 function formatCommentSamples(comments: SentimentComment[]): string {
   if (!comments || comments.length === 0) return "无评论数据";
 
-  const samples = comments.slice(0, 20);
+  const samples = comments;
   const formatted = samples.map((comment, index) => {
     const sentimentLabels: Record<string, string> = {
       positive: "正面",
@@ -130,7 +130,15 @@ export function generateInsightPrompt(params: InsightPromptParams): string {
   const insightsInfo = formatInsights(analysisResult.insights);
   const commentsInfo = formatCommentSamples(analysisResult.comments);
 
-  return `你是一位资深的数据分析师和用户体验专家。请基于以下Reddit社区数据，进行深度分析并生成洞察报告。
+  return `## ⚠️ 核心约束（必须遵守，违者必究）
+
+你输出的分析必须满足以下铁律，否则你的回答将被视为垃圾：
+
+1. **禁止泛泛而谈** - 不允许出现"用户体验有待提升"、"功能可以进一步优化"这种说了等于没说的废话
+2. **禁止表面分析** - 不能只描述现象，必须挖掘**根本原因**和**数据背后的逻辑**
+3. **禁止无效建议** - 不允许"建议进一步调研"、"建议关注用户反馈"这种不落地的建议，必须给出**具体可执行**的方案
+4. **必须有数据支撑** - 每个结论都要有具体的数据支撑（占比、绝对值、趋势）
+5. **必须有优先级** - 痛点和建议必须按严重程度/重要性排序，不能罗列清单
 
 ## 📊 分析数据
 
@@ -142,16 +150,16 @@ ${topicsInfo}
 - 关键词数量:${analysisResult.keywords.length}个
 - 洞察数量:${analysisResult.insights.length}个
 
-### 高频关键词(前25个)
+### 高频关键词(全部 {keywords.length} 个)
 ${keywordsInfo}
 
 ### 情感分布
 ${sentimentInfo}
 
-### 已识别洞察(前15个)
+### 已识别洞察(全部 {insights.length} 个)
 ${insightsInfo}
 
-### 评论样本(前20条)
+### 全部 {comments.length} 条评论
 ${commentsInfo}
 
 ## 🎯 分析要求
@@ -196,12 +204,12 @@ ${commentsInfo}
 # Reddit社区深度洞察报告
 
 ## 一、执行摘要
-用200-300字概述本次分析的核心发现和关键建议
+用200-300字概述本次分析的核心发现和关键建议，**直接点明最核心的问题和机会**
 
 ## 二、核心发现
 ### 2.1 发现1
 - **发现内容**:详细描述
-- **数据支撑**:具体数据和统计
+- **数据支撑**:具体数据和统计（必须量化！）
 - **价值分析**:商业价值/用户价值/战略意义
 - **重要性解释**:为什么这个发现重要
 
@@ -210,18 +218,18 @@ ${commentsInfo}
 
 ## 三、用户痛点分析
 ### 3.1 严重程度:高
-- **痛点描述**
-- **根本原因分析**
-- **影响范围**:受影响用户数量/比例
-- **解决方案建议**
-- **业务影响评估**
+- **痛点描述**:一句话说明白是什么问题
+- **根本原因分析**:深入挖掘为什么会这样（至少2层why）
+- **影响范围**:受影响用户数量/比例（必须有具体数字）
+- **解决方案建议**:具体的、可落地的方案
+- **业务影响评估**:对业务指标的影响
 
 ### 3.2 严重程度:中
 ...
 
 ## 四、需求趋势预测
 ### 4.1 趋势1
-- **趋势描述**
+- **趋势描述**:用户想要什么
 - **需求分析**:用户为什么需要这个
 - **创新点**:这个需求的价值和创新性
 - **紧迫性评估**:高/中/低
@@ -253,6 +261,10 @@ ${commentsInfo}
 - 总结最重要的洞察
 - 强调最关键的行动建议
 - 展望未来的机会和挑战
+
+## 八、附注
+- 列出本次分析的局限性
+- 建议后续需要深入研究的方向
 
 请确保分析深入、洞察有力、建议具体可行。`;
 }

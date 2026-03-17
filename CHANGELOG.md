@@ -2,6 +2,19 @@
 
 本文档记录项目的所有重要变更，按版本号倒序排列。
 
+## [未发布]
+
+### 移除
+- 删除 `src/middleware.ts` 邀请码验证中间件（v2.80.0 清理遗留，`/invite` 页面已不存在，中间件会导致 Web 部署 404）
+- 删除 `scripts/prepare-electron.js` 中 Prisma 目录复制逻辑（Prisma 已在 v2.80.0 清理，该段代码为无效遗留）
+
+### 变更
+- `tsconfig.json`：启用 `strict: true`，新增排除 `services/`（独立 browser-worker 服务）
+- `tsconfig.json`：修复 strict 模式下 3 个文件的 13 处类型错误（`electron.d.ts`、`InsightCard.tsx`、`InsightTrendChart.tsx`、`prompts.ts`）
+- `jest.config.js`：设定覆盖率底线阈值（statements/lines 25%、functions 20%、branches 15%），防止覆盖率倒退
+- `TESTING.md`：更新覆盖率目标为分阶段策略（底线 → 中期 50% → 长期 70%）
+- 文档同步：`CODE_DIRECTORY.md`、`FRAMEWORK.md`、`PROJECT_STATE.md`、`README.md` 补录 Jobs API（4个路由）、browser-worker-client、AppShell、SettingsDialog、Validators 子模块（3个）、Job Store、Theme Store 等约 15 个缺失文件/模块记录
+
 ## [2.71.0] - 2026-01-30
 
 ### 修复

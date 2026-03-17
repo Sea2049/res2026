@@ -1,6 +1,7 @@
 /**
  * 任务内存存储
  * 提供跨 API 路由的任务状态共享（单实例进程内）
+ * 开发模式下通过 globalThis 持久化，避免 HMR 热更新清空导致轮询 404
  */
 
 import type { CrawlJob, JobStatus } from "./types";
@@ -62,5 +63,13 @@ class JobStore {
   }
 }
 
-// 进程级单例（Next.js 开发模式 HMR 下会重置，生产模式保持一致）
-export const jobStore = new JobStore();
+// 开发模式下 HMR 会重新执行模块，导致 jobStore 被重置、轮询 GET /api/jobs/:id 返回 404
+// 使用 globalThis 保留同一进程内的 store，避免热更新后任务丢失
+const globalKey = "__RES2026_JOB_STORE__";
+declare const globalThis: { [key: string]: JobStore | undefined };
+const jobStore =
+  typeof globalThis[globalKey] !== "undefined"
+    ? globalThis[globalKey]!
+    : (globalThis[globalKey] = new JobStore());
+
+export { jobStore };

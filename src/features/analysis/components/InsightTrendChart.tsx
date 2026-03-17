@@ -26,7 +26,7 @@ interface InsightTrendChartProps {
 /**
  * 趋势图标映射
  */
-const TREND_ICONS: Record<Insight["trend"], string> = {
+const TREND_ICONS: Record<NonNullable<Insight["trend"]>, string> = {
   up: "📈",
   down: "📉",
   stable: "➡️",
@@ -35,7 +35,7 @@ const TREND_ICONS: Record<Insight["trend"], string> = {
 /**
  * 趋势颜色映射
  */
-const TREND_COLORS: Record<Insight["trend"], string> = {
+const TREND_COLORS: Record<NonNullable<Insight["trend"]>, string> = {
   up: "text-green-300 bg-green-500/10 border border-green-900/50",
   down: "text-red-300 bg-red-500/10 border border-red-900/50",
   stable: "text-muted-foreground bg-muted/40 border border-border",

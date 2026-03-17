@@ -231,17 +231,22 @@ class RedditApiClient {
    * @param postId Post ID
    * @param subreddit Subreddit 名称
    * @param signal AbortSignal 用于取消请求
+   * @param sort 可选，排序方式：confidence|top|new|controversial|old
    * @returns Promise<Comment[]> 评论列表
    */
-  async getComments(postId: string, subreddit: string, signal?: AbortSignal): Promise<Comment[]> {
+  async getComments(
+    postId: string,
+    subreddit: string,
+    signal?: AbortSignal,
+    sort?: 'confidence' | 'top' | 'new' | 'controversial' | 'old'
+  ): Promise<Comment[]> {
     try {
-      console.log("正在获取评论:", postId, subreddit);
+      console.log("正在获取评论:", postId, subreddit, sort || "confidence");
 
-      // 使用服务端 API 获取评论
-      const response = await this.fetchViaServerApi('comments', {
-        subreddit,
-        postId,
-      }, signal);
+      const params: Record<string, string> = { subreddit, postId };
+      if (sort) params.sort = sort;
+
+      const response = await this.fetchViaServerApi('comments', params, signal);
       const data = await response.json();
       
       const comments: Comment[] = [];

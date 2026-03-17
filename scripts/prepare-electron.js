@@ -77,15 +77,7 @@ if (fs.existsSync(PUBLIC_SRC)) {
   copyDirSync(PUBLIC_SRC, targetPublic);
 }
 
-// 5. 复制 prisma 目录（Prisma 需要 schema 和迁移文件）
-const prismaSrc = path.join(ROOT, 'prisma');
-if (fs.existsSync(prismaSrc)) {
-  const prismaTarget = path.join(TARGET, 'prisma');
-  console.log(`[prepare] 正在复制 prisma -> ${prismaTarget}`);
-  copyDirSync(prismaSrc, prismaTarget);
-}
-
-// 6. 清理 standalone 中可能残留的环境变量文件，避免敏感信息被打包
+// 5. 清理 standalone 中可能残留的环境变量文件，避免敏感信息被打包
 const envFilesToRemove = [
   '.env',
   '.env.local',

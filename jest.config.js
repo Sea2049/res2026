@@ -26,13 +26,16 @@ const customJestConfig = {
     '!src/**/*.stories.{js,jsx,ts,tsx}',
     '!src/**/__tests__/**',
   ],
-  // 短期：仅报告覆盖率，不因未达 70% 导致 CI 失败；中期可逐步提高并恢复 threshold
+  // 覆盖率阈值策略：设定略低于当前实际水平的底线，防止倒退。
+  // 当前实际值约 statements 30% / lines 31% / functions 26% / branches 23%
+  // 底线：statements/lines 25%，functions 20%，branches 15%
+  // 中期目标：50%；长期目标：70%
   coverageThreshold: {
     global: {
-      branches: 0,
-      functions: 0,
-      lines: 0,
-      statements: 0,
+      branches: 15,
+      functions: 20,
+      lines: 25,
+      statements: 25,
     },
   },
 }

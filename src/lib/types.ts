@@ -75,6 +75,8 @@ export interface FetchStats {
   completionGap: number;
   /** 数据来源：jobs | legacy */
   source: "jobs" | "legacy";
+  /** 当 source 为 legacy 时，可选的失败原因说明（便于排查为何未走 Jobs） */
+  legacyFallbackReason?: string;
 }
 
 /**
@@ -730,6 +732,8 @@ export interface CrawlJobErrorStats {
   http_429_count: number;
   retry_count: number;
   last_error_code?: ErrorCode;
+  /** 服务端采集失败时的具体错误信息，便于前端展示与排查 */
+  last_error_message?: string;
 }
 
 /** 浠诲姟鏃堕棿淇℃伅 */

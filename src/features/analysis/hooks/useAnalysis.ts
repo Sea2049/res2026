@@ -96,7 +96,8 @@ interface UseAnalysisReturn {
 // ==================== 轮询配置 ====================
 const POLL_INTERVAL_INITIAL_MS = 1000;
 const POLL_INTERVAL_MAX_MS = 5000;
-const POLL_TIMEOUT_MS = 180000; // 约 3 分钟
+// 原来 3 分钟会导致 Jobs 仍在跑时就回退 legacy（legacy 通常只有 100 条上限）
+const POLL_TIMEOUT_MS = 15 * 60 * 1000; // 15 分钟
 
 /**
  * 生成唯一会话 ID
@@ -220,13 +221,14 @@ export function useAnalysis(): UseAnalysisReturn {
   const [errorInfo, setErrorInfo] = useState<ErrorInfo | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const jobIdRef = useRef<string | null>(null);
+  const jobsFailureReasonRef = useRef<string | null>(null);
   const workerManagerRef = useRef<ReturnType<typeof getNLPWorkerManager> | null>(null);
   const [commentsNextCursor, setCommentsNextCursor] = useState<string | null>(null);
   const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
   const configRef = useRef<AnalysisConfig>({
     maxComments: 1000,
     minKeywordLength: 3,
-    topKeywordsCount: 30,
+    topKeywordsCount: 100,
     sentimentThreshold: 0.3,
     enableInsightDetection: true,
   });
@@ -305,8 +307,31 @@ export function useAnalysis(): UseAnalysisReturn {
           updateSession({
             currentStep: `正在获取帖子 "${topic.title.substring(0, 30)}..." 的评论...`,
           });
-          const comments = await redditApi.getComments(topic.id, topic.subreddit);
-          return comments;
+          // 多排序抽样合并，提升 legacy 模式下评论数量（每 sort 约 100 条，5 sort 可超 200）
+          const SORTS: Array<"confidence" | "top" | "new" | "controversial" | "old"> = [
+            "confidence",
+            "top",
+            "new",
+            "controversial",
+            "old",
+          ];
+          const seen = new Set<string>();
+          const merged: { id: string; body: string; author: string; score: number; created_utc: number; parent_id: string }[] = [];
+          for (const sort of SORTS) {
+            try {
+              const comments = await redditApi.getComments(topic.id, topic.subreddit, undefined, sort);
+              for (const c of comments) {
+                if (c.body?.trim() && !seen.has(c.id)) {
+                  seen.add(c.id);
+                  merged.push({ id: c.id, body: c.body, author: c.author, score: c.score, created_utc: c.created_utc, parent_id: c.parent_id });
+                }
+              }
+              await new Promise((r) => setTimeout(r, 600));
+            } catch {
+              // 单个 sort 失败不影响其他
+            }
+          }
+          return merged;
         }
       } catch (error) {
         // 继续处理，让外层决定是否终止
@@ -387,13 +412,25 @@ export function useAnalysis(): UseAnalysisReturn {
           signal,
         });
       } catch (e) {
+        jobsFailureReasonRef.current = "提交任务时网络异常，请检查是否已启动 Next 服务与网络连接";
         console.warn("[useAnalysis] Jobs crawl 请求异常:", e);
         return null;
       }
 
       if (!createRes || !createRes.ok) {
+        const status = createRes?.status;
         const errText = createRes ? await createRes.text().catch(() => "") : "";
-        console.warn("[useAnalysis] Jobs crawl 请求失败:", createRes?.status ?? "(无响应)", errText);
+        console.warn("[useAnalysis] Jobs crawl 请求失败:", status ?? "(无响应)", errText);
+
+        // 429：不要回退到 legacy（legacy 更不完整），直接提示用户等待重试
+        if (status === 429) {
+          throw createRateLimitError();
+        }
+
+        jobsFailureReasonRef.current =
+          status === 400
+            ? "请求参数校验未通过，请确认选择主题后重试"
+            : `服务端返回 ${status}，请查看控制台或稍后重试`;
         return null;
       }
 
@@ -401,12 +438,14 @@ export function useAnalysis(): UseAnalysisReturn {
       try {
         createData = await createRes.json();
       } catch {
+        jobsFailureReasonRef.current = "任务创建响应解析失败";
         console.warn("[useAnalysis] Jobs crawl 响应解析失败");
         return null;
       }
 
       const jobId = createData?.job_id;
       if (!jobId) {
+        jobsFailureReasonRef.current = "服务未返回任务 ID";
         console.warn("[useAnalysis] Jobs crawl 未返回 job_id");
         return null;
       }
@@ -428,15 +467,20 @@ export function useAnalysis(): UseAnalysisReturn {
         try {
           statusRes = await fetch(`/api/jobs/${jobId}`, { signal });
         } catch (e) {
+          jobsFailureReasonRef.current = "轮询任务状态时网络异常";
           console.warn("[useAnalysis] Jobs 状态查询异常:", e);
           return null;
         }
         if (!statusRes.ok) {
+          jobsFailureReasonRef.current = `获取任务状态失败 (HTTP ${statusRes.status})`;
           console.warn("[useAnalysis] Jobs 状态查询失败:", statusRes.status);
           return null;
         }
         job = (await statusRes.json()) as CrawlJob;
-        if (!job?.job_id) return null;
+        if (!job?.job_id) {
+          jobsFailureReasonRef.current = "任务状态数据异常";
+          return null;
+        }
 
         const status = job.status;
         const progress = job.progress;
@@ -450,7 +494,14 @@ export function useAnalysis(): UseAnalysisReturn {
           break;
         }
         if (status === "failed" || status === "cancelled") {
-          console.warn("[useAnalysis] Jobs 终态异常:", status);
+          const serverMsg = job?.errors?.last_error_message;
+          jobsFailureReasonRef.current =
+            status === "failed"
+              ? serverMsg
+                ? `服务端采集失败：${serverMsg}（可配置 HTTP_PROXY 或稍后重试）`
+                : "服务端采集失败（常见原因：Reddit 限流/网络不通，请配置 HTTP_PROXY 或稍后重试）"
+              : "任务已取消";
+          console.warn("[useAnalysis] Jobs 终态异常:", status, serverMsg || "");
           return null;
         }
 
@@ -459,7 +510,8 @@ export function useAnalysis(): UseAnalysisReturn {
 
       if (!job || (job.status !== "completed" && job.status !== "partial_success")) {
         console.warn("[useAnalysis] Jobs 轮询超时或未完成");
-        return null;
+        // 不回退 legacy：这种情况下 legacy 很可能只给 100 条，误导“只能分析100”
+        throw createTimeoutError();
       }
 
       // GET results
@@ -468,10 +520,12 @@ export function useAnalysis(): UseAnalysisReturn {
       try {
         resultsRes = await fetch(`/api/jobs/${jobId}/results?view=summary`, { signal });
       } catch (e) {
+        jobsFailureReasonRef.current = "获取分析结果时网络异常";
         console.warn("[useAnalysis] Jobs results 请求异常:", e);
         return null;
       }
       if (!resultsRes.ok) {
+        jobsFailureReasonRef.current = `获取结果失败 (HTTP ${resultsRes.status})`;
         console.warn("[useAnalysis] Jobs results 请求失败:", resultsRes.status);
         return null;
       }
@@ -481,6 +535,7 @@ export function useAnalysis(): UseAnalysisReturn {
       const analyzedCount = summary?.analyzed_comments ?? job.progress.analyzed_comments ?? 0;
 
       if (analyzedCount === 0) {
+        jobsFailureReasonRef.current = "Jobs 未抓取到任何评论（可能 Reddit 限流或帖子无评论）";
         console.warn("[useAnalysis] Jobs 返回 0 条分析结果，回退");
         return null;
       }
@@ -624,6 +679,7 @@ export function useAnalysis(): UseAnalysisReturn {
         analyzedComments: result.comments.length,
         completionGap: 0,
         source: "legacy",
+        legacyFallbackReason: jobsFailureReasonRef.current ?? undefined,
       };
       return { ...result, fetchStats };
     },
@@ -657,6 +713,7 @@ export function useAnalysis(): UseAnalysisReturn {
       if (abortControllerRef.current) abortControllerRef.current.abort();
       abortControllerRef.current = new AbortController();
       jobIdRef.current = null;
+      jobsFailureReasonRef.current = null;
       setCommentsNextCursor(null);
       setIsLoadingMoreComments(false);
       const { signal } = abortControllerRef.current;

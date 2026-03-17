@@ -91,6 +91,19 @@ API Routes 实现服务端代理，统一处理与 Reddit API 的通信，保护
 | src/app/api/export/excel/route.ts | TS | Excel导出端点，生成包含完整分析数据的电子表格 |
 | src/app/api/export/pdf/route.ts | TS | PDF导出端点，生成美观的分析报告文档 |
 | src/app/api/docs/route.ts | TS | OpenAPI 文档端点(v2.66.0新增)，返回 OpenAPI JSON 规范 |
+| src/app/api/jobs/crawl/route.ts | TS | Jobs 爬取任务创建端点，接收爬取请求并创建后台任务 |
+| src/app/api/jobs/[jobId]/route.ts | TS | Jobs 任务状态查询端点，返回指定任务的当前状态 |
+| src/app/api/jobs/[jobId]/results/route.ts | TS | Jobs 任务结果查询端点，返回已完成任务的爬取结果 |
+| src/app/api/jobs/[jobId]/cancel/route.ts | TS | Jobs 任务取消端点，取消进行中的爬取任务 |
+
+### 3.3 API Routes 测试
+
+| 文件路径 | 类型 | 说明 |
+|----------|------|------|
+| src/app/api/__tests__/reddit-routes.test.ts | TS | Reddit API 路由测试，覆盖参数验证、限流、响应格式 |
+| src/app/api/__tests__/export-routes.test.ts | TS | 导出 API 路由测试，覆盖格式验证、文件生成 |
+| src/app/api/jobs/__tests__/crawl.route.integration.test.ts | TS | Jobs 爬取任务集成测试，覆盖完整任务生命周期 |
+| src/app/api/jobs/__tests__/crawl.route.error-code.test.ts | TS | Jobs 爬取任务错误码测试，覆盖各类异常情况 |
 
 ## 四、组件库目录（components）
 
@@ -122,7 +135,14 @@ components 目录存放通用的 UI 组件，这些组件不依赖特定业务�
 | src/components/ui/__tests__/Card.test.tsx | TSX | Card 组件的单元测试，覆盖渲染和样式测试 |
 | src/components/ui/__tests__/Input.test.tsx | TSX | Input 组件的单元测试，覆盖输入和验证测试 |
 
-### 4.3 组件索引
+### 4.3 应用层组件
+
+| 文件路径 | 类型 | 说明 |
+|----------|------|------|
+| src/components/app/AppShell.tsx | TSX | 应用外壳组件，管理 Electron 主题切换和菜单事件监听 |
+| src/components/app/SettingsDialog.tsx | TSX | 设置对话框组件，提供应用偏好设置界面（主题等） |
+
+### 4.4 组件索引
 
 | 文件路径 | 类型 | 说明 |
 |----------|------|------|
@@ -250,6 +270,7 @@ lib 目录包含项目的工具函数、类型定义、外部服务封装、API 
 |----------|------|------|
 | src/lib/api/fetch-helper.ts | TS | Fetch 工具模块，提供统一的请求封装和错误处理逻辑 |
 | src/lib/api/reddit.ts | TS | Reddit API 类型定义，包含请求和响应的 TypeScript 类型 |
+| src/lib/api/browser-worker-client.ts | TS | Browser Worker 客户端，与独立的 browser-worker 服务通信，发起爬取任务 |
 
 ### 6.2 AI集成模块
 
@@ -270,6 +291,9 @@ lib 目录包含项目的工具函数、类型定义、外部服务封装、API 
 | src/lib/rate-limiter.ts | TS | 请求限流器(v2.66.0新增)，滑动窗口算法按 IP 追踪请求，预配置限流策略 |
 | src/lib/lru-cache.ts | TS | LRU 缓存(v2.66.0新增)，支持固定大小、TTL 过期、命中率统计 |
 | src/lib/swagger.ts | TS | Swagger 配置(v2.66.0新增)，OpenAPI 3.0 规范定义和 schema 配置 |
+| src/lib/job-store.ts | TS | Job 状态存储，管理爬取任务的内存状态（创建、更新、查询） |
+| src/lib/job-results-store.ts | TS | Job 结果存储，管理已完成任务的爬取结果数据 |
+| src/lib/theme/theme-store.ts | TS | 主题状态存储，管理应用明暗主题偏好的持久化与同步 |
 
 ### 6.4 Worker 线程
 
@@ -288,10 +312,24 @@ lib 目录包含项目的工具函数、类型定义、外部服务封装、API 
 | src/lib/__tests__/validators.test.ts | TS | 验证器单元测试(v2.66.0新增)，覆盖所有验证函数边界条件 |
 | src/lib/api/__tests__/fetch-helper.test.ts | TS | Fetch 辅助工具的单元测试，覆盖多策略回退机制（8个测试用例） |
 | src/lib/api/__tests__/reddit.test.ts | TS | Reddit API 客户端的单元测试，覆盖所有 API 方法（9个测试用例） |
-| src/app/api/__tests__/reddit-routes.test.ts | TS | Reddit API 路由测试(v2.66.0新增)，覆盖参数验证、限流、响应格式 |
-| src/app/api/__tests__/export-routes.test.ts | TS | 导出 API 路由测试(v2.66.0新增)，覆盖格式验证、文件生成 |
 
-### 6.6 类型定义
+### 6.6 Validators 子模块
+
+| 文件路径 | 类型 | 说明 |
+|----------|------|------|
+| src/lib/validators/index.ts | TS | Validators 统一出口，聚合各子模块验证函数 |
+| src/lib/validators/jobs.ts | TS | Jobs 请求参数验证，校验爬取任务的输入格式和范围 |
+| src/lib/validators/worker.ts | TS | Worker 配置验证，校验 browser-worker 相关配置参数 |
+| src/lib/validators/__tests__/jobs.test.ts | TS | Jobs 验证器单元测试 |
+| src/lib/validators/__tests__/worker.test.ts | TS | Worker 验证器单元测试 |
+
+### 6.7 Jobs 任务执行
+
+| 文件路径 | 类型 | 说明 |
+|----------|------|------|
+| src/lib/jobs/runner.ts | TS | Job Runner，协调爬取任务的分发、状态跟踪和结果回写 |
+
+### 6.8 类型定义
 
 | 文件路径 | 类型 | 说明 |
 |----------|------|------|
@@ -309,30 +347,34 @@ integration 目录包含跨模块的集成测试，验证多个功能模块协�
 
 ### 8.1 按类型统计
 
-| 文件类型 | 数量 | 占比 |
+| 文件类型 | 数量 | 说明 |
 |----------|------|------|
-| TypeScript 组件（.tsx） | 41 | 40.6% |
-| TypeScript 工具（.ts） | 40 | 39.6% |
-| 测试文件（.test.ts/.test.tsx） | 22 | 21.8% |
-| 配置文件 | 19 | - |
-| 文档文件 | 5 | - |
+| TypeScript 组件（.tsx） | 43 | UI 组件、功能模块组件、App Shell、Swagger UI 页面 |
+| TypeScript 工具（.ts） | 52 | 钩子、API Routes（15个）、API 客户端、NLP、Worker、Jobs、安全工具、限流、缓存 |
+| 测试文件（.test.ts/.test.tsx） | 26 | 单元测试（lib、API 路由、Jobs）和集成测试 |
+| 配置文件 | 19 | 项目构建和测试配置 |
+| 文档文件 | 5 | FRAMEWORK、CODE_DIRECTORY、README、TESTING、CHANGELOG |
 
 ### 8.2 按目录统计
 
 | 目录 | 组件 | 工具 | 测试 | API | Worker | 小计 |
 |------|------|------|------|-----|--------|------|
 | electron | 0 | 3 | 0 | 0 | 0 | 3 |
-| src/app | 3 | 0 | 3 | 12 | 0 | 18 |
+| src/app | 3 | 0 | 7 | 15 | 0 | 25 |
 | src/components/ui | 13 | 0 | 3 | 0 | 0 | 16 |
+| src/components/app | 2 | 0 | 0 | 0 | 0 | 2 |
 | src/components | 0 | 1 | 0 | 0 | 0 | 1 |
 | src/features/topic-selection | 5 | 2 | 4 | 0 | 0 | 11 |
 | src/features/analysis | 10 | 5 | 4 | 0 | 0 | 19 |
 | src/features/product-appeal | 3 | 1 | 0 | 0 | 0 | 4 |
-| src/lib/api | 0 | 2 | 2 | 0 | 0 | 4 |
+| src/lib/api | 0 | 3 | 2 | 0 | 0 | 5 |
 | src/lib/ai | 0 | 3 | 0 | 0 | 0 | 3 |
+| src/lib/validators | 0 | 3 | 2 | 0 | 0 | 5 |
+| src/lib/jobs | 0 | 1 | 0 | 0 | 0 | 1 |
+| src/lib/theme | 0 | 1 | 0 | 0 | 0 | 1 |
 | src/lib | 0 | 10 | 5 | 0 | 2 | 17 |
 | src/integration | 0 | 0 | 1 | 0 | 0 | 1 |
-| **总计** | **41** | **40** | **22** | **12** | **2** | **101** |
+| **总计** | **43** | **52** | **26** | **15** | **2** | **121** |
 
 ### 8.3 文件清单
 

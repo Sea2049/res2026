@@ -44,6 +44,16 @@ function extractCommentsAndMore(
   outComments: Comment[],
   outMoreChildrenIds: string[]
 ): void {
+  const normalizeChildId = (raw: string): string => {
+    // Reddit morechildren 返回的 children 在不同场景下可能是：
+    // - "abc123"（comment id）
+    // - "t1_abc123"（comment fullname）
+    // 统一成纯 id，避免后续 morechildren 请求失效导致递归提前结束。
+    if (!raw) return "";
+    if (raw.startsWith("t1_")) return raw.slice(3);
+    return raw;
+  };
+
   for (const item of children) {
     if (item.kind === "t1" && item.data) {
       const d = item.data as RedditCommentData;
@@ -79,7 +89,10 @@ function extractCommentsAndMore(
       const d = item.data as RedditMoreData;
       if (Array.isArray(d.children) && d.children.length > 0) {
         for (const id of d.children) {
-          if (typeof id === "string" && id) outMoreChildrenIds.push(id);
+          if (typeof id === "string" && id) {
+            const normalized = normalizeChildId(id);
+            if (normalized) outMoreChildrenIds.push(normalized);
+          }
         }
       }
     }
@@ -101,7 +114,6 @@ async function fetchMoreChildrenThings(
   childrenIds: string[],
   sort: string
 ): Promise<RedditChild[]> {
-  const dispatcher = getProxyDispatcher();
   const form = new URLSearchParams();
   form.set("link_id", linkId);
   form.set("children", childrenIds.join(","));
@@ -109,32 +121,55 @@ async function fetchMoreChildrenThings(
   form.set("sort", sort);
   form.set("depth", "0");
 
-  const res = await undiciFetch("https://www.reddit.com/api/morechildren.json", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Accept: "application/json",
-      "User-Agent": REDDIT_UA,
-    },
-    body: form.toString(),
-    dispatcher,
-  });
+  // 首选：直连 POST（更标准）
+  try {
+    const dispatcher = getProxyDispatcher();
+    const res = await undiciFetch(
+      "https://www.reddit.com/api/morechildren.json",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+          "User-Agent": REDDIT_UA,
+        },
+        body: form.toString(),
+        dispatcher,
+      }
+    );
 
-  if (res.status === 429) {
-    const err = new Error("Reddit rate limited (429)") as Error & { status?: number };
-    err.status = 429;
-    throw err;
-  }
-  if (!res.ok) {
-    const err = new Error(`morechildren HTTP ${res.status}`) as Error & { status?: number };
-    err.status = res.status;
-    throw err;
-  }
+    if (res.status === 429) {
+      const err = new Error("Reddit rate limited (429)") as Error & {
+        status?: number;
+      };
+      err.status = 429;
+      throw err;
+    }
+    if (!res.ok) {
+      const err = new Error(`morechildren HTTP ${res.status}`) as Error & {
+        status?: number;
+      };
+      err.status = res.status;
+      throw err;
+    }
 
-  // undici Response supports json()
-  const json = (await res.json()) as any;
-  const things = json?.json?.data?.things;
-  return Array.isArray(things) ? (things as RedditChild[]) : [];
+    const json = (await res.json()) as any;
+    const things = json?.json?.data?.things;
+    return Array.isArray(things) ? (things as RedditChild[]) : [];
+  } catch (e) {
+    // 兜底：GET + fetchWithBrowserWorkerFallback（可走 CF Worker / Browser Worker 等策略）
+    // 说明：某些环境下 Reddit 对匿名 POST 更敏感，但 GET 反而能通过代理/浏览器兜底拿到数据。
+    const status = (e as any)?.status;
+    if (status === 429) throw e;
+
+    const url = `https://www.reddit.com/api/morechildren.json?${form.toString()}`;
+    const res = await fetchWithBrowserWorkerFallback(url, {
+      useBrowserWorker: true,
+    });
+    const json = (await res.json()) as any;
+    const things = json?.json?.data?.things;
+    return Array.isArray(things) ? (things as RedditChild[]) : [];
+  }
 }
 
 async function fetchMoreChildrenThingsWithRetry(
@@ -167,9 +202,12 @@ async function fetchMoreChildrenThingsWithRetry(
 async function fetchPostComments(
   subreddit: string,
   postId: string,
-  limit = DEFAULT_COMMENT_LIMIT
+  opts?: { limit?: number; sort?: string; raw_json?: 0 | 1 }
 ): Promise<{ comments: Comment[]; more_children_ids: string[]; link_id: string; subreddit: string }> {
-  const url = `https://www.reddit.com/r/${encodeURIComponent(subreddit)}/comments/${encodeURIComponent(postId)}.json?limit=${limit}&sort=confidence`;
+  const limit = opts?.limit ?? DEFAULT_COMMENT_LIMIT;
+  const sort = opts?.sort ?? "confidence";
+  const rawJson = opts?.raw_json ?? 1;
+  const url = `https://www.reddit.com/r/${encodeURIComponent(subreddit)}/comments/${encodeURIComponent(postId)}.json?limit=${limit}&sort=${encodeURIComponent(sort)}&raw_json=${rawJson}`;
   const res = await fetchWithBrowserWorkerFallback(url, {
     useBrowserWorker: true,
   });
@@ -191,9 +229,12 @@ async function fetchPostComments(
 /** 按 post_id 直接抓取评论（不依赖 subreddit） */
 async function fetchPostCommentsById(
   postId: string,
-  limit = DEFAULT_COMMENT_LIMIT
+  opts?: { limit?: number; sort?: string; raw_json?: 0 | 1 }
 ): Promise<{ comments: Comment[]; more_children_ids: string[]; link_id: string; subreddit: string }> {
-  const url = `https://www.reddit.com/comments/${encodeURIComponent(postId)}.json?limit=${limit}&sort=confidence`;
+  const limit = opts?.limit ?? DEFAULT_COMMENT_LIMIT;
+  const sort = opts?.sort ?? "confidence";
+  const rawJson = opts?.raw_json ?? 1;
+  const url = `https://www.reddit.com/comments/${encodeURIComponent(postId)}.json?limit=${limit}&sort=${encodeURIComponent(sort)}&raw_json=${rawJson}`;
   const res = await fetchWithBrowserWorkerFallback(url, {
     useBrowserWorker: true,
   });
@@ -297,33 +338,79 @@ export async function runJob(jobId: string): Promise<void> {
 
   const subreddits = job.filters?.subreddits ?? DEFAULT_SUBREDDITS;
   const postIds = job.filters?.post_ids ?? [];
-  const targetComments = Math.min(job.target_comments, job.max_comments);
+  // 抓取目标设为 10000（忽略前端的 max_comments 限制），确保能抓取到足够多的评论
+  const targetComments = 10000;
   const seenIds = new Set<string>();
   const allComments: Comment[] = [];
   let rawFetched = 0;
 
   try {
+    // 稳定优先：对同一帖子用多种 sort 抽样抓取，合并去重后再尝试 morechildren。
+    // 这样即使 morechildren 被限流，也能更稳定地超过“每帖仅 ~100 条”的上限。
+    const SORTS: Array<"confidence" | "top" | "new" | "controversial" | "old"> = [
+      "confidence",
+      "top",
+      "new",
+      "controversial",
+      "old",
+    ];
+
     // 优先按指定 post_ids 抓取，确保“选中的帖子”能被优先分析
     for (const postId of postIds) {
       if (allComments.length >= targetComments) break;
       try {
-        const fetched = await fetchPostCommentsById(postId);
-        rawFetched += fetched.comments.length;
-        for (const c of fetched.comments) {
-          if (!seenIds.has(c.id) && c.body?.trim()) {
-            seenIds.add(c.id);
-            allComments.push(c);
-            if (allComments.length >= targetComments) break;
+        let mergedSubreddit = "";
+        const mergedMoreIds: string[] = [];
+        const mergedMoreSet = new Set<string>();
+
+        for (const sort of SORTS) {
+          if (allComments.length >= targetComments) break;
+          try {
+            const fetched = await fetchPostCommentsById(postId, {
+              sort,
+              limit: DEFAULT_COMMENT_LIMIT,
+              raw_json: 1,
+            });
+            if (!mergedSubreddit && fetched.subreddit) mergedSubreddit = fetched.subreddit;
+
+            rawFetched += fetched.comments.length;
+            for (const c of fetched.comments) {
+              if (c.id && !seenIds.has(c.id)) {
+                seenIds.add(c.id);
+                allComments.push(c);
+                if (allComments.length >= targetComments) break;
+              }
+            }
+
+            for (const id of fetched.more_children_ids ?? []) {
+              if (!mergedMoreSet.has(id)) {
+                mergedMoreSet.add(id);
+                mergedMoreIds.push(id);
+              }
+            }
+
+            // 节流：sort 抽样也会触发 429，放慢一点并加抖动
+            await sleep(1200 + Math.floor(Math.random() * 600));
+          } catch (e) {
+            // 单个 sort 失败不能影响整帖，否则就会“永远停在约100条”
+            const msg = e instanceof Error ? e.message : String(e);
+            console.warn(`[jobs/runner] fetch failed post=${postId} sort=${sort}: ${msg}`);
+            // 如果是限流，给更长冷却时间再继续
+            if (msg.includes("429") || msg.toLowerCase().includes("rate")) {
+              await sleep(8000);
+            } else {
+              await sleep(1500);
+            }
+            continue;
           }
         }
 
         // 尝试展开折叠评论（kind:"more"）
         if (
           allComments.length < targetComments &&
-          Array.isArray(fetched.more_children_ids) &&
-          fetched.more_children_ids.length > 0
+          mergedMoreIds.length > 0
         ) {
-          const pending: string[] = [...fetched.more_children_ids];
+          const pending: string[] = [...mergedMoreIds];
           const pendingSet = new Set(pending);
           let rounds = 0;
 
@@ -338,7 +425,7 @@ export async function runJob(jobId: string): Promise<void> {
 
             try {
               const things = await fetchMoreChildrenThingsWithRetry(
-                fetched.link_id,
+                `t3_${postId}`,
                 chunk,
                 "confidence"
               );
@@ -346,14 +433,14 @@ export async function runJob(jobId: string): Promise<void> {
               const moreIds: string[] = [];
               extractCommentsAndMore(
                 things as RedditChild[],
-                fetched.subreddit,
+                mergedSubreddit,
                 moreComments,
                 moreIds
               );
 
               rawFetched += moreComments.length;
               for (const c of moreComments) {
-                if (!seenIds.has(c.id) && c.body?.trim()) {
+                if (c.id && !seenIds.has(c.id)) {
                   seenIds.add(c.id);
                   allComments.push(c);
                   if (allComments.length >= targetComments) break;
@@ -374,11 +461,12 @@ export async function runJob(jobId: string): Promise<void> {
               break;
             }
 
-            await sleep(600);
+            // morechildren 更容易触发限流，放慢一些
+            await sleep(1500);
           }
         }
 
-        await sleep(600);
+        await sleep(800);
       } catch (e) {
         console.warn(`[jobs/runner] fetch comments failed by post_id ${postId}:`, e);
       }
@@ -396,7 +484,7 @@ export async function runJob(jobId: string): Promise<void> {
             const fetched = await fetchPostComments(post.subreddit, post.id);
             rawFetched += fetched.comments.length;
             for (const c of fetched.comments) {
-              if (!seenIds.has(c.id) && c.body?.trim()) {
+              if (c.id && !seenIds.has(c.id)) {
                 seenIds.add(c.id);
                 allComments.push(c);
                 if (allComments.length >= targetComments) break;
@@ -438,7 +526,7 @@ export async function runJob(jobId: string): Promise<void> {
 
                   rawFetched += moreComments.length;
                   for (const c of moreComments) {
-                    if (!seenIds.has(c.id) && c.body?.trim()) {
+                    if (c.id && !seenIds.has(c.id)) {
                       seenIds.add(c.id);
                       allComments.push(c);
                       if (allComments.length >= targetComments) break;
@@ -472,9 +560,10 @@ export async function runJob(jobId: string): Promise<void> {
     }
 
     const uniqueNormalized = allComments.length;
+    const maxToAnalyze = Math.min(uniqueNormalized, 10000);
     const config = {
       ...defaultAnalysisConfig,
-      maxComments: Math.min(uniqueNormalized, job.max_comments),
+      maxComments: maxToAnalyze,
     };
 
     const analysisResult = analyzeComments(allComments, config);
@@ -496,7 +585,7 @@ export async function runJob(jobId: string): Promise<void> {
       raw_fetched: rawFetched,
       unique_normalized: uniqueNormalized,
       analyzed_comments: analyzedComments,
-      completion_gap: Math.max(0, targetComments - analyzedComments),
+      completion_gap: Math.max(0, uniqueNormalized - analyzedComments),
     };
 
     const status = analyzedComments >= targetComments * 0.5 ? "completed" : "partial_success";
@@ -539,11 +628,13 @@ export async function runJob(jobId: string): Promise<void> {
   } catch (err) {
     console.error(`[jobs/runner] Job ${jobId} failed:`, err);
     const msg = err instanceof Error ? err.message : String(err);
+    const truncatedMsg = msg.length > 200 ? `${msg.slice(0, 200)}…` : msg;
     jobStore.update(jobId, {
       status: "failed",
       errors: {
         ...job.errors,
         last_error_code: "UPSTREAM_FORBIDDEN",
+        last_error_message: truncatedMsg,
       },
       timing: {
         ...job.timing,

@@ -28,11 +28,12 @@ app 目录遵循 Next.js App Router 规范，包含页面路由、布局组件�
 
 项目采用 Next.js API Routes 作为服务端代理层，统一处理所有与 Reddit API 的通信。这种架构设计带来了多重优势：首先，API 密钥和敏感配置存储在服务端环境变量中，避免在前端代码中暴露，降低了安全风险；其次，API Routes 可以实现请求的预处理和后处理，包括请求重试、错误转换和数据格式化；第三，通过 CORS 配置和请求限制，可以更好地控制 API 访问频率和来源。
 
-API Routes 按功能划分为九个端点：
+API Routes 按功能划分为 15 个端点：
 - **Reddit API 代理**：subreddit 端点处理 Subreddit 社区的搜索和信息获取；search 端点处理帖子搜索和结果筛选；comments 端点处理评论数据的获取和分页
 - **AI 分析服务**：insights 端点（/api/ai/insights）调用智谱AI GLM-4模型生成深度洞见
 - **高级分析功能**：prioritize 端点（/api/analysis/prioritize）提供优先级计算服务；appeal 端点（/api/analysis/appeal）提供产品吸引力评估服务
 - **数据导出服务**：export 端点（/api/export/*）支持Excel、PDF等格式的数据导出
+- **Jobs 爬取任务**：crawl 端点（/api/jobs/crawl）创建爬取任务；[jobId] 端点查询任务状态；[jobId]/results 端点获取任务结果；[jobId]/cancel 端点取消任务
 
 fetch-helper 工具模块提供统一的请求封装和错误处理逻辑。每个端点都实现了完善的错误处理和输入验证，确保 API 的健壮性和可靠性。
 
@@ -54,7 +55,7 @@ fetch-helper 工具模块提供统一的请求封装和错误处理逻辑。每�
 - 使用 `next-swagger-doc` 从 JSDoc 注释自动生成 OpenAPI 规范
 - `/api-docs` 页面提供 Swagger UI 可视化 API 文档
 - `/api/docs` 端点返回 OpenAPI JSON 规范
-- 所有 11 个 API 路由包含完整的 JSDoc 注释（参数、响应、错误码）
+- 所有 15 个 API 路由包含完整的 JSDoc 注释（参数、响应、错误码）
 
 ### 3.6 请求限流架构
 
@@ -64,6 +65,25 @@ fetch-helper 工具模块提供统一的请求封装和错误处理逻辑。每�
 - 滑动窗口算法，按 IP 地址追踪请求
 - 预配置限流策略：Reddit API（30/分钟）、AI 分析（10/分钟）、导出（20/分钟）、分析功能（20/分钟）
 - 429 响应包含 `Retry-After` 头和剩余配额信息
+
+### 3.7 Jobs 爬取任务架构
+
+为支持长时间运行的爬取任务，项目实现了异步 Jobs 架构。
+
+**核心组成**：
+- **jobs API 层**（`src/app/api/jobs/`）：提供 4 个端点（crawl 创建、状态查询、结果获取、取消）
+- **Job Store**（`src/lib/job-store.ts`）：内存中维护任务状态，支持创建、更新、查询操作
+- **Job Results Store**（`src/lib/job-results-store.ts`）：存储已完成任务的结果数据
+- **Job Runner**（`src/lib/jobs/runner.ts`）：协调任务分发到 browser-worker 服务并跟踪执行状态
+- **Browser Worker Client**（`src/lib/api/browser-worker-client.ts`）：与独立的 browser-worker 服务（`services/browser-worker/`）通信，发起实际爬取请求
+
+`services/browser-worker/` 是一个独立的 Node.js 服务，不在主项目 TypeScript 编译范围内，负责浏览器自动化爬取 Reddit 评论。
+
+### 3.8 Electron 应用 Shell 架构
+
+桌面版提供 AppShell 和 SettingsDialog 两个应用级组件（`src/components/app/`）：
+- **AppShell**：挂载在根布局，监听来自 Electron 主进程的菜单事件（主题切换、打开设置），桥接 IPC 与 React 状态
+- **SettingsDialog**：提供用户设置界面，目前包含主题（明/暗）切换功能，设置持久化通过 `src/lib/theme/theme-store.ts` 和 Electron 主进程双向同步
 
 ## 四、核心功能模块
 
@@ -222,40 +242,45 @@ API 密钥和敏感配置必须存储在服务端环境变量中，严禁写入�
 
 ### 11.1 代码文件统计
 
-截至当前版本（v2.66.0），项目包含以下代码文件：
+截至当前版本，项目 `src/` 目录包含以下代码文件：
 
-**TypeScript 组件文件（.tsx）**：41 个
+**TypeScript 组件文件（.tsx）**：43 个
 - UI 组件：13 个（button、input、card、badge、spinner、alert、tabs、separator、select、dialog、dropdown-menu、tooltip、progress）
+- App Shell 组件：2 个（AppShell、SettingsDialog）
 - 功能模块组件：21 个
-  - 话题选择模块：5 个（TopicSearchInput、TopicList、SearchSuggestions、TopicCard、AdvancedSearchOptions）
-  - 分析模块：11 个（AnalysisProgress、CommentList、SentimentChart、KeywordCloud、InsightCard、DeepInsights、EmptyState、InsightFilters、InsightGraph、InsightTrendChart、FeatureAnalysis入口）
-  - 产品吸引力模块：3 个（AppealScore、ObjectionMap、入口组件）
+  - 话题选择模块：5 个
+  - 分析模块：11 个
+  - 产品吸引力模块：3 个（含入口组件）
 - 页面组件：3 个（page.tsx、layout.tsx、api-docs/page.tsx）
-- 测试组件：2 个（UI组件测试3个、功能组件测试4个）
+- 测试组件：4 个（UI 组件测试 3 个、功能组件测试 1 个）
 
-**TypeScript 工具文件（.ts）**：40 个
-- API Routes：10 个（subreddit、search、comments、insights、prioritize、appeal、export、export/excel、export/pdf、docs）
-- 自定义钩子：7 个（useTopicSearch、useSearchHistory、useAnalysis、useDeepInsights、useInsightTrend、useAppealAnalysis）
-- API 客户端和工具：4 个（fetch-helper、reddit、zhipu-ai、qwen-ai、prompts）
-- NLP 处理：1 个（nlp.ts）
+**TypeScript 工具文件（.ts）**：52 个
+- API Routes：15 个（Reddit 3个、AI 分析 1个、高级分析 2个、导出 3个、docs 1个、Jobs 4个、OpenAPI 1个）
+- 自定义钩子：7 个
+- API 客户端和工具：5 个（fetch-helper、reddit、zhipu-ai、qwen-ai、browser-worker-client）
+- NLP 处理：1 个
 - 工具类和模式定义：3 个（sentiment-patterns、priority-calculator、utils）
 - 安全工具：1 个（validators.ts）
-- 限流和缓存：2 个（rate-limiter.ts、lru-cache.ts）
-- Swagger 配置：1 个（swagger.ts）
-- 错误处理：1 个（errors.ts）
-- 类型定义：1 个（types.ts）
+- Validators 子模块：3 个（index、jobs、worker）
+- 限流和缓存：2 个（rate-limiter、lru-cache）
+- Jobs 相关：3 个（job-store、job-results-store、jobs/runner）
+- 主题管理：1 个（theme/theme-store）
+- Swagger 配置：1 个
+- 错误处理：1 个
+- 类型定义：2 个（types.ts、src/types/electron.d.ts）
 - Worker 线程：2 个（worker-manager、nlp.worker）
 - Electron 主进程：3 个（main.ts、preload.ts、types.d.ts）
 
-**测试文件（.test.tsx/.test.ts）**：22 个
+**测试文件（.test.tsx/.test.ts）**：26 个
 - UI 组件测试：3 个（Button、Card、Input）
 - 话题选择模块测试：4 个（useTopicSearch、useSearchHistory、TopicSearchInput、TopicCard）
 - 分析模块测试：4 个（useAnalysis、AnalysisProgress、sentiment-patterns、priority-calculator）
 - API 工具测试：2 个（fetch-helper、reddit）
 - NLP 模块测试：1 个（nlp.test.ts）
 - 集成测试：1 个（user-flow.test.ts）
-- lib 模块测试：4 个（rate-limiter、lru-cache、auth-token、validators）
-- API 路由测试：3 个（reddit-routes、invite-routes、export-routes）
+- lib 模块测试：4 个（rate-limiter、lru-cache、validators、validators 子模块）
+- API 路由测试：4 个（reddit-routes、export-routes、jobs crawl 集成、jobs 错误码）
+- Validators 子模块测试：2 个（jobs、worker 验证器）
 
 ### 11.2 配置文件统计
 
