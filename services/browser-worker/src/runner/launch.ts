@@ -1,4 +1,9 @@
-import { Browser, chromium } from "playwright";
+import type { Browser } from "playwright";
+import { chromium } from "playwright-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+
+// Register once at module load so all contexts inherit stealth evasion.
+chromium.use(StealthPlugin());
 
 export interface LaunchOptions {
   headless: boolean;

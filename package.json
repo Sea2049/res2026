@@ -1,6 +1,6 @@
 {
   "name": "res2026",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "description": "Reddit Insight Tool - 发现热门主题，洞察用户痛点，智能优先级分析（Windows 桌面版）",
   "main": "electron-out/main.js",
   "scripts": {
@@ -101,7 +101,12 @@
     "extraResources": [
       {
         "from": "electron-resources/standalone",
-        "to": "standalone"
+        "to": "standalone",
+        "filter": ["**/*", "node_modules/**/*"]
+      },
+      {
+        "from": "electron-resources/standalone/node_modules",
+        "to": "standalone/node_modules"
       },
       {
         "from": "public",

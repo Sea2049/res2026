@@ -1,5 +1,7 @@
-import { Browser, BrowserContext } from "playwright";
-import { applyStealthScripts } from "../runner/stealth";
+import type { Browser, BrowserContext } from "playwright";
+import { createContextWithFingerprint } from "../runner/fingerprint";
+import type { ProxyPool } from "../proxy/proxy-pool";
+import { ContextStore } from "./context-store";
 
 export interface SessionInfo {
   id: string;
@@ -22,22 +24,42 @@ function generateId(): string {
 export class SessionPool {
   private sessions: Map<string, SessionInfo> = new Map();
   private sessionKeyMap: Map<string, string> = new Map(); // sessionKey -> sessionId
+  private readonly contextStore: ContextStore;
 
-  constructor(private browser: Browser, private maxSize: number = 3) {}
+  constructor(
+    private browser: Browser,
+    private maxSize: number = 3,
+    private proxyPool?: ProxyPool
+  ) {
+    this.contextStore = new ContextStore();
+    // Clean stale state files on startup
+    this.contextStore.clean();
+  }
 
   private async createSession(sessionKey?: string): Promise<SessionInfo> {
-    const context = await this.browser.newContext({
-      userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      viewport: { width: 1920, height: 1080 },
-      locale: "en-US",
-      timezoneId: "America/New_York",
-      extraHTTPHeaders: {
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-    });
+    const proxy = this.proxyPool?.next() ?? undefined;
+    const storagePath = sessionKey ? this.contextStore.load(sessionKey) : undefined;
 
-    await applyStealthScripts(context);
+    let context: BrowserContext;
+
+    if (storagePath) {
+      try {
+        context = await createContextWithFingerprint(this.browser, {
+          storageState: storagePath,
+          proxy,
+        });
+      } catch (err) {
+        console.warn(
+          `[session-pool] Failed to load storageState for ${sessionKey}, falling back to fresh context:`,
+          err
+        );
+        // Corrupted state file — delete and retry without it
+        this.contextStore.delete(sessionKey!);
+        context = await createContextWithFingerprint(this.browser, { proxy });
+      }
+    } else {
+      context = await createContextWithFingerprint(this.browser, { proxy });
+    }
 
     const id = generateId();
     const info: SessionInfo = {
@@ -136,6 +158,16 @@ export class SessionPool {
 
     const sessionKey = old.sessionKey;
 
+    // Persist cookie/storage state before closing so next session can inherit it
+    if (sessionKey) {
+      try {
+        const state = await old.context.storageState();
+        await this.contextStore.save(sessionKey, state);
+      } catch (err) {
+        console.warn(`[session-pool] Failed to save storageState for ${sessionKey}:`, err);
+      }
+    }
+
     // Remove old mappings
     this.sessions.delete(sessionId);
     if (sessionKey) {
@@ -149,17 +181,34 @@ export class SessionPool {
       // ignore
     }
 
-    // Create replacement
+    // Create replacement (will load the persisted state we just saved)
     const newSession = await this.createSession(sessionKey);
     return newSession;
   }
 
   async closeAll(): Promise<void> {
+    // Persist state for all keyed sessions before shutdown
+    const savePromises: Promise<void>[] = [];
+    for (const [, info] of this.sessions) {
+      if (info.sessionKey) {
+        savePromises.push(
+          info.context
+            .storageState()
+            .then((state) => this.contextStore.save(info.sessionKey!, state))
+            .catch((err) =>
+              console.warn(
+                `[session-pool] Failed to save storageState on shutdown for ${info.sessionKey}:`,
+                err
+              )
+            )
+        );
+      }
+    }
+    await Promise.allSettled(savePromises);
+
     const closePromises: Promise<void>[] = [];
     for (const [, info] of this.sessions) {
-      closePromises.push(
-        info.context.close().catch(() => {})
-      );
+      closePromises.push(info.context.close().catch(() => {}));
     }
     await Promise.all(closePromises);
     this.sessions.clear();

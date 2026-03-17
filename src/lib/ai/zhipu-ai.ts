@@ -108,32 +108,46 @@ export const zhipuAI = {
     const apiUrl = process.env.ZHIPU_API_URL || "https://open.bigmodel.cn/api/paas/v4/chat/completions";
     const token = generateJWT(apiKey);
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature,
-        max_tokens: maxTokens,
-        top_p: topP
-      })
-    });
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature,
+          max_tokens: maxTokens,
+          top_p: topP
+        }),
+        signal: AbortSignal.timeout(25000),
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`智谱AI API请求失败: ${response.status} - ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`智谱AI API请求失败: ${response.status} - ${errorText}`);
+      }
+
+      const data: ChatCompletionResponse = await response.json();
+
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error("智谱AI API返回数据格式异常");
+      }
+
+      return data.choices[0].message.content;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'TimeoutError') {
+        throw new Error('智谱AI API请求超时（25秒），请稍后重试');
+      }
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new Error('智谱AI API请求已取消');
+      }
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`智谱AI API调用失败: ${String(error)}`);
     }
-
-    const data: ChatCompletionResponse = await response.json();
-
-    if (!data.choices || data.choices.length === 0) {
-      throw new Error("智谱AI API返回数据格式异常");
-    }
-
-    return data.choices[0].message.content;
   }
 };

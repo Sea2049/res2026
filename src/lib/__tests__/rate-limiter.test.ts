@@ -135,11 +135,12 @@ describe('getClientIP', () => {
     expect(getClientIP(request)).toBe('1.2.3.4');
   });
 
-  it('should extract first IP from x-forwarded-for header', () => {
+  it('should extract last non-local IP from x-forwarded-for header (safe XFF strategy)', () => {
     const request = new Request('http://localhost', {
       headers: { 'x-forwarded-for': '1.2.3.4, 5.6.7.8, 9.10.11.12' },
     });
-    expect(getClientIP(request)).toBe('1.2.3.4');
+    // 新策略：取最后一个非本地 IP，即最近的可信代理添加的 IP
+    expect(getClientIP(request)).toBe('9.10.11.12');
   });
 
   it('should extract IP from x-real-ip header', () => {

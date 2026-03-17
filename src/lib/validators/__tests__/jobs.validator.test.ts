@@ -74,7 +74,7 @@ describe("A: 合法输入 - validateCreateCrawlJobRequest", () => {
   });
 
   test("A-05: qos_class=auto 时应自动归一化为具体值", () => {
-    const result = validateCreateCrawlJobRequest(valid({ target_comments: 500, qos_class: "auto" }));
+    const result = validateCreateCrawlJobRequest(valid({ target_comments: 500, max_comments: 1000, qos_class: "auto" }));
     expect(result.valid).toBe(true);
     expect(result.resolved_qos_class).toBe("small");
   });
@@ -92,7 +92,7 @@ describe("A: 合法输入 - validateCreateCrawlJobRequest", () => {
   });
 
   test("A-08: 未提供 qos_class 时应自动归一化", () => {
-    const result = validateCreateCrawlJobRequest(valid({ target_comments: 300 }));
+    const result = validateCreateCrawlJobRequest(valid({ target_comments: 300, max_comments: 300 }));
     expect(result.valid).toBe(true);
     expect(result.resolved_qos_class).toBe("small");
   });

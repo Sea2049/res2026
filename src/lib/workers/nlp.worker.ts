@@ -54,9 +54,8 @@ interface WorkerMessage {
  */
 interface WorkerResponse {
   type: 'result' | 'error' | 'progress' | 'chunk_result';
-  result?: ReturnType<typeof analyzeCommentsLib>;
-  keywords?: Array<{ word: string; count: number }>;
-  sentiment?: { positive: number; negative: number; neutral: number };
+  /** 任务结果：analyze 返回 AnalysisResult，sentiment_only 返回情感统计，keywords_only 返回关键词数组 */
+  result?: unknown;
   error?: string;
   progress?: number;
   chunkIndex?: number;
@@ -147,7 +146,7 @@ self.addEventListener('message', (event: MessageEvent<WorkerMessage>) => {
         self.postMessage({ type: 'progress', progress: 30 } as WorkerResponse);
         const sentiment = performSentimentAnalysis(comments);
         self.postMessage({ type: 'progress', progress: 100 } as WorkerResponse);
-        self.postMessage({ type: 'result', sentiment } as WorkerResponse);
+        self.postMessage({ type: 'result', result: sentiment } as WorkerResponse);
         break;
       }
 
@@ -155,7 +154,7 @@ self.addEventListener('message', (event: MessageEvent<WorkerMessage>) => {
         self.postMessage({ type: 'progress', progress: 30 } as WorkerResponse);
         const keywords = performKeywordExtraction(comments, config);
         self.postMessage({ type: 'progress', progress: 100 } as WorkerResponse);
-        self.postMessage({ type: 'result', keywords } as WorkerResponse);
+        self.postMessage({ type: 'result', result: keywords } as WorkerResponse);
         break;
       }
 

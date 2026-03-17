@@ -1,10 +1,19 @@
+import { fetch as undiciFetch, ProxyAgent } from "undici";
 import { WorkerPool, FetchResult, FetchOptions, RawComment } from "../orchestrator/worker-pool";
 import { SessionPool, SessionInfo } from "../session/session-pool";
 import { ProxyPool } from "../proxy/proxy-pool";
 import { detectChallenge } from "../detection/challenge-detector";
+import { CaptchaSolver } from "../detection/captcha-solver";
 
 const DEFAULT_TIMEOUT = 30_000;
 const DEFAULT_LIMIT = 100;
+
+const COMMON_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  Accept: "application/json",
+  "Accept-Language": "en-US,en;q=0.9",
+};
 
 interface RedditApiChild {
   kind: string;
@@ -27,15 +36,29 @@ interface RedditCommentData {
 
 export class RedditFetcher implements WorkerPool {
   private activeSlots: number = 0;
+  private captchaSolver: CaptchaSolver;
 
   constructor(
     private sessionPool: SessionPool,
     private proxyPool: ProxyPool,
     private maxConcurrent: number = 3
-  ) {}
+  ) {
+    this.captchaSolver = new CaptchaSolver();
+  }
 
   async fetch(url: string, options?: FetchOptions): Promise<FetchResult> {
     const start = Date.now();
+
+    // Early-exit if already cancelled
+    if (options?.signal?.aborted) {
+      return {
+        ok: false,
+        url,
+        error_code: "CANCELLED",
+        error_message: "Request cancelled before start",
+        duration_ms: 0,
+      };
+    }
 
     if (options?.forceBrowser) {
       return this.fetchWithBrowser(url, options, start);
@@ -61,9 +84,17 @@ export class RedditFetcher implements WorkerPool {
     start: number
   ): Promise<FetchResult> {
     if (this.activeSlots >= this.maxConcurrent) {
-      // Wait for slot
       const deadline = Date.now() + (options?.timeout ?? DEFAULT_TIMEOUT);
       while (this.activeSlots >= this.maxConcurrent && Date.now() < deadline) {
+        if (options?.signal?.aborted) {
+          return {
+            ok: false,
+            url,
+            error_code: "CANCELLED",
+            error_message: "Request cancelled while waiting for browser slot",
+            duration_ms: Date.now() - start,
+          };
+        }
         await new Promise((r) => setTimeout(r, 200));
       }
       if (this.activeSlots >= this.maxConcurrent) {
@@ -96,7 +127,6 @@ export class RedditFetcher implements WorkerPool {
     } finally {
       if (sessionInfo) {
         this.sessionPool.release(sessionInfo.id);
-        // Rotate if needed
         if (sessionInfo.needsRotation) {
           this.sessionPool.rotate(sessionInfo.id).catch(() => {});
         }
@@ -110,25 +140,45 @@ export class RedditFetcher implements WorkerPool {
     const jsonUrl = this.toJsonUrl(url, options?.limit ?? DEFAULT_LIMIT);
     const timeout = options?.timeout ?? DEFAULT_TIMEOUT;
 
+    // Pick a proxy if available
+    const proxy = this.proxyPool.next();
+
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeout);
 
-      const response = await fetch(jsonUrl, {
-        signal: controller.signal,
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          Accept: "application/json",
-          "Accept-Language": "en-US,en;q=0.9",
-        },
-      });
+      // Also abort when the caller's signal fires
+      const onExternalAbort = () => controller.abort();
+      options?.signal?.addEventListener("abort", onExternalAbort, { once: true });
+
+      let response: Response;
+      if (proxy) {
+        const dispatcher = new ProxyAgent({
+          uri: proxy.server,
+          ...(proxy.username
+            ? { token: `Basic ${Buffer.from(`${proxy.username}:${proxy.password ?? ""}`).toString("base64")}` }
+            : {}),
+        });
+        const raw = await undiciFetch(jsonUrl, {
+          dispatcher,
+          headers: COMMON_HEADERS,
+          signal: controller.signal as AbortSignal,
+        });
+        response = raw as unknown as Response;
+      } else {
+        response = await fetch(jsonUrl, {
+          signal: controller.signal,
+          headers: COMMON_HEADERS,
+        });
+      }
       clearTimeout(timer);
+      options?.signal?.removeEventListener("abort", onExternalAbort);
 
       const text = await response.text();
       const challenge = detectChallenge(text, response.status);
 
       if (challenge.detected) {
+        if (proxy) this.proxyPool.markFailed(proxy.server);
         return {
           ok: false,
           url,
@@ -141,6 +191,7 @@ export class RedditFetcher implements WorkerPool {
       }
 
       if (!response.ok) {
+        if (proxy) this.proxyPool.markFailed(proxy.server);
         return {
           ok: false,
           url,
@@ -151,6 +202,8 @@ export class RedditFetcher implements WorkerPool {
           duration_ms: Date.now() - start,
         };
       }
+
+      if (proxy) this.proxyPool.markSuccess(proxy.server);
 
       let json: unknown;
       try {
@@ -177,7 +230,19 @@ export class RedditFetcher implements WorkerPool {
         duration_ms: Date.now() - start,
       };
     } catch (err) {
+      if (proxy) this.proxyPool.markFailed(proxy.server);
       if (err instanceof Error && err.name === "AbortError") {
+        // Distinguish between external cancellation and internal timeout
+        if (options?.signal?.aborted) {
+          return {
+            ok: false,
+            url,
+            error_code: "CANCELLED",
+            error_message: "Request cancelled by caller",
+            fetched_via: "http",
+            duration_ms: Date.now() - start,
+          };
+        }
         return {
           ok: false,
           url,
@@ -210,6 +275,18 @@ export class RedditFetcher implements WorkerPool {
     const page = await sessionInfo.context.newPage();
 
     try {
+      // Check cancellation before navigating
+      if (options?.signal?.aborted) {
+        return {
+          ok: false,
+          url,
+          error_code: "CANCELLED",
+          error_message: "Request cancelled before browser navigation",
+          fetched_via: "browser",
+          duration_ms: Date.now() - start,
+        };
+      }
+
       const response = await page.goto(jsonUrl, {
         waitUntil: "domcontentloaded",
         timeout,
@@ -230,10 +307,50 @@ export class RedditFetcher implements WorkerPool {
       // Wait for content to render
       await page.waitForSelector("body", { timeout: 10_000 });
 
+      // Check cancellation after navigation completes
+      if (options?.signal?.aborted) {
+        return {
+          ok: false,
+          url,
+          error_code: "CANCELLED",
+          error_message: "Request cancelled after browser navigation",
+          fetched_via: "browser",
+          duration_ms: Date.now() - start,
+        };
+      }
+
       const bodyText = await page.evaluate(() => document.body.innerText);
       const challenge = detectChallenge(bodyText, statusCode);
 
       if (challenge.detected) {
+        // Attempt CAPTCHA auto-solve when enabled
+        if (
+          challenge.type === "captcha" &&
+          this.captchaSolver.enabled
+        ) {
+          const captchaType = bodyText.toLowerCase().includes("hcaptcha") ? "hcaptcha" : "recaptcha";
+          const solved = await this.captchaSolver.solve(page, captchaType);
+          if (solved) {
+            // Re-read page content after solving
+            const newBody = await page.evaluate(() => document.body.innerText);
+            const rechallenge = detectChallenge(newBody, statusCode);
+            if (!rechallenge.detected) {
+              let json: unknown;
+              try { json = JSON.parse(newBody); } catch { json = null; }
+              if (json) {
+                return {
+                  ok: true,
+                  url,
+                  status_code: statusCode,
+                  comments: this.parseRedditComments(json),
+                  fetched_via: "browser",
+                  duration_ms: Date.now() - start,
+                };
+              }
+            }
+          }
+        }
+
         return {
           ok: false,
           url,
@@ -293,7 +410,6 @@ export class RedditFetcher implements WorkerPool {
   }
 
   private toJsonUrl(url: string, limit: number): string {
-    // Ensure the URL ends with .json and has proper query params
     let jsonUrl = url.replace(/\/?$/, ".json");
     if (!jsonUrl.includes(".json")) {
       jsonUrl += ".json";
@@ -306,7 +422,6 @@ export class RedditFetcher implements WorkerPool {
     const comments: RawComment[] = [];
 
     try {
-      // Reddit returns an array: [post_listing, comments_listing]
       const body = jsonBody as unknown[];
       const listings = Array.isArray(body) ? body : [body];
 
@@ -342,7 +457,6 @@ export class RedditFetcher implements WorkerPool {
         replies: [],
       };
 
-      // Recurse into replies
       if (d.replies && typeof d.replies === "object") {
         const repliesData = (d.replies as { data?: { children?: RedditApiChild[] } }).data;
         if (repliesData?.children) {

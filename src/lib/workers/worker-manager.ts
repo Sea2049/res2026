@@ -64,6 +64,7 @@ const DEFAULT_CHUNK_CONFIG: ChunkConfig = {
 /**
  * NLP Worker 管理器
  */
+
 export class NLPWorkerManager {
   private worker: Worker | null = null;
   private status: WorkerStatus = WorkerStatus.IDLE;
@@ -75,6 +76,11 @@ export class NLPWorkerManager {
   private isTerminating: boolean = false; // 防止重复 terminate
   private idleTimer: NodeJS.Timeout | null = null; // 空闲清理计时器
   private readonly IDLE_CLEANUP_DELAY = 5 * 60 * 1000; // 5分钟空闲后清理
+
+  /** 等待队列：Worker BUSY 时后续任务在此排队，每个元素是一个"启动该任务"的回调 */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private pendingQueue: Array<{ run: () => void; reject: (e: Error) => void }> = [];
+  private readonly MAX_QUEUE_SIZE = 10; // 最大队列长度，超过则直接拒绝
 
   /**
    * 初始化 Worker
@@ -125,8 +131,11 @@ export class NLPWorkerManager {
       this.currentTask = null;
       this.retryCount = 0;
       
-      // 启动空闲清理计时器
-      this.startIdleCleanup();
+      // 先派发队列中的下一个任务，再考虑启动空闲清理
+      this.drainQueue();
+      if (this.status === WorkerStatus.IDLE) {
+        this.startIdleCleanup();
+      }
     } else if (type === 'error') {
       // 任务失败
       this.clearTaskTimeout();
@@ -137,6 +146,19 @@ export class NLPWorkerManager {
     }
   };
   
+  /**
+   * 派发等待队列中的下一个任务（仅在 Worker 空闲时调用）
+   */
+  private drainQueue(): void {
+    if (this.status !== WorkerStatus.IDLE || this.pendingQueue.length === 0) {
+      return;
+    }
+    const next = this.pendingQueue.shift();
+    if (next) {
+      next.run();
+    }
+  }
+
   /**
    * 启动空闲清理计时器
    */
@@ -201,6 +223,8 @@ export class NLPWorkerManager {
         if (task) {
           task.reject(error);
         }
+        // 重试失败后仍尝试派发队列中的下一个任务
+        this.drainQueue();
       }, 100);
     } else {
       // 超过最大重试次数
@@ -253,9 +277,21 @@ export class NLPWorkerManager {
       this.initializeWorker();
     }
 
-    // 如果 Worker 忙碌，等待
+    // 如果 Worker 忙碌，排队等待而不是直接报错
     if (this.status === WorkerStatus.BUSY) {
-      throw new Error('Worker 正在处理其他任务，请稍后再试');
+      if (this.pendingQueue.length >= this.MAX_QUEUE_SIZE) {
+        throw new Error(`Worker 队列已满（${this.MAX_QUEUE_SIZE}），请稍后再试`);
+      }
+      return new Promise<T>((resolve, reject) => {
+        this.pendingQueue.push({
+          run: () => {
+            this.executeTask<T>(taskType, comments, config, timeout)
+              .then(resolve)
+              .catch(reject);
+          },
+          reject,
+        });
+      });
     }
 
     // 设置超时时间
@@ -472,6 +508,11 @@ export class NLPWorkerManager {
       this.currentTask.reject(new Error('任务被用户取消'));
       this.currentTask = null;
       this.status = WorkerStatus.IDLE;
+    }
+    // 同时拒绝并清空等待队列
+    const cancelled = this.pendingQueue.splice(0);
+    for (const queued of cancelled) {
+      queued.reject(new Error('任务被用户取消'));
     }
   }
 

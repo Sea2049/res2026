@@ -62,6 +62,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { qwenAI } from "@/lib/ai/qwen-ai";
+import { zhipuAI } from "@/lib/ai/zhipu-ai";
 import { generateInsightPrompt } from "@/lib/ai/prompts";
 import type { 
   AnalysisResult, 
@@ -111,10 +112,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.QWEN_API_KEY;
-    if (!apiKey) {
+    const qwenApiKey = process.env.QWEN_API_KEY;
+    const zhipuApiKey = process.env.ZHIPU_API_KEY;
+
+    if (!qwenApiKey && !zhipuApiKey) {
       return NextResponse.json(
-        { error: "通义千问API密钥未配置" },
+        { error: "AI API密钥未配置，请设置 QWEN_API_KEY 或 ZHIPU_API_KEY 环境变量" },
         { status: 500 }
       );
     }
@@ -125,29 +128,61 @@ export async function POST(request: NextRequest) {
       exportData
     });
 
-    const aiResponse = await qwenAI.chatCompletion({
-      apiKey,
-      messages: [
-        {
-          role: "system",
-          content: "你是一位顶级商业分析师和用户洞察专家，擅长从海量用户反馈中发现关键问题、隐藏机会和战略洞察。你的分析必须尖锐、直接、一针见血。禁止泛泛而谈，禁止车轱辘话，禁止不痛不痒的结论。每个结论都必须有数据支撑，每个建议都必须可执行。你的用户是追求真相和执行力的决策者，不是来听漂亮话的。"
-        },
-        {
-          role: "user",
-          content: prompt
+    const messages: Parameters<typeof qwenAI.chatCompletion>[0]["messages"] = [
+      {
+        role: "system",
+        content: "你是一位顶级商业分析师和用户洞察专家，擅长从海量用户反馈中发现关键问题、隐藏机会和战略洞察。你的分析必须尖锐、直接、一针见血。禁止泛泛而谈，禁止车轱辘话，禁止不痛不痒的结论。每个结论都必须有数据支撑，每个建议都必须可执行。你的用户是追求真相和执行力的决策者，不是来听漂亮话的。"
+      },
+      {
+        role: "user",
+        content: prompt
+      }
+    ];
+
+    let aiResponse: string;
+    let usedFallback = false;
+
+    if (qwenApiKey) {
+      try {
+        aiResponse = await qwenAI.chatCompletion({
+          apiKey: qwenApiKey,
+          messages,
+          model: "qwen3.5-plus",
+          temperature: 0.5,
+          maxTokens: 10000
+        });
+      } catch (qwenError) {
+        if (!zhipuApiKey) {
+          throw qwenError;
         }
-      ],
-      model: "qwen3.5-plus",
-      temperature: 0.5,
-      maxTokens: 10000
-    });
+        console.warn("Qwen AI 失败，降级到 Zhipu AI:", qwenError instanceof Error ? qwenError.message : qwenError);
+        aiResponse = await zhipuAI.chatCompletion({
+          apiKey: zhipuApiKey,
+          messages,
+          model: "glm-4",
+          temperature: 0.5,
+          maxTokens: 8000
+        });
+        usedFallback = true;
+      }
+    } else {
+      aiResponse = await zhipuAI.chatCompletion({
+        apiKey: zhipuApiKey!,
+        messages,
+        model: "glm-4",
+        temperature: 0.5,
+        maxTokens: 8000
+      });
+      usedFallback = true;
+    }
 
     console.log("AI响应长度:", aiResponse.length);
     console.log("AI响应前500字符:", aiResponse.substring(0, 500));
 
     return NextResponse.json({
       success: true,
-      data: aiResponse
+      data: aiResponse,
+      ...(usedFallback && { _fallback: true })
     });
 
   } catch (error) {

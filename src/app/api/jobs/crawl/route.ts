@@ -10,29 +10,21 @@ import {
   resolveQosClass,
 } from "@/lib/validators/jobs";
 import { jobStore } from "@/lib/job-store";
-import { RateLimiter, getClientIP } from "@/lib/rate-limiter";
+import { jobsCreateRateLimiter, getClientIP } from "@/lib/rate-limiter";
 
 // ==================== 限流（每 IP，10次/分钟）====================
 
-let crawlRateLimiter: RateLimiter | null = null;
-
-function getCrawlRateLimiter(): RateLimiter {
-  // 测试环境每次请求都重新取实例，避免模块缓存污染用例
+function getCrawlRateLimiter() {
+  // 测试环境每次请求都返回新实例，避免模块缓存污染用例
   if (process.env.NODE_ENV === "test") {
+    const { RateLimiter } = require("@/lib/rate-limiter") as typeof import("@/lib/rate-limiter");
     return new RateLimiter({
       windowMs: 60 * 1000,
       maxRequests: 10,
       name: "jobs-crawl",
     });
   }
-  if (!crawlRateLimiter) {
-    crawlRateLimiter = new RateLimiter({
-      windowMs: 60 * 1000,
-      maxRequests: 10,
-      name: "jobs-crawl",
-    });
-  }
-  return crawlRateLimiter;
+  return jobsCreateRateLimiter;
 }
 
 // ==================== 工具函数 ====================

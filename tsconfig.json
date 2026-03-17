@@ -41,6 +41,9 @@
     "electron-out",
     "electron-resources",
     "services",
+    "dist",
+    "dist-build",
+    "dist-new",
     "**/*.test.ts",
     "**/*.test.tsx"
   ]

@@ -85,6 +85,8 @@ interface ActiveJobMeta {
   timeoutMs: number;
   /** 子任务 taskId → qosLevel 的映射，用于 ack/nack */
   taskQosMap: Map<string, QosLevel>;
+  /** 取消信号控制器，cancelJob() 调用时触发 */
+  abortController: AbortController;
 }
 
 export class JobRunner {
@@ -150,6 +152,7 @@ export class JobRunner {
         startedAtMs: 0, // 任务未开始时为 0
         timeoutMs,
         taskQosMap,
+        abortController: new AbortController(),
       });
 
       this.scheduler.schedule(tasks, qosLevel);
@@ -196,6 +199,8 @@ export class JobRunner {
   async cancelJob(jobId: string, reason: string): Promise<void> {
     try {
       this.jobRepo.cancelJob(jobId, reason);
+      // Signal any in-flight fetches for this job to abort gracefully
+      this.activeJobs.get(jobId)?.abortController.abort();
       this.activeJobs.delete(jobId);
     } catch (err) {
       throw new Error(
@@ -236,11 +241,28 @@ export class JobRunner {
     const qosLevel = meta?.taskQosMap.get(task.task_id) ?? "medium";
     const url = buildFetchUrl(task);
 
+    // Use per-job abort signal so cancelJob() can interrupt in-flight fetches
+    const signal = meta?.abortController.signal;
+
+    // Skip processing if already cancelled
+    if (signal?.aborted) return;
+
+    // Read limit from job config; fall back to task's estimated count then 100
+    const limit =
+      meta?.config.target_comments ??
+      task.estimated_comments ??
+      100;
+
     try {
       const result = await this.workerPool.fetch(url, {
-        timeout_ms: 30_000,
-        prefer_http_first: true,
+        timeout: 30_000,
+        forceHttp: false,
+        limit,
+        signal,
       });
+
+      // If cancelled mid-flight, silently discard without nack
+      if (signal?.aborted) return;
 
       if (!result.ok) {
         throw new Error(
@@ -249,14 +271,14 @@ export class JobRunner {
       }
 
       // 保存评论
-      for (const raw of result.comments) {
+      for (const raw of result.comments ?? []) {
         try {
-          saveRawComment(task.job_id, task.task_id, raw.id, raw, {
+          await saveRawComment(task.job_id, task.task_id, raw.id, raw, {
             url,
-            strategy: result.strategy_used,
-            latency_ms: result.latency_ms,
+            strategy: result.fetched_via,
+            latency_ms: result.duration_ms,
           });
-          const saved = saveNormalizedComment(toNormalized(raw, task.job_id));
+          const saved = await saveNormalizedComment(toNormalized(raw, task.job_id));
           if (saved) {
             this.analysisQueue.enqueue(raw.id);
           }
@@ -268,6 +290,8 @@ export class JobRunner {
       this.scheduler.ack(task.task_id, qosLevel);
       await this._updateJobProgress(task.job_id);
     } catch (err) {
+      // Suppress errors caused by intentional cancellation
+      if (signal?.aborted) return;
       const error = err instanceof Error ? err : new Error(String(err));
       console.warn(`[JobRunner] task ${task.task_id} nack:`, error.message);
       this.scheduler.nack(task.task_id, qosLevel, error);
@@ -291,7 +315,7 @@ export class JobRunner {
         return;
       }
 
-      const normalizedCount = countNormalizedComments(jobId);
+      const normalizedCount = await countNormalizedComments(jobId);
       const targetComments = job.target_comments;
 
       const progress: CrawlJobProgress = {

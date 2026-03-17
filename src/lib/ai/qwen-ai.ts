@@ -79,7 +79,8 @@ export const qwenAI = {
           temperature,
           max_tokens: maxTokens,
           top_p: topP
-        })
+        }),
+        signal: AbortSignal.timeout(25000),
       });
 
       if (!response.ok) {
@@ -110,7 +111,12 @@ export const qwenAI = {
 
       return content;
     } catch (error) {
-      // 增强错误信息
+      if (error instanceof DOMException && error.name === 'TimeoutError') {
+        throw new Error('通义千问API请求超时（25秒），请稍后重试');
+      }
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new Error('通义千问API请求已取消');
+      }
       if (error instanceof Error) {
         throw error;
       }

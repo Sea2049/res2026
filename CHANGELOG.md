@@ -4,6 +4,31 @@
 
 ## [未发布]
 
+### 修复
+- P0: `nlp.worker.ts` `sentiment_only`/`keywords_only` 任务结果字段由 `sentiment`/`keywords` 改为 `result`，修复 Worker 返回 undefined 问题（`src/lib/workers/nlp.worker.ts`）
+- P0: `jobs.validator.test.ts` A-05/A-08 测试数据修正，`target_comments` 不再超越 `max_comments` 阈值，修复误报的测试失败（`src/lib/validators/__tests__/jobs.validator.test.ts`）
+- P0: `worker.ts` 中 `isPrivateHost` 过宽逻辑修复，新增 `isRawIPAddress` 区分公网/私网裸 IP，避免公网 IP 被误判为 SSRF（`src/lib/validators/worker.ts`）
+- P0: `tsconfig.json` 排除 `dist`/`dist-build`/`dist-new` 构建产物，修复 `typecheck` 扫描旧文件报错
+- P1: `rate-limiter.ts` `getClientIP` 改为取 XFF 最后一个非本地 IP，防止客户端伪造 IP 绕过限流，添加 Clash 桌面代理说明
+- P1: `worker-manager.ts` Worker BUSY 时由直接报错改为 Promise 队列排队（最多 10 个），`cancel()` 同时清空队列
+- P1: `qwen-ai.ts` / `zhipu-ai.ts` 添加 `AbortSignal.timeout(25000)`，`catch` 块区分超时/取消/普通错误
+- P1: `src/app/api/jobs/[jobId]/route.ts` 和 `results/route.ts` 添加 `jobsPollingRateLimiter`（60次/分钟），`crawl/route.ts` 迁移到 `jobsCreateRateLimiter`（10次/分钟）
+- P1: `browser-worker/src/orchestrator/job-runner.ts` `limit` 从 Job 配置 `target_comments` 读取（fallback 100），修复硬编码；新增 `AbortController` 取消信号，`cancelJob()` 现在可中断进行中的爬取
+- P1: `src/app/api/ai/insights/route.ts` 添加 Zhipu AI 降级分支，Qwen 失败且配置 `ZHIPU_API_KEY` 时自动 fallback，响应附加 `_fallback: true` 方便调试
+
+### 新增
+- `services/browser-worker/src/runner/fingerprint.ts`：基于 `fingerprint-generator` + `fingerprint-injector` 生成并注入随机浏览器指纹（UserAgent、Viewport、WebGL、Canvas、AudioContext 保持一致）
+- `services/browser-worker/src/session/context-store.ts`：浏览器 StorageState 持久化，跨 session 复用 Cookie/LocalStorage，减少被挑战概率
+- `services/browser-worker/src/detection/captcha-solver.ts`：集成 `@2captcha/captcha-solver`，在 `fetchBrowser()` 遭遇 reCAPTCHA / hCaptcha 时自动调用，需设置 `CAPTCHA_API_KEY` 环境变量启用
+- `services/browser-worker/tsconfig.json`：为 browser-worker 子服务创建专属 tsconfig，隔离编译范围，排除存量错误文件
+
+### 变更
+- `services/browser-worker/src/runner/launch.ts`：切换至 `playwright-extra` + `puppeteer-extra-plugin-stealth`，自动覆盖 30+ 反检测信号
+- `services/browser-worker/src/session/session-pool.ts`：全面重写，集成指纹注入（Phase 2）、StorageState 持久化（Phase 4）、ProxyPool 代理轮换（Bonus）
+- `services/browser-worker/src/runner/reddit-fetcher.ts`：`fetchHttp()` 改用 `undici.fetch` + `ProxyAgent` 实现真实 HTTP 代理；`fetchBrowser()` 集成 CAPTCHA 自动解决
+- `services/browser-worker/src/runner/stealth.ts`：重命名为 `stealth.legacy.ts`（保留备份，不再被引用）
+- `services/browser-worker/src/index.ts`：更新导出，新增 `fingerprint.ts`、`context-store.ts`、`captcha-solver.ts`，移除 `stealth.ts`
+
 ### 移除
 - 删除 `src/middleware.ts` 邀请码验证中间件（v2.80.0 清理遗留，`/invite` 页面已不存在，中间件会导致 Web 部署 404）
 - 删除 `scripts/prepare-electron.js` 中 Prisma 目录复制逻辑（Prisma 已在 v2.80.0 清理，该段代码为无效遗留）

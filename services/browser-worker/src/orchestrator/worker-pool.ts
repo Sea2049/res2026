@@ -18,6 +18,7 @@ export interface FetchOptions {
   forceHttp?: boolean;      // skip browser fallback
   forceBrowser?: boolean;   // skip HTTP, go straight to browser
   limit?: number;           // comment limit, default 100
+  signal?: AbortSignal;     // cancellation signal; when aborted, fetch returns immediately
 }
 
 export interface FetchResult {

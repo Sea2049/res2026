@@ -78,8 +78,7 @@ function issue(
 }
 
 /**
- * 检测主机名或 IP 是否为内网地址（SSRF 防护）
- * 同时拒绝纯 IP 字符串（非白名单主机名）
+ * 检测主机名或 IP 是否为 RFC 1918 / link-local 等内网地址（SSRF 防护）
  */
 function isPrivateHost(hostname: string): boolean {
   const h = hostname.toLowerCase();
@@ -90,11 +89,14 @@ function isPrivateHost(hostname: string): boolean {
     if (pattern.test(h)) return true;
   }
 
-  // 拒绝所有纯 IPv4/IPv6 地址访问（必须使用白名单域名）
-  // 粗略判断：包含 ':' 的为 IPv6，全数字+点的为 IPv4
+  return false;
+}
+
+/** 检测主机名是否为纯 IP 地址（非域名） */
+function isRawIPAddress(hostname: string): boolean {
+  const h = hostname.toLowerCase();
   if (/^\d+\.\d+\.\d+\.\d+$/.test(h)) return true;
   if (h.includes(":")) return true;
-
   return false;
 }
 
@@ -160,7 +162,7 @@ export function validateInternalFetchRequest(
 
       const hostname = parsedUrl.hostname;
 
-      // SSRF 防护：拒绝内网地址
+      // SSRF 防护：拒绝内网地址（127.x / 10.x / 172.16-31.x / 192.168.x 等）
       if (isPrivateHost(hostname)) {
         issues.push(
           issue(
@@ -173,7 +175,7 @@ export function validateInternalFetchRequest(
             }
           )
         );
-      } else if (!HOST_ALLOWLIST.has(hostname)) {
+      } else if (isRawIPAddress(hostname) || !HOST_ALLOWLIST.has(hostname)) {
         // 白名单校验
         issues.push(
           issue(

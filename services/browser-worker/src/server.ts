@@ -150,20 +150,35 @@ async function start(): Promise<void> {
     process.exit(1);
   }
 
-  // 4. Initialize SessionPool
-  sessionPool = new SessionPool(browser, SESSION_POOL_SIZE);
+  // 5b. Initialize ProxyPool first so SessionPool can use it for context proxy
+  const rawProxiesEarly = process.env["PROXIES"];
+  let proxiesEarly: ProxyConfig[] = [];
+  if (rawProxiesEarly) {
+    try {
+      proxiesEarly = JSON.parse(rawProxiesEarly) as ProxyConfig[];
+    } catch {
+      console.warn("[server] Failed to parse PROXIES env var, running without proxies");
+    }
+  }
+  proxyPool = new ProxyPool(proxiesEarly);
 
-  // 5. Initialize ProxyPool from env
+  // 4. Initialize SessionPool (pass proxyPool so contexts use rotating proxies)
+  sessionPool = new SessionPool(browser, SESSION_POOL_SIZE, proxyPool);
+
+  // 5. Initialize ProxyPool from env (already done above for SessionPool)
   const rawProxies = process.env["PROXIES"];
   let proxies: ProxyConfig[] = [];
   if (rawProxies) {
     try {
       proxies = JSON.parse(rawProxies) as ProxyConfig[];
     } catch {
-      console.warn("[server] Failed to parse PROXIES env var, running without proxies");
+      // already warned above
     }
   }
-  proxyPool = new ProxyPool(proxies);
+  // reuse if already initialized, otherwise create fresh
+  if (!proxyPool) {
+    proxyPool = new ProxyPool(proxies);
+  }
 
   // 6. Initialize RedditFetcher
   fetcher = new RedditFetcher(sessionPool, proxyPool, MAX_CONCURRENT);

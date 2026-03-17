@@ -173,32 +173,55 @@ export const analysisRateLimiter = new RateLimiter({
   name: 'analysis-api',
 })
 
+/** Jobs 轮询限流器（GET 状态/结果查询）：60次/分钟，滑动窗口 */
+export const jobsPollingRateLimiter = new RateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 60,
+  name: 'jobs-polling',
+})
+
+/** Jobs 创建限流器（POST 提交任务）：10次/分钟 */
+export const jobsCreateRateLimiter = new RateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 10,
+  name: 'jobs-create',
+})
+
 // ==================== 工具函数 ====================
 
 /**
  * 从请求中提取客户端 IP
  * 支持各种代理头部
+ *
+ * 桌面版（Electron）部署说明：
+ * 系统默认通过 Clash 代理（127.0.0.1:7897）发出请求，
+ * 此时不存在 XFF 头，getClientIP 返回 'unknown'。
+ * 限流器在桌面版下主要保护 Reddit API 配额，XFF 处理仅在 Web 部署场景下生效。
  */
 export function getClientIP(request: Request): string {
-  // 尝试从各种头部获取真实 IP
   const headers = request.headers
 
-  // Cloudflare
+  // Cloudflare（可信：由 CF 边缘节点设置，不可被客户端伪造）
   const cfConnectingIP = headers.get('cf-connecting-ip')
   if (cfConnectingIP) return cfConnectingIP
 
-  // 标准代理头
-  const xForwardedFor = headers.get('x-forwarded-for')
-  if (xForwardedFor) {
-    // 取第一个 IP（最原始的客户端 IP）
-    return xForwardedFor.split(',')[0].trim()
-  }
-
-  // Nginx 代理
+  // Nginx 代理（可信：由反向代理设置）
   const xRealIP = headers.get('x-real-ip')
   if (xRealIP) return xRealIP
 
-  // 如果都没有，返回默认值
+  // X-Forwarded-For：取最后一个非本地 IP（最近可信代理添加的）
+  const xForwardedFor = headers.get('x-forwarded-for')
+  if (xForwardedFor) {
+    const ips = xForwardedFor.split(',').map(ip => ip.trim()).filter(Boolean)
+    for (let i = ips.length - 1; i >= 0; i--) {
+      const ip = ips[i]
+      if (ip !== '127.0.0.1' && ip !== '::1' && ip !== 'unknown') {
+        return ip
+      }
+    }
+    if (ips.length > 0) return ips[0]
+  }
+
   return 'unknown'
 }
 
